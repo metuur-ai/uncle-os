@@ -1,0 +1,18 @@
+schemaVersion: '1.0'
+kind: CompanyBaseline
+controls:
+- {id: security-service-baseline, version: '3.0', level: mandatory, requirement: 'Services
+    must authenticate all inbound calls, encrypt data in transit, and pass the annual
+    security review.
+
+    '}
+- {id: customer-data-privacy, version: '2.2', level: mandatory, requirement: 'Customer
+    data handling must comply with the enterprise privacy policy; PII access is logged
+    and auditable.
+
+    '}
+- {id: tier-1-observability, version: '1.4', level: default, requirement: 'Tier-1
+    services expose golden-signal dashboards and on-call runbooks.
+
+    '}
+tags: [kind/baseline, scope/company, tier/mixed]

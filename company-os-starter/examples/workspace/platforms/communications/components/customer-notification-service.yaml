@@ -1,0 +1,14 @@
+schemaVersion: '1.0'
+kind: Component
+metadata: {id: customer-notification-service, name: Customer Notification Service,
+  type: service, status: active}
+ownership: {accountableTeam: 'team://customer-engagement', repository: 'repo://customer-notification-service'}
+platformRelationships:
+- platform: platform://communications
+  relationship: belongs-to
+  capabilities: ['capability://communications/message-delivery']
+# External references (Unit 8) — stored, never fetched; collected into the index.
+pointers:
+- {label: Service repository, system: github, url: 'https://example.invalid/cns-repo'}
+tags: [capability/message-delivery, component/customer-notification-service, kind/component,
+  platform/communications, team/customer-engagement]

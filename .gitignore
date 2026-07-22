@@ -1,0 +1,19 @@
+# macOS
+.DS_Store
+
+# Python (the company-os CLI is a single-file Python script)
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Local-only working areas (company-os scratchpad convention)
+scratchpad/
+.company-os.local.yaml
+
+# Environment / secrets
+.env
+.env.local
+
+.devlocal/

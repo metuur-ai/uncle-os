@@ -1,0 +1,14 @@
+schemaVersion: '1.0'
+kind: Team
+metadata: {id: solo, name: Solo Adopters}
+agentSkills: {canonicalPath: skills/, personalPath: scratchpad/personal-rules/, precedence: canonical-mandatory
+    > personal > canonical-default > canonical-guidance, onConflict: prefer-canonical-and-inform-user}
+# Team identity (Unit 5) — optional blocks, queryable across teams.
+roster:
+  - {name: Robin Solo, role: team-lead}
+  - {name: Sam Indie, role: developer}
+channels:
+  - {name: '#solo-team', system: slack, id: C0SOLO001}
+pointers:
+  - {label: Team handbook, system: notion, url: 'https://example.invalid/solo-handbook'}
+tags: [kind/team, team/solo]

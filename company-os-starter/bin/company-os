@@ -1,0 +1,1355 @@
+#!/usr/bin/env python3
+"""company-os — reference CLI for the Federated Company/Platform/Team OS.
+
+Strict on process and structure, flexible on document formats:
+  - scaffolds example artifacts (discovery briefs, PRDs) — section formats are
+    team-local guidance, not contracts (templates/README.md)
+  - resolves effective governance per team from ownership -> components -> platforms
+  - composes Definition of Ready / Done checks
+  - validates the shared contract only: frontmatter core, references, lifecycle
+    gates, ownership reconciliation, expiries, tag derivation
+    (docs/FRONTMATTER-CORE.md)
+
+Requires: Python 3.9+, PyYAML. No other dependencies.
+Workspace root = $COMPANY_OS_WORKSPACE_ROOT or --root or current directory.
+"""
+
+import argparse
+import datetime as dt
+import os
+import re
+import shutil
+import sys
+from pathlib import Path
+
+import yaml
+
+TODAY = dt.date.today()
+NOW = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+# ---------------------------------------------------------------- helpers
+
+def die(msg):
+    print(f"error: {msg}", file=sys.stderr)
+    sys.exit(1)
+
+
+def ok(msg):
+    print(f"  [ok] {msg}")
+
+
+def warn(msg):
+    print(f"  [warn] {msg}")
+
+
+def fail(msg):
+    print(f"  [FAIL] {msg}")
+
+
+def load_yaml(path, default=None):
+    p = Path(path)
+    if not p.exists():
+        return default
+    with open(p) as f:
+        return yaml.safe_load(f) or default
+
+
+def dump_yaml(data, path):
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w") as f:
+        yaml.safe_dump(data, f, sort_keys=False, default_flow_style=False)
+
+
+def slugify(title):
+    return re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")
+
+
+def frontmatter(path):
+    """Return (dict, body) for a markdown file with YAML frontmatter."""
+    text = Path(path).read_text()
+    m = re.match(r"^---\n(.*?)\n---\n(.*)$", text, re.DOTALL)
+    if not m:
+        return {}, text
+    return yaml.safe_load(m.group(1)) or {}, m.group(2)
+
+
+# ------------------------------------------------ canonical compare (idempotency)
+# Derived artifacts are compared by SEMANTIC equality, never by raw bytes (R-0.1):
+#   - YAML files (feature-index): parsed-structure equality via a key-sorted
+#     canonical dump — sidesteps every safe_dump ordering/quoting divergence.
+#   - CLAUDE.md blocks: canonical string — stripped, trailing-whitespace trimmed
+#     per line, newline-normalized.
+# No derived artifact carries a volatile field (timestamp); a fresh render of an
+# unchanged input is therefore identical to the committed one (R-0.2). Each
+# artifact is produced by ONE builder and serialized through dump_canonical_yaml,
+# so `graph build` (write) and `validate` (render+compare) never diverge (R-0.3).
+
+def canonical_yaml(data):
+    """Canonical, key-sorted YAML text for parsed-structure comparison (R-0.1)."""
+    return yaml.safe_dump(data, sort_keys=True, default_flow_style=False,
+                          allow_unicode=True)
+
+
+def dump_canonical_yaml(data, path):
+    """The single writer for derived YAML artifacts — identical serialization to
+    what the drift gate compares against, so write-then-validate cannot drift."""
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    Path(path).write_text(canonical_yaml(data))
+
+
+def canonical_block(text):
+    """Canonical string of a generated block: strip, normalize newlines, trim
+    trailing whitespace per line (R-0.1)."""
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    return "\n".join(line.rstrip() for line in text.strip().split("\n"))
+
+
+def blocks_equal(a, b):
+    return canonical_block(a) == canonical_block(b)
+
+
+# ------------------------------------------------- minimal frontmatter core
+# The interop contract (docs/FRONTMATTER-CORE.md): identity + lifecycle +
+# references live in frontmatter and are validated everywhere; everything
+# below the frontmatter is team-local format and is guidance by default.
+
+LIFECYCLE_TYPES = {"discovery-brief", "prd", "adr", "outcome-review"}
+
+
+def core_field_errors(meta):
+    """Process-level contract only — never inspects body format."""
+    errors = []
+    if not meta.get("type"):
+        errors.append("frontmatter core: 'type' missing")
+    if not meta.get("id") and not meta.get("prd"):
+        errors.append("frontmatter core: no identity field "
+                      "('id', or 'prd' for outcome reviews)")
+    t = meta.get("type")
+    if t in LIFECYCLE_TYPES and not meta.get("status"):
+        errors.append(f"frontmatter core: '{t}' doc has no 'status' (lifecycle)")
+    if t == "component-reality" and not meta.get("updated"):
+        errors.append("frontmatter core: reality doc has no 'updated' date "
+                      "(the done-gate reads it)")
+    if t == "onboarding-guide" and not meta.get("role"):
+        errors.append("frontmatter core: onboarding-guide has no 'role'")
+    return errors
+
+
+def pointer_errors(meta):
+    """A `pointers:` list stores external references, never fetched (R-1.4).
+    Each entry needs `label` + `system` + at least one of `url`/`id` (R-1.2).
+    Guidance-tier by default — callers `warn` unless a gate consumes the pointer,
+    where it blocks (R-1.3)."""
+    ptrs = meta.get("pointers")
+    if ptrs is None:
+        return []
+    if not isinstance(ptrs, list):
+        return ["pointers: must be a list"]
+    errors = []
+    for i, p in enumerate(ptrs):
+        if not isinstance(p, dict):
+            errors.append(f"pointers[{i}]: must be a mapping")
+            continue
+        if not p.get("label"):
+            errors.append(f"pointers[{i}]: missing 'label'")
+        if not p.get("system"):
+            errors.append(f"pointers[{i}]: missing 'system'")
+        if not p.get("url") and not p.get("id"):
+            errors.append(f"pointers[{i}]: needs 'url' or 'id'")
+    return errors
+
+
+def format_checks_enforced(ws, team):
+    """Section-structure checks are team-local guidance by default; a team
+    opts in to blocking enforcement via standards/doc-formats.yaml."""
+    cfg = load_yaml(ws.teams / str(team) / "standards" / "doc-formats.yaml", {}) or {}
+    return bool(cfg.get("enforce"))
+
+
+class Workspace:
+    def __init__(self, root):
+        self.root = Path(root).resolve()
+        self.company = self.root / "company-os"
+        self.platforms = self.root / "platforms"
+        self.teams = self.root / "teams"
+
+    def platform_dir(self, pid):
+        d = self.platforms / pid
+        if not d.exists():
+            die(f"platform '{pid}' not found under {self.platforms}")
+        return d
+
+    def team_dir(self, tid):
+        d = self.teams / tid
+        if not d.exists():
+            die(f"team '{tid}' not found under {self.teams}")
+        return d
+
+    def all_platforms(self):
+        if not self.platforms.exists():
+            return []
+        return [d for d in sorted(self.platforms.iterdir()) if d.is_dir()]
+
+    def all_teams(self):
+        if not self.teams.exists():
+            return []
+        return [d for d in sorted(self.teams.iterdir()) if d.is_dir()]
+
+    def find_component(self, cid):
+        """Search every platform catalog for a component descriptor."""
+        for pdir in self.all_platforms():
+            f = pdir / "components" / f"{cid}.yaml"
+            if f.exists():
+                return pdir.name, load_yaml(f)
+        return None, None
+
+
+# ---------------------------------------------------------------- governance
+
+def resolve_team_governance(ws, team_id):
+    """ownership -> components -> platform relationships -> requirements
+    (company baseline + platform mandatory/default) merged with deviations."""
+    tdir = ws.team_dir(team_id)
+    ownership = load_yaml(tdir / "ownership" / "components.yaml", {})
+    deviations = load_yaml(tdir / "governance" / "deviations.yaml", {}) or {}
+    dev_rules = {d["rule"]: d for d in deviations.get("deviations", [])}
+    baseline = load_yaml(ws.company / "standards" / "company-baseline.yaml", {}) or {}
+
+    result = {
+        "generatedAt": NOW,
+        "team": team_id,
+        "components": {},
+        "deviationsApplied": [],
+    }
+
+    for comp in ownership.get("components", []):
+        cid = comp["id"]
+        home_platform, desc = ws.find_component(cid)
+        entry = {"platforms": [], "requirements": {"company": [], "platform": {}}}
+
+        # Company baseline applies to everything the team is accountable for
+        for ctrl in baseline.get("controls", []):
+            entry["requirements"]["company"].append(
+                {"id": ctrl["id"], "level": ctrl.get("level", "mandatory"),
+                 "version": str(ctrl.get("version", "1.0"))})
+
+        if desc is None:
+            entry["warning"] = "no component descriptor found in any platform catalog"
+            result["components"][cid] = entry
+            continue
+
+        for rel in desc.get("platformRelationships", []):
+            pid = rel["platform"].split("://")[-1]
+            entry["platforms"].append({"id": pid, "relationship": rel["relationship"]})
+            reqs = load_yaml(ws.platform_dir(pid) / "governance" / "requirements.yaml", {}) or {}
+            applicable = []
+            for r in reqs.get("requirements", []):
+                applies = r.get("appliesTo", {})
+                rels = applies.get("relationships")
+                if rels and rel["relationship"] not in rels:
+                    continue
+                ctypes = applies.get("componentTypes")
+                if ctypes and desc.get("metadata", {}).get("type") not in ctypes:
+                    continue
+                rule_id = f"platform-standard://{pid}/{r['id']}"
+                item = {"id": r["id"], "level": r.get("level", "default"),
+                        "version": str(r.get("version", "1.0")), "title": r.get("title", r["id"])}
+                if rule_id in dev_rules:
+                    d = dev_rules[rule_id]
+                    if item["level"] == "mandatory":
+                        item["deviationRejected"] = "mandatory rules cannot be deviated; use an exception"
+                    else:
+                        item["deviation"] = {"status": d.get("status"),
+                                             "rationale": d.get("rationale", "").strip()}
+                        result["deviationsApplied"].append(rule_id)
+                applicable.append(item)
+            if applicable:
+                entry["requirements"]["platform"][pid] = applicable
+        result["components"][cid] = entry
+
+    out = tdir / "generated" / "effective-governance.yaml"
+    dump_yaml(result, out)
+    return out, result
+
+
+def cmd_governance(ws, args):
+    if args.action == "resolve":
+        out, res = resolve_team_governance(ws, args.team)
+        n = len(res["components"])
+        print(f"resolved governance for team '{args.team}' ({n} component(s))")
+        print(f"wrote {out.relative_to(ws.root)}")
+        for cid, e in res["components"].items():
+            plats = ", ".join(p["id"] for p in e["platforms"]) or "-"
+            total = sum(len(v) for v in e["requirements"]["platform"].values())
+            print(f"  {cid}: platforms [{plats}], "
+                  f"{len(e['requirements']['company'])} company + {total} platform requirement(s)")
+            if "warning" in e:
+                warn(f"{cid}: {e['warning']}")
+    elif args.action == "explain":
+        found = False
+        for tdir in ws.all_teams():
+            eff = load_yaml(tdir / "generated" / "effective-governance.yaml", {})
+            comp = (eff or {}).get("components", {}).get(args.component)
+            if not comp:
+                continue
+            found = True
+            print(f"component '{args.component}' (team {eff['team']}):")
+            for pid, reqs in comp["requirements"]["platform"].items():
+                rel = next((p["relationship"] for p in comp["platforms"] if p["id"] == pid), "?")
+                for r in reqs:
+                    dev = " [deviation applied]" if "deviation" in r else ""
+                    print(f"  - {r['id']} v{r['version']} ({r['level']}){dev}")
+                    print(f"      applies because the component '{rel}' platform '{pid}'")
+        if not found:
+            die(f"component '{args.component}' not in any generated governance file; "
+                f"run: company-os governance resolve --team <team>")
+
+
+# ---------------------------------------------------------------- discovery
+
+DISCOVERY_TEMPLATE = """---
+type: discovery-brief
+id: {bid}
+title: {title}
+status: draft
+team: {team}
+created: {date}
+tags: [kind/discovery, team/{team}, status/draft]
+---
+
+# Discovery: {title}
+
+## Problem signal
+<!-- What evidence triggered this? Support tickets, metrics, stakeholder ask. -->
+
+## Hypothesis
+<!-- We believe that <change> for <who> will achieve <outcome>. -->
+
+## Success criteria
+<!-- Measurable. How will we know the hypothesis is true/false? -->
+
+## Affected components (initial guess)
+<!-- component ids, if known -->
+
+## Risks and open questions
+
+## Decision
+<!-- validated | invalidated, and why. Set by `discover validate`. -->
+"""
+
+
+def cmd_discover(ws, args):
+    tdir = ws.team_dir(args.team)
+    if args.action == "new":
+        bid = f"{TODAY.year}-{slugify(args.title)}"
+        d = tdir / "product" / "discovery" / bid
+        d.mkdir(parents=True, exist_ok=True)
+        brief = d / "brief.md"
+        if brief.exists():
+            die(f"{brief} already exists")
+        brief.write_text(DISCOVERY_TEMPLATE.format(
+            bid=bid, title=args.title, team=args.team, date=TODAY))
+        print(f"created {brief.relative_to(ws.root)}")
+        print("next: fill Problem signal, Hypothesis, Success criteria, "
+              "then run: company-os discover validate --team "
+              f"{args.team} {bid}")
+    elif args.action == "validate":
+        brief = tdir / "product" / "discovery" / args.id / "brief.md"
+        if not brief.exists():
+            die(f"no brief at {brief}")
+        meta, body = frontmatter(brief)
+        errors = core_field_errors(meta)
+        format_issues = []
+        for section in ["Problem signal", "Hypothesis", "Success criteria"]:
+            m = re.search(rf"## {section}\n(.*?)(\n## |\Z)", body, re.DOTALL)
+            content = re.sub(r"<!--.*?-->", "", m.group(1), flags=re.DOTALL).strip() if m else ""
+            if not content:
+                format_issues.append(f"section '{section}' is empty")
+        if format_checks_enforced(ws, args.team):
+            errors += format_issues
+        else:
+            for i in format_issues:
+                warn(f"{i} — format guidance only; the team may use its own "
+                     "structure (opt in via standards/doc-formats.yaml)")
+        if errors:
+            for e in errors:
+                fail(e)
+            sys.exit(1)
+        text = brief.read_text().replace("status: draft", "status: validated", 1)
+        brief.write_text(text)
+        ok(f"brief '{args.id}' validated (status: validated)")
+        print(f"next: company-os prd new --team {args.team} "
+              f"--from-discovery {args.id} --platform <platform-id> "
+              f"--components <comp-id,...>")
+
+
+# ---------------------------------------------------------------- prd
+
+PRD_TEMPLATE = """---
+type: prd
+id: {pid}
+title: {title}
+status: proposed
+team: {team}
+platform: {platform}
+components: [{components}]
+governanceSnapshot: {date}
+decisionOwner: TODO
+created: {date}
+fromDiscovery: {discovery}
+tags: [kind/prd, platform/{platform}, team/{team}, status/proposed]
+---
+
+# PRD: {title}
+
+## Problem statement
+{problem}
+
+## Success metrics
+{metrics}
+
+## Proposed change
+<!-- What will be different in the Representation of Reality when done? -->
+
+## Affected components
+{component_list}
+
+## Applicable governance (snapshot {date})
+<!-- Injected by `prd new`. Check items off as evidence is linked. -->
+{governance_checklist}
+
+## Out of scope
+
+## Rollout and validation
+"""
+
+
+def gather_prd_governance(ws, team, components):
+    """Return markdown checklist of mandatory+default requirements for components."""
+    eff_path = ws.team_dir(team) / "generated" / "effective-governance.yaml"
+    eff = load_yaml(eff_path)
+    if eff is None:
+        _, eff = resolve_team_governance(ws, team)
+    lines, missing = [], []
+    for cid in components:
+        comp = eff["components"].get(cid)
+        if comp is None:
+            missing.append(cid)
+            continue
+        lines.append(f"\n**{cid}**")
+        for c in comp["requirements"]["company"]:
+            lines.append(f"- [ ] company: {c['id']} v{c['version']} ({c['level']}) — evidence: ")
+        for pid, reqs in comp["requirements"]["platform"].items():
+            for r in reqs:
+                dev = " *(team deviation applies)*" if "deviation" in r else ""
+                lines.append(f"- [ ] {pid}: {r['id']} v{r['version']} ({r['level']}){dev} — evidence: ")
+    return "\n".join(lines), missing
+
+
+def cmd_prd(ws, args):
+    if args.action == "new":
+        pdir = ws.platform_dir(args.platform)
+        components = [c.strip() for c in args.components.split(",")]
+        pid = f"{TODAY.year}-{slugify(args.title)}" if args.title else None
+
+        problem, metrics, discovery = "<!-- Why now? -->", "<!-- Measurable. -->", "none"
+        if args.from_discovery:
+            brief = (ws.team_dir(args.team) / "product" / "discovery"
+                     / args.from_discovery / "brief.md")
+            if not brief.exists():
+                die(f"discovery brief not found: {brief}")
+            meta, body = frontmatter(brief)
+            if meta.get("status") != "validated":
+                die(f"discovery '{args.from_discovery}' is '{meta.get('status')}', "
+                    "not 'validated'. Run discover validate first.")
+            discovery = args.from_discovery
+            if not args.title:
+                pid = f"{TODAY.year}-{slugify(meta['title'])}"
+                args.title = meta["title"]
+
+            def grab(section):
+                m = re.search(rf"## {section}\n(.*?)(\n## |\Z)", body, re.DOTALL)
+                return m.group(1).strip() if m else ""
+            problem = grab("Problem signal") or problem
+            metrics = grab("Success criteria") or metrics
+
+        if not pid:
+            die("--title required (or --from-discovery)")
+        checklist, missing = gather_prd_governance(ws, args.team, components)
+        for cid in missing:
+            warn(f"component '{cid}' has no resolved governance "
+                 "(not in team ownership? run governance resolve)")
+        d = pdir / "change-records" / "active" / pid
+        d.mkdir(parents=True, exist_ok=True)
+        prd = d / "prd.md"
+        if prd.exists():
+            die(f"{prd} already exists")
+        prd.write_text(PRD_TEMPLATE.format(
+            pid=pid, title=args.title, team=args.team, platform=args.platform,
+            components=", ".join(components), date=TODAY, discovery=discovery,
+            problem=problem, metrics=metrics,
+            component_list="\n".join(f"- `{c}`" for c in components),
+            governance_checklist=checklist or "- [ ] none resolved"))
+        print(f"created {prd.relative_to(ws.root)}")
+        print(f"next: fill Proposed change + decisionOwner, then: "
+              f"company-os prd validate --platform {args.platform} {pid}")
+
+    elif args.action == "validate":
+        prd = (ws.platform_dir(args.platform) / "change-records" / "active"
+               / args.id / "prd.md")
+        if not prd.exists():
+            die(f"no active PRD at {prd}")
+        meta, body = frontmatter(prd)
+        errors = core_field_errors(meta)
+        for field in ["title", "team", "platform", "components",
+                      "governanceSnapshot", "decisionOwner"]:
+            if not meta.get(field) or meta.get(field) == "TODO":
+                errors.append(f"process contract field '{field}' missing or TODO")
+        format_issues = []
+        for section in ["Problem statement", "Success metrics", "Proposed change"]:
+            m = re.search(rf"## {section}\n(.*?)(\n## |\Z)", body, re.DOTALL)
+            content = re.sub(r"<!--.*?-->", "", m.group(1), flags=re.DOTALL).strip() if m else ""
+            if not content:
+                format_issues.append(f"section '{section}' is empty")
+        if meta.get("team") and format_checks_enforced(ws, meta["team"]):
+            errors += format_issues
+        else:
+            for i in format_issues:
+                warn(f"{i} — format guidance only; the team may use its own "
+                     "structure (opt in via standards/doc-formats.yaml)")
+        if errors:
+            for e in errors:
+                fail(e)
+            sys.exit(1)
+        ok(f"PRD '{args.id}' passes the process contract")
+        print(f"next: deliver the change, update the reality doc for each "
+              f"component, then: company-os prd complete "
+              f"--platform {args.platform} {args.id}")
+
+    elif args.action == "complete":
+        pdir = ws.platform_dir(args.platform)
+        src = pdir / "change-records" / "active" / args.id
+        prd = src / "prd.md"
+        if not prd.exists():
+            die(f"no active PRD at {prd}")
+        meta, body = frontmatter(prd)
+        unchecked = re.findall(r"- \[ \] .*", body)
+        errors = []
+        if unchecked:
+            errors.append(f"{len(unchecked)} governance checklist item(s) unchecked "
+                          "(check them off with linked evidence)")
+        for cid in meta.get("components", []):
+            reality = pdir / "reality" / "components" / f"{cid}.md"
+            if not reality.exists():
+                errors.append(f"no reality doc for component '{cid}' "
+                              f"({reality.relative_to(ws.root)})")
+            else:
+                r_meta, _ = frontmatter(reality)
+                if str(r_meta.get("updated", "")) < str(meta.get("created", "")):
+                    errors.append(f"reality doc for '{cid}' not updated since PRD created "
+                                  f"(reality updated: {r_meta.get('updated')})")
+        if errors and not args.force:
+            print("done-check failed — a change is not done until reality is updated:")
+            for e in errors:
+                fail(e)
+            sys.exit(1)
+        dst = pdir / "archive" / "prds" / args.id
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(src), str(dst))
+        archived = dst / "prd.md"
+        archived.write_text(archived.read_text().replace(
+            "status: proposed", "status: completed", 1).replace(
+            "status: in-delivery", "status: completed", 1))
+        outcome = dst / "outcome.md"
+        due = TODAY + dt.timedelta(days=90)
+        outcome.write_text(
+            f"---\ntype: outcome-review\nprd: {args.id}\ndue: {due}\nstatus: pending\n"
+            f"tags: [kind/outcome, prd/{args.id}, status/pending]\n---\n\n"
+            f"# Outcome review: {meta.get('title')}\n\n"
+            "## Success metrics vs. actuals\n\n## Verdict\n\n## Learnings\n")
+        log = pdir / "log.md"
+        with open(log, "a") as f:
+            f.write(f"- {TODAY}: PRD `{args.id}` completed and archived; "
+                    f"outcome review due {due}\n")
+        print(f"archived -> {dst.relative_to(ws.root)}")
+        print(f"outcome review scheduled (due {due})")
+        print(f"appended {log.relative_to(ws.root)}")
+
+
+# ---------------------------------------------------------------- checks
+
+def compose_checklist(ws, team, components, kind):
+    tdir = ws.team_dir(team)
+    baseline = tdir / "standards" / f"definition-of-{kind}.md"
+    print(f"== Team baseline ({baseline.name}) ==")
+    if baseline.exists():
+        print(baseline.read_text().strip())
+    else:
+        warn("no team baseline file")
+    print(f"\n== Applicable governance ({', '.join(components)}) ==")
+    checklist, missing = gather_prd_governance(ws, team, components)
+    print(checklist.strip() if checklist.strip() else "(none resolved)")
+    for cid in missing:
+        warn(f"'{cid}' not in team governance — run governance resolve")
+
+
+def cmd_check(ws, args):
+    components = [c.strip() for c in args.components.split(",")]
+    compose_checklist(ws, args.team, components, "ready" if args.kind == "ready" else "done")
+
+
+# ---------------------------------------------------------------- validate
+
+def cmd_validate(ws, args):
+    problems = 0
+    print(f"validating workspace {ws.root}\n")
+
+    # 1. ownership <-> descriptor reconciliation
+    print("[1/6] ownership reconciliation")
+    for tdir in ws.all_teams():
+        team_id = tdir.name
+        ownership = load_yaml(tdir / "ownership" / "components.yaml", {}) or {}
+        for comp in ownership.get("components", []):
+            cid = comp["id"]
+            platform, desc = ws.find_component(cid)
+            if desc is None:
+                fail(f"{team_id}: owns '{cid}' but no descriptor in any platform catalog")
+                problems += 1
+                continue
+            acc = (desc.get("ownership", {}) or {}).get("accountableTeam", "")
+            if comp.get("relationship") == "accountable" and acc != f"team://{team_id}":
+                fail(f"'{cid}': team '{team_id}' claims accountable but descriptor "
+                     f"says '{acc}' (single-source rule: descriptor ownership must "
+                     f"match team registry)")
+                problems += 1
+            else:
+                ok(f"{cid}: registry and descriptor agree ({platform})")
+
+    # 2. expiries
+    print("\n[2/6] deviation and exception expiry")
+    for tdir in ws.all_teams():
+        dev = load_yaml(tdir / "governance" / "deviations.yaml", {}) or {}
+        for d in dev.get("deviations", []):
+            rd = d.get("reviewDate")
+            if rd and dt.date.fromisoformat(str(rd)) < TODAY:
+                fail(f"{tdir.name}: deviation for {d['rule']} expired {rd} — re-review or remove")
+                problems += 1
+            else:
+                ok(f"{tdir.name}: deviation {d['rule']} current (review {rd})")
+        exc = load_yaml(tdir / "governance" / "exceptions.yaml", {}) or {}
+        for e in exc.get("exceptions", []):
+            ex = e.get("expires")
+            if not ex:
+                fail(f"{tdir.name}: exception for {e.get('rule')} has NO expiry — invalid")
+                problems += 1
+            elif dt.date.fromisoformat(str(ex)) < TODAY:
+                fail(f"{tdir.name}: exception for {e.get('rule')} expired {ex}")
+                problems += 1
+            else:
+                ok(f"{tdir.name}: exception {e.get('rule')} valid until {ex}")
+
+    # 3. active PRD contracts
+    print("\n[3/6] active PRD contracts")
+    for pdir in ws.all_platforms():
+        active = pdir / "change-records" / "active"
+        if not active.exists():
+            continue
+        for d in sorted(active.iterdir()):
+            prd = d / "prd.md"
+            if not prd.exists():
+                continue
+            meta, _ = frontmatter(prd)
+            missing = [f for f in ["title", "team", "components", "governanceSnapshot"]
+                       if not meta.get(f)]
+            if missing:
+                fail(f"{pdir.name}/{d.name}: missing frontmatter {missing}")
+                problems += 1
+            else:
+                ok(f"{pdir.name}/{d.name}: contract fields present")
+
+    # 4. frontmatter core + tag derivation — the OKF/Obsidian interop contract.
+    #    This is the only doc-level gate; body format is never inspected here.
+    print("\n[4/6] frontmatter core and tag derivation (interop contract)")
+    for md, meta, derived in iter_graph_docs(ws):
+        rel = md.relative_to(ws.root)
+        core = core_field_errors(meta)
+        for e in core:
+            fail(f"{rel}: {e}")
+            problems += 1
+        committed = sorted(meta.get("tags") or [])
+        if committed != derived:
+            fail(f"{rel}: committed tags drifted from frontmatter derivation "
+                 f"— run: company-os graph build")
+            problems += 1
+        elif not core:
+            ok(f"{rel}: core fields + tags in sync")
+        # pointer well-formedness is guidance-tier (warn), never blocking here (R-1.3)
+        for pe in pointer_errors(meta):
+            warn(f"{rel}: {pe} — pointer guidance (not blocking)")
+
+    # 5. CLAUDE.md context-node drift — per federation root, canonical-string
+    #    compare the committed generated block to a fresh render. Team identity
+    #    shape is blocking; the node itself is absence-tolerant (enrichment opt-in).
+    print("\n[5/6] CLAUDE.md context node drift (fail-safe, absence-tolerant)")
+    groups = group_docs_by_root(ws)
+    for root in node_roots(ws):
+        rel_root = root.relative_to(ws.root)
+        team_meta = root_team_meta(ws, root)
+        if team_meta is not None:
+            for ie in identity_errors(team_meta):
+                fail(f"{rel_root}/team.yaml: {ie}")
+                problems += 1
+        node_path = root / "CLAUDE.md"
+        if not node_path.exists():
+            ok(f"{rel_root}: no CLAUDE.md node (absent -> pass)")
+            continue
+        committed = extract_generated_block(node_path.read_text())
+        if committed is None:
+            ok(f"{rel_root}/CLAUDE.md: hand-owned, no generated markers (-> pass)")
+            continue
+        fresh = build_claude_node(ws, root, groups.get(root, []), team_meta)
+        if not blocks_equal(committed, fresh):
+            fail(f"{rel_root}/CLAUDE.md: generated block drifted "
+                 f"— run: company-os graph build")
+            problems += 1
+        else:
+            ok(f"{rel_root}/CLAUDE.md: context node in sync")
+
+    # 6. feature-index drift — derived component→artifact map per platform.
+    #    Absence-tolerant: a platform without an index PASSES (enrichment opt-in).
+    print("\n[6/6] feature-index drift (derived component->artifact map)")
+    for pdir in ws.all_platforms():
+        committed_path = pdir / "generated" / "feature-index.yaml"
+        fresh = build_feature_index(ws, pdir)
+        if not committed_path.exists():
+            ok(f"{pdir.name}: no feature-index (absent -> pass; "
+               f"run graph build to enable)")
+            continue
+        committed = load_yaml(committed_path, {})
+        if canonical_yaml(committed) != canonical_yaml(fresh):
+            fail(f"{pdir.name}: feature-index drifted from derivation "
+                 f"— run: company-os graph build")
+            problems += 1
+            continue
+        unresolved = feature_index_unresolved(ws, fresh)
+        if unresolved:
+            for kind, rid, cid in unresolved:
+                fail(f"{pdir.name}: feature-index component '{cid}' references "
+                     f"{kind} '{rid}' which resolves to no document")
+                problems += 1
+        else:
+            ok(f"{pdir.name}: feature-index in sync "
+               f"({len(fresh['components'])} component(s))")
+
+    print(f"\n{'PASS' if problems == 0 else f'FAIL — {problems} problem(s)'}")
+    sys.exit(0 if problems == 0 else 1)
+
+
+# ---------------------------------------------------------------- misc
+
+def cmd_deviation(ws, args):
+    tdir = ws.team_dir(args.team)
+    path = tdir / "governance" / "deviations.yaml"
+    data = load_yaml(path, {"schemaVersion": "1.0", "team": args.team, "deviations": []})
+    data.setdefault("deviations", []).append({
+        "rule": args.rule, "tier": "default", "status": "declared",
+        "rationale": args.rationale or "TODO: why does the team deviate?",
+        "reviewDate": str(TODAY + dt.timedelta(days=180)),
+    })
+    dump_yaml(data, path)
+    print(f"declared deviation from {args.rule} in {path.relative_to(ws.root)}")
+    print(f"review due {TODAY + dt.timedelta(days=180)}; "
+          f"re-run: company-os governance resolve --team {args.team}")
+
+
+def cmd_exception(ws, args):
+    tdir = ws.team_dir(args.team)
+    path = tdir / "governance" / "exceptions.yaml"
+    data = load_yaml(path, {"schemaVersion": "1.0", "team": args.team, "exceptions": []})
+    data.setdefault("exceptions", []).append({
+        "rule": args.rule, "component": args.component,
+        "reason": args.reason or "TODO", "compensatingControls": ["TODO"],
+        "approvedBy": "TODO: rule owner", "expires": args.expires,
+    })
+    dump_yaml(data, path)
+    print(f"exception drafted in {path.relative_to(ws.root)} (expires {args.expires})")
+    print("note: mandatory rules require approval by the rule owner before this is valid.")
+
+
+def cmd_scratchpad(ws, args):
+    base = Path(args.repo or ".") / "scratchpad"
+    for sub in ["drafts", "brainstorms", "personal-rules", "experiments", "inbox"]:
+        (base / sub).mkdir(parents=True, exist_ok=True)
+    (base / "README.md").write_text(
+        "# Scratchpad (local-only)\n\nPrivate working area. Never authoritative, "
+        "never committed.\nPersonal agent rules go in personal-rules/ and are applied "
+        "ON TOP of canonical skills,\nnever instead of mandatory steps.\n")
+    gi = Path(args.repo or ".") / ".gitignore"
+    existing = gi.read_text() if gi.exists() else ""
+    if "scratchpad/" not in existing:
+        with open(gi, "a") as f:
+            f.write("\n# Local user and AI working area\nscratchpad/\n"
+                    ".company-os.local.yaml\n.env\n.env.local\n")
+    print(f"initialized {base} and updated .gitignore")
+
+
+def onboarding_guide_for(ws, role):
+    """Onboarding guide matching a role, team scope before company (R-6.2)."""
+    for tdir in ws.all_teams():
+        g = tdir / "onboarding" / f"{role}.md"
+        if g.exists():
+            return g
+    g = ws.company / "onboarding" / f"{role}.md"
+    return g if g.exists() else None
+
+
+def cmd_today(ws, args):
+    print(f"== today ({args.role}) ==")
+    if args.role in ("product-owner", "director-of-product"):
+        for pdir in ws.all_platforms():
+            active = pdir / "change-records" / "active"
+            prds = sorted(active.iterdir()) if active.exists() else []
+            print(f"\nplatform {pdir.name}: {len(prds)} active PRD(s)")
+            for d in prds:
+                meta, _ = frontmatter(d / "prd.md") if (d / "prd.md").exists() else ({}, "")
+                print(f"  - {d.name} [{meta.get('status','?')}] team={meta.get('team','?')}")
+            arch = pdir / "archive" / "prds"
+            for d in (sorted(arch.iterdir()) if arch.exists() else []):
+                o = d / "outcome.md"
+                if o.exists():
+                    m, _ = frontmatter(o)
+                    if m.get("status") == "pending":
+                        print(f"  - outcome review due {m.get('due')}: {d.name}")
+    if args.role in ("developer", "team-lead", "vp-engineering"):
+        for tdir in ws.all_teams():
+            eff = load_yaml(tdir / "generated" / "effective-governance.yaml")
+            if not eff:
+                warn(f"{tdir.name}: no effective-governance.yaml — run governance resolve")
+                continue
+            print(f"\nteam {tdir.name} (governance generated {eff.get('generatedAt')})")
+            for cid, e in eff.get("components", {}).items():
+                n = sum(len(v) for v in e["requirements"]["platform"].values())
+                print(f"  - {cid}: {n} platform requirement(s), "
+                      f"{len(e['requirements']['company'])} company control(s)")
+    # after the role view, point to a matching onboarding guide if one exists;
+    # otherwise leave the view unchanged with no error (R-6.2/R-6.3)
+    guide = onboarding_guide_for(ws, args.role)
+    if guide:
+        print(f"\nonboarding: {guide.relative_to(ws.root)}")
+
+
+
+
+# ---------------------------------------------------------------- graph / tags
+
+KIND_TAG = {"prd": "kind/prd", "discovery-brief": "kind/discovery",
+            "component-reality": "kind/reality", "outcome-review": "kind/outcome",
+            "adr": "kind/adr", "concept": "ontology/concept",
+            "bounded-context": "ontology/context", "context-map": "ontology/context-map",
+            "onboarding-guide": "kind/onboarding"}
+
+# Deferred doc types are reserved but INERT — no required-field gate wired until
+# their consumer ships (R-4.2). Listed so the boundary is explicit, not enforced.
+DEFERRED_DOC_TYPES = ("account-context", "customer-call", "data-catalog")
+
+
+def derive_tags(meta, extra=None):
+    """Tags are DERIVED from frontmatter IDs — never hand-written (Ontology Guide 2.2)."""
+    tags = set(extra or [])
+    t = meta.get("type")
+    if t in KIND_TAG:
+        tags.add(KIND_TAG[t])
+    if meta.get("platform"):
+        tags.add(f"platform/{meta['platform']}")
+    if meta.get("team"):
+        tags.add(f"team/{meta['team']}")
+    for c in meta.get("components", []) or []:
+        tags.add(f"component/{c}")
+    bc = meta.get("boundedContext", "")
+    if bc:
+        tags.add("context/" + str(bc).split("://")[-1])
+    if meta.get("status"):
+        tags.add(f"status/{meta['status']}")
+    if meta.get("authority"):
+        tags.add(f"authority/{meta['authority']}")
+    if meta.get("fromDiscovery") and meta["fromDiscovery"] != "none":
+        tags.add(f"discovery/{meta['fromDiscovery']}")
+    if meta.get("prd"):
+        tags.add(f"prd/{meta['prd']}")
+    if t == "onboarding-guide" and meta.get("role"):
+        tags.add(f"role/{meta['role']}")
+    return sorted(tags)
+
+
+def rewrite_frontmatter_tags(path, tags):
+    text = Path(path).read_text()
+    m = re.match(r"^---\n(.*?)\n---\n(.*)$", text, re.DOTALL)
+    if not m:
+        return False
+    meta = yaml.safe_load(m.group(1)) or {}
+    if meta.get("tags") == tags:
+        return False
+    meta["tags"] = tags
+    fm = yaml.safe_dump(meta, sort_keys=False, default_flow_style=None).strip()
+    Path(path).write_text(f"---\n{fm}\n---\n{m.group(2)}")
+    return True
+
+
+def iter_graph_docs(ws):
+    """Yield (path, meta, derived_tags) for every frontmatter markdown doc.
+
+    Shared by `graph build` (which writes tags) and `validate` gate 4
+    (which checks committed tags against a fresh derivation)."""
+    roots = [ws.company, *ws.all_platforms(), *ws.all_teams(),
+             ws.root / "company-ontology"]
+    for root in roots:
+        if not root.exists():
+            continue
+        # infer platform/team from location for docs that omit it
+        loc = {}
+        if root.parent.name == "platforms":
+            loc = {"platform": root.name}
+        elif root.parent.name == "teams":
+            loc = {"team": root.name}
+        # Sorted so aggregate consumers (feature-index, CLAUDE.md nodes) are
+        # walk-order independent and idempotent across checkouts (R-0.4).
+        # CLAUDE.md is skipped by name so generated nodes are never re-ingested
+        # as graph documents, even once they carry frontmatter (R-0.5).
+        for md in sorted(root.rglob("*.md")):
+            if ("scratchpad" in md.parts
+                    or md.name in ("log.md", "README.md", "CLAUDE.md")):
+                continue
+            meta, _ = frontmatter(md)
+            if not meta:
+                continue
+            extra = [f"{k}/{v}" for k, v in loc.items()]
+            # reality docs: tag their component from the id field
+            if meta.get("type") == "component-reality":
+                cid = str(meta.get("id", "")).replace("reality-", "")
+                if cid:
+                    extra.append(f"component/{cid}")
+            existing = meta.get("tags") or []
+            # keep manually curated ontology/* and capability/* facets
+            keep = [t for t in existing if str(t).split("/")[0]
+                    in ("ontology", "capability", "req", "spec")]
+            yield md, meta, derive_tags(meta, extra + keep)
+
+
+# ------------------------------------------------------- feature index (#2)
+# A derived, always-current map from each catalog component to all of its
+# artifacts — reality doc, active/archived PRDs, discovery ids, pending outcomes,
+# and external pointers — following the reference edges already in frontmatter
+# (`components`, `fromDiscovery`, `prd`). Written under generated/, never
+# hand-edited; the same builder feeds both the writer and the drift gate.
+
+def _prd_meta_list(change_dir):
+    """Yield [(prd_id, meta), ...] for each prd.md under a change dir."""
+    out = []
+    if change_dir.exists():
+        for d in sorted(change_dir.iterdir()):
+            prd = d / "prd.md"
+            if prd.exists():
+                meta, _ = frontmatter(prd)
+                out.append((meta.get("id") or d.name, meta))
+    return out
+
+
+def collect_pointers(*metas):
+    """Merge, dedupe, and sort well-formed `pointers:` from several docs (R-2.3)."""
+    seen = []
+    for meta in metas:
+        if not isinstance(meta, dict):
+            continue
+        for p in meta.get("pointers") or []:
+            if (isinstance(p, dict) and p not in seen
+                    and not pointer_errors({"pointers": [p]})):
+                seen.append(p)
+    return sorted(seen, key=lambda p: (str(p.get("label", "")),
+                                       str(p.get("system", "")),
+                                       str(p.get("url") or p.get("id") or "")))
+
+
+def build_feature_index(ws, pdir):
+    """Pure derivation of a platform's component→artifact map (R-2.1/R-2.2).
+    No volatile fields; all lists sorted so output is walk-order independent."""
+    pid = pdir.name
+    comp_dir = pdir / "components"
+    cids = sorted(f.stem for f in comp_dir.glob("*.yaml")) if comp_dir.exists() else []
+    active = _prd_meta_list(pdir / "change-records" / "active")
+    archived = _prd_meta_list(pdir / "archive" / "prds")
+
+    # outcome.md docs keyed by their `prd` edge (R-2.2), pending only
+    outcomes_by_prd = {}
+    arch_root = pdir / "archive" / "prds"
+    if arch_root.exists():
+        for d in sorted(arch_root.iterdir()):
+            o = d / "outcome.md"
+            if o.exists():
+                om, _ = frontmatter(o)
+                if om.get("status") == "pending":
+                    key = om.get("prd") or d.name
+                    outcomes_by_prd[key] = {
+                        "prd": key,
+                        "due": str(om.get("due")) if om.get("due") is not None else None,
+                        "status": om.get("status")}
+
+    components = {}
+    for cid in cids:
+        desc = load_yaml(comp_dir / f"{cid}.yaml", {}) or {}
+        entry = {}
+        reality = pdir / "reality" / "components" / f"{cid}.md"
+        reality_meta = {}
+        if reality.exists():
+            entry["reality"] = f"reality/components/{cid}.md"
+            reality_meta, _ = frontmatter(reality)
+
+        active_ids, archived_ids, discovery_ids, outcomes = [], [], [], []
+        ptr_metas = [desc, reality_meta]
+        for prd_id, meta in active:
+            if cid in (meta.get("components") or []):
+                active_ids.append(prd_id)
+                ptr_metas.append(meta)
+                fd = meta.get("fromDiscovery")
+                if fd and fd != "none":
+                    discovery_ids.append(fd)
+        for prd_id, meta in archived:
+            if cid in (meta.get("components") or []):
+                archived_ids.append(prd_id)
+                ptr_metas.append(meta)
+                fd = meta.get("fromDiscovery")
+                if fd and fd != "none":
+                    discovery_ids.append(fd)
+                if prd_id in outcomes_by_prd:
+                    outcomes.append(outcomes_by_prd[prd_id])
+
+        if active_ids:
+            entry["activePrds"] = sorted(set(active_ids))
+        if archived_ids:
+            entry["archivedPrds"] = sorted(set(archived_ids))
+        if discovery_ids:
+            entry["discovery"] = sorted(set(discovery_ids))
+        if outcomes:
+            entry["outcomes"] = sorted(outcomes, key=lambda o: str(o["prd"]))
+        ptrs = collect_pointers(*ptr_metas)
+        if ptrs:
+            entry["externalPointers"] = ptrs
+        components[cid] = entry
+    return {"platform": pid, "components": components}
+
+
+def _discovery_exists(ws, did):
+    return any((tdir / "product" / "discovery" / str(did) / "brief.md").exists()
+               for tdir in ws.all_teams())
+
+
+def _prd_exists(ws, prd_id):
+    for pdir in ws.all_platforms():
+        if (pdir / "change-records" / "active" / str(prd_id) / "prd.md").exists():
+            return True
+        if (pdir / "archive" / "prds" / str(prd_id) / "prd.md").exists():
+            return True
+    return False
+
+
+def feature_index_unresolved(ws, idx):
+    """Discovery/PRD ids in an index that resolve to no document (R-2.7)."""
+    bad = []
+    for cid, e in (idx.get("components") or {}).items():
+        for did in e.get("discovery") or []:
+            if not _discovery_exists(ws, did):
+                bad.append(("discovery", did, cid))
+        for o in e.get("outcomes") or []:
+            if not _prd_exists(ws, o.get("prd")):
+                bad.append(("prd", o.get("prd"), cid))
+    return bad
+
+
+def write_feature_indexes(ws):
+    """Write each platform's feature-index, regenerating only on change."""
+    for pdir in ws.all_platforms():
+        idx = build_feature_index(ws, pdir)
+        out = pdir / "generated" / "feature-index.yaml"
+        new = canonical_yaml(idx)
+        if not out.exists() or out.read_text() != new:
+            dump_canonical_yaml(idx, out)
+            print(f"  wrote index {out.relative_to(ws.root)}")
+
+
+# --------------------------------------------- team identity (#5) + node (#1)
+
+def identity_errors(team_meta):
+    """`roster`/`channels`/`pointers` are optional; if present each row is shape-
+    checked — roster needs name+role, channels need name+id (R-5.2/R-5.3)."""
+    errors = []
+    roster = (team_meta or {}).get("roster")
+    if roster is not None:
+        if not isinstance(roster, list):
+            errors.append("roster: must be a list")
+        else:
+            for i, r in enumerate(roster):
+                if not isinstance(r, dict) or not r.get("name") or not r.get("role"):
+                    errors.append(f"roster[{i}]: needs 'name' and 'role'")
+    channels = (team_meta or {}).get("channels")
+    if channels is not None:
+        if not isinstance(channels, list):
+            errors.append("channels: must be a list")
+        else:
+            for i, c in enumerate(channels):
+                if not isinstance(c, dict) or not c.get("name") or not c.get("id"):
+                    errors.append(f"channels[{i}]: needs 'name' and 'id'")
+    errors += pointer_errors(team_meta or {})
+    return errors
+
+
+def identity_summary(team_meta):
+    """Markdown lines summarizing a team's roster/channels/pointers (R-3.8/R-5.5).
+    Pure function of team.yaml; empty when no identity blocks are present."""
+    lines = []
+    roster = (team_meta or {}).get("roster") or []
+    channels = (team_meta or {}).get("channels") or []
+    pointers = (team_meta or {}).get("pointers") or []
+    people = [r for r in roster if isinstance(r, dict)]
+    chans = [c for c in channels if isinstance(c, dict)]
+    ptrs = [p for p in pointers if isinstance(p, dict)]
+    if people:
+        lines.append("**Roster:** " + ", ".join(
+            f"{r.get('name')} ({r.get('role')})" for r in people))
+    if chans:
+        lines.append("**Channels:** " + ", ".join(
+            (f"{c.get('name')} ({c.get('system')})" if c.get("system")
+             else f"{c.get('name')}") for c in chans))
+    if ptrs:
+        lines.append("**Pointers:** " + ", ".join(
+            f"[{p.get('label')}]({p.get('url') or p.get('id')})" for p in ptrs))
+    return lines
+
+
+GEN_START = ("<!-- company-os:generated:start — do not edit; "
+             "run `company-os graph build` -->")
+GEN_END = "<!-- company-os:generated:end -->"
+# Line-anchored so a marker string appearing inside prose/content (a title or
+# path that mentions this feature) can never be miscounted as a real sentinel.
+START_RE = re.compile(r"^<!--\s*company-os:generated:start.*?-->\s*$", re.MULTILINE)
+END_RE = re.compile(r"^<!--\s*company-os:generated:end.*?-->\s*$", re.MULTILINE)
+
+
+def render_generated_region(block):
+    return f"{GEN_START}\n{block.strip()}\n{GEN_END}"
+
+
+def extract_generated_block(text):
+    """Interior string of the single balanced marker pair, else None (R-3.3)."""
+    starts = list(START_RE.finditer(text))
+    ends = list(END_RE.finditer(text))
+    if len(starts) == 1 and len(ends) == 1 and starts[0].start() < ends[0].start():
+        return text[starts[0].end():ends[0].start()]
+    return None
+
+
+def rewrite_generated_block(path, block):
+    """Fail-safe write of a generated region delimited by literal sentinels.
+    Never uses the frontmatter regex (CLAUDE.md prose legitimately contains
+    `---`). Returns True if the file was created or changed.
+
+      0 markers + absent   -> create minimal hand-owned header + block (R-3.4)
+      0 markers + exists    -> append block, alter no prose (R-3.5)
+      exactly 1 balanced pair -> replace interior only, verbatim outside (R-3.3)
+      any other combination  -> warn, mutate nothing (R-3.6)
+    """
+    region = render_generated_region(block)
+    p = Path(path)
+    if not p.exists():
+        header = (f"# {p.parent.name}\n\n"
+                  "_Hand-owned context. The block below is generated by "
+                  "`company-os graph build` — edit outside the markers only._\n\n")
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(header + region + "\n")
+        return True
+    text = p.read_text()
+    starts = list(START_RE.finditer(text))
+    ends = list(END_RE.finditer(text))
+    if not starts and not ends:
+        sep = "" if text.endswith("\n\n") else ("\n" if text.endswith("\n") else "\n\n")
+        new = text + sep + region + "\n"
+        if new == text:
+            return False
+        p.write_text(new)
+        return True
+    if len(starts) == 1 and len(ends) == 1 and starts[0].start() < ends[0].start():
+        new = text[:starts[0].start()] + region + text[ends[0].end():]
+        if new == text:
+            return False
+        p.write_text(new)
+        return True
+    warn(f"{path}: unbalanced/duplicated company-os:generated markers "
+         f"({len(starts)} start, {len(ends)} end) — not rewriting")
+    return False
+
+
+def node_roots(ws):
+    """Federation roots that carry a CLAUDE.md context node (R-3.1)."""
+    roots = [ws.company, *ws.all_platforms(), *ws.all_teams(),
+             ws.root / "company-ontology"]
+    return [r for r in roots if r.exists()]
+
+
+def root_team_meta(ws, root):
+    if root.parent.name == "teams":
+        m = load_yaml(root / "team.yaml", {})
+        return m if isinstance(m, dict) else {}
+    return None
+
+
+def group_docs_by_root(ws):
+    """{root: sorted[(relpath-from-root, meta)]} for every node root (R-0.4)."""
+    roots = node_roots(ws)
+    groups = {r: [] for r in roots}
+    for md, meta, _ in iter_graph_docs(ws):
+        for r in roots:
+            try:
+                rel = md.relative_to(r)
+            except ValueError:
+                continue
+            groups[r].append((rel.as_posix(), meta))
+            break
+    return {r: sorted(v, key=lambda x: x[0]) for r, v in groups.items()}
+
+
+def build_claude_node(ws, root, docs, team_meta=None):
+    """Pure render of a root's generated context block: a Doc Index grouped by
+    `type`, links to sibling federation roots, and (team roots) an identity
+    summary. No time, no walk-order dependence — inputs are pre-sorted (R-3.7)."""
+    lines = [f"## {root.name} — context index", ""]
+    by_type = {}
+    for rel, meta in docs:
+        by_type.setdefault(str(meta.get("type") or "other"), []).append((rel, meta))
+    if by_type:
+        lines.append("### Doc index")
+        for t in sorted(by_type):
+            lines.append(f"- **{t}**")
+            for rel, meta in sorted(by_type[t], key=lambda x: x[0]):
+                title = meta.get("title") or meta.get("id") or Path(rel).name
+                lines.append(f"  - [{title}]({rel})")
+        lines.append("")
+    others = [r for r in node_roots(ws) if r != root]
+    if others:
+        lines.append("### Federation roots")
+        for r in others:
+            # POSIX separators so the committed block is byte-identical across
+            # operating systems (idempotency must survive a Windows checkout).
+            link = os.path.relpath(r / "CLAUDE.md", root).replace(os.sep, "/")
+            lines.append(f"- [{r.name}]({link})")
+        lines.append("")
+    if team_meta is not None:
+        summary = identity_summary(team_meta)
+        if summary:
+            lines.append("### Team identity")
+            lines.extend(summary)
+            lines.append("")
+    return "\n".join(lines).strip()
+
+
+def write_claude_nodes(ws):
+    """Write/refresh a generated context block at each federation root (R-3.1)."""
+    groups = group_docs_by_root(ws)
+    for root in node_roots(ws):
+        team_meta = root_team_meta(ws, root)
+        block = build_claude_node(ws, root, groups.get(root, []), team_meta)
+        if rewrite_generated_block(root / "CLAUDE.md", block):
+            print(f"  node {(root / 'CLAUDE.md').relative_to(ws.root)}")
+
+
+def cmd_graph(ws, args):
+    """Derive tags for every frontmatter doc, then rebuild derived aggregates."""
+    scanned = changed = 0
+    for md, meta, tags in iter_graph_docs(ws):
+        scanned += 1
+        if rewrite_frontmatter_tags(md, tags):
+            changed += 1
+            print(f"  tagged {md.relative_to(ws.root)}")
+    write_feature_indexes(ws)
+    write_claude_nodes(ws)
+    print(f"graph build: {scanned} doc(s) scanned, {changed} updated")
+
+
+# ---------------------------------------------------------------- main
+
+def main():
+    p = argparse.ArgumentParser(prog="company-os")
+    p.add_argument("--root", default=os.environ.get("COMPANY_OS_WORKSPACE_ROOT", "."),
+                   help="workspace root (default: $COMPANY_OS_WORKSPACE_ROOT or cwd)")
+    sub = p.add_subparsers(dest="cmd", required=True)
+
+    d = sub.add_parser("discover", help="discovery brief workflow")
+    d.add_argument("action", choices=["new", "validate"])
+    d.add_argument("--team", required=True)
+    d.add_argument("title", nargs="?", help="title (new) or brief id (validate)")
+    d.set_defaults(fn=lambda ws, a: cmd_discover(
+        ws, argparse.Namespace(action=a.action, team=a.team,
+                               title=a.title, id=a.title)))
+
+    pr = sub.add_parser("prd", help="PRD workflow")
+    pr.add_argument("action", choices=["new", "validate", "complete"])
+    pr.add_argument("id", nargs="?")
+    pr.add_argument("--team")
+    pr.add_argument("--platform", required=True)
+    pr.add_argument("--components", default="")
+    pr.add_argument("--title")
+    pr.add_argument("--from-discovery", dest="from_discovery")
+    pr.add_argument("--force", action="store_true")
+    pr.set_defaults(fn=cmd_prd)
+
+    g = sub.add_parser("governance", help="resolve / explain effective governance")
+    g.add_argument("action", choices=["resolve", "explain"])
+    g.add_argument("component", nargs="?")
+    g.add_argument("--team")
+    g.set_defaults(fn=cmd_governance)
+
+    c = sub.add_parser("check", help="composable DoR / DoD")
+    c.add_argument("kind", choices=["ready", "done"])
+    c.add_argument("--team", required=True)
+    c.add_argument("--components", required=True)
+    c.set_defaults(fn=cmd_check)
+
+    v = sub.add_parser("validate", help="workspace validation gates")
+    v.set_defaults(fn=cmd_validate)
+
+    dv = sub.add_parser("deviation", help="declare a comply-or-explain deviation")
+    dv.add_argument("action", choices=["declare"])
+    dv.add_argument("rule")
+    dv.add_argument("--team", required=True)
+    dv.add_argument("--rationale")
+    dv.set_defaults(fn=cmd_deviation)
+
+    ex = sub.add_parser("exception", help="request an exception to a mandatory rule")
+    ex.add_argument("action", choices=["request"])
+    ex.add_argument("rule")
+    ex.add_argument("--team", required=True)
+    ex.add_argument("--component", required=True)
+    ex.add_argument("--expires", required=True)
+    ex.add_argument("--reason")
+    ex.set_defaults(fn=cmd_exception)
+
+    sc = sub.add_parser("scratchpad", help="init the local-only scratchpad")
+    sc.add_argument("action", choices=["init"])
+    sc.add_argument("--repo")
+    sc.set_defaults(fn=cmd_scratchpad)
+
+    t = sub.add_parser("today", help="role-aware daily view")
+    t.add_argument("--role", default="developer",
+                   choices=["developer", "team-lead", "product-owner",
+                            "architect", "vp-engineering", "director-of-product"])
+    t.set_defaults(fn=cmd_today)
+
+    gr = sub.add_parser("graph", help="derive tags/graph metadata from frontmatter")
+    gr.add_argument("action", choices=["build"])
+    gr.set_defaults(fn=cmd_graph)
+
+    args = p.parse_args()
+    ws = Workspace(args.root)
+    args.fn(ws, args)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,10 @@
+schemaVersion: '1.0'
+team: customer-engagement
+exceptions:
+- rule: platform-standard://communications/message-schema
+  component: legacy-fax-gateway
+  reason: Legacy protocol cannot carry the standard envelope.
+  compensatingControls: [TODO]
+  approvedBy: 'TODO: rule owner'
+  expires: '2026-12-31'
+tags: [kind/exceptions, team/customer-engagement]

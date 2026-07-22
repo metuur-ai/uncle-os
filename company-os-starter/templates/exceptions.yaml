@@ -1,0 +1,10 @@
+schemaVersion: "1.0"
+team: <team-id>
+exceptions:
+  - rule: <stable-rule-id>          # mandatory rules only
+    component: <component-id>
+    reason: <why compliance is impossible right now>
+    compensatingControls:
+      - <what mitigates the risk meanwhile>
+    approvedBy: <rule owner — required for validity>
+    expires: <YYYY-MM-DD>           # mandatory; no expiry = invalid; expired = FAIL

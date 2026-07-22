@@ -1,0 +1,10 @@
+schemaVersion: "1.0"
+team: <team-id>
+deviations:
+  - rule: <stable-rule-id>          # e.g. platform-standard://communications/prd-structure
+    tier: default                   # only `default` rules can be deviated
+    status: declared                # declared | approved (if the rule owner requires sign-off)
+    rationale: >
+      Why the team departs from the default, in one or two sentences.
+    approvedBy: <rule owner id, if approved>
+    reviewDate: <YYYY-MM-DD>        # mandatory; expired deviations fail `validate`

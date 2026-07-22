@@ -1,0 +1,36 @@
+schemaVersion: '1.0'
+kind: PlatformRequirements
+platform: {id: communications}
+requirements:
+- id: delivery-reliability
+  title: Message Delivery Reliability
+  level: mandatory
+  version: '2.1'
+  effectiveFrom: 2026-06-01
+  supersedes: '2.0'
+  appliesTo:
+    componentTypes: [service, worker]
+    relationships: [belongs-to]
+  requirement: 'Components delivering customer messages must ensure failed messages
+    are recoverable and delivery status is observable. (Outcome, not implementation.)
+
+    '
+  verification:
+    evidence: [architecture-document, integration-tests, operational-dashboard]
+    checklist: [Retry strategy is documented, Idempotency is implemented, Failed messages
+        are recoverable, Delivery status is observable]
+- id: message-schema
+  title: Standard Message Envelope
+  level: mandatory
+  version: '1.3'
+  appliesTo:
+    relationships: [belongs-to, publishes-to]
+  requirement: Messages must use the current platform message envelope.
+- id: prd-structure
+  title: Platform PRD Structure
+  level: default
+  version: '1.0'
+  appliesTo:
+    relationships: [belongs-to, supports]
+  requirement: PRDs for this platform use the standard platform PRD template.
+tags: [kind/requirements, platform/communications]

@@ -1,0 +1,37 @@
+validating workspace <WORKSPACE>
+
+[1/6] ownership reconciliation
+  [ok] customer-notification-service: registry and descriptor agree (communications)
+
+[2/6] deviation and exception expiry
+  [ok] customer-engagement: deviation platform-standard://communications/prd-structure current (review 2027-01-15)
+  [ok] customer-engagement: deviation company-standard://estimation/story-points current (review 2027-01-14)
+  [ok] customer-engagement: exception platform-standard://communications/message-schema valid until 2026-12-31
+
+[3/6] active PRD contracts
+
+[4/6] frontmatter core and tag derivation (interop contract)
+  [ok] company-os/onboarding/developer.md: core fields + tags in sync
+  [ok] platforms/communications/archive/prds/2026-per-channel-quiet-hours/outcome.md: core fields + tags in sync
+  [ok] platforms/communications/archive/prds/2026-per-channel-quiet-hours/prd.md: core fields + tags in sync
+  [ok] platforms/communications/reality/components/customer-notification-service.md: core fields + tags in sync
+  [ok] platforms/communications/skills/creating-prd.SKILL.md: core fields + tags in sync
+  [ok] teams/customer-engagement/onboarding/developer.md: core fields + tags in sync
+  [ok] teams/customer-engagement/product/discovery/2026-per-channel-quiet-hours/brief.md: core fields + tags in sync
+  [ok] teams/customer-engagement/standards/definition-of-done.md: core fields + tags in sync
+  [ok] teams/customer-engagement/standards/definition-of-ready.md: core fields + tags in sync
+  [ok] company-ontology/concepts/capability--message-delivery.md: core fields + tags in sync
+  [ok] company-ontology/concepts/component.md: core fields + tags in sync
+  [ok] company-ontology/context-maps/crm-to-communications.md: core fields + tags in sync
+  [ok] company-ontology/contexts/communications.md: core fields + tags in sync
+
+[5/6] CLAUDE.md context node drift (fail-safe, absence-tolerant)
+  [ok] company-os/CLAUDE.md: context node in sync
+  [ok] platforms/communications/CLAUDE.md: context node in sync
+  [ok] teams/customer-engagement/CLAUDE.md: context node in sync
+  [ok] company-ontology/CLAUDE.md: context node in sync
+
+[6/6] feature-index drift (derived component->artifact map)
+  [ok] communications: feature-index in sync (1 component(s))
+
+PASS
