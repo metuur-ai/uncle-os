@@ -5,6 +5,7 @@ characterization harness. Run by acceptance.sh; exits non-zero on any failure.
 Covers the invariants that have no other oracle in a repo with no test suite:
 canonical compare (R-0.1), preserve-unknown-fields (R-1.5), and the fail-safe
 generated-block rewrite across every marker state (R-3.3/3.4/3.5/3.6)."""
+import subprocess
 import sys
 import tempfile
 from importlib.machinery import SourceFileLoader
@@ -12,6 +13,7 @@ from pathlib import Path
 
 CLI = Path(__file__).resolve().parent.parent / "bin" / "company-os"
 co = SourceFileLoader("co", str(CLI)).load_module()
+HERE = Path(__file__).resolve().parent
 
 fails = []
 
@@ -78,6 +80,38 @@ check("R-3.6 unbalanced markers -> no mutation", ch is False and txt == bad)
 dup = co.render_generated_region("A") + "\n" + co.render_generated_region("B") + "\n"
 ch, txt = rewrite(dup, "NEW")
 check("R-3.6 duplicated markers -> no mutation", ch is False and txt == dup)
+
+# GPF-R-8.1 — fail-fast workspace-root resolution. The is_root() predicate:
+# an empty dir is NOT a root; a full workspace and a teams-only standalone both
+# ARE (any one canonical root suffices).
+with tempfile.TemporaryDirectory() as d:
+    check("R-8.1 empty dir is not a workspace root", co.Workspace(d).is_root() is False)
+check("R-8.1 full workspace is a root",
+      co.Workspace(HERE / "workspace").is_root() is True)
+check("R-8.1 standalone teams-only dir is a root",
+      co.Workspace(HERE / "standalone-team").is_root() is True)
+
+# GPF-R-8.1 — a workspace-scoped command outside a root exits non-zero and names
+# the resolution order in its message.
+with tempfile.TemporaryDirectory() as d:
+    r = subprocess.run([sys.executable, str(CLI), "--root", d, "validate"],
+                       capture_output=True, text=True)
+    check("R-8.1 validate outside a root exits non-zero", r.returncode != 0)
+    check("R-8.1 message names resolution order",
+          "--root -> $COMPANY_OS_WORKSPACE_ROOT -> current directory" in r.stderr)
+
+# GPF-R-4.3 — *_SECTIONS is the single source: every required heading it names
+# renders into the template AS a `## ` heading (the same list `validate` greps).
+_disc = co.DISCOVERY_TEMPLATE.format(bid="b", title="t", team="tm",
+                                     date="2026-01-01", ds=co.DISCOVERY_SECTIONS)
+check("R-4.3 DISCOVERY_SECTIONS drives the template",
+      all(f"## {s}" in _disc for s in co.DISCOVERY_SECTIONS))
+_prd = co.PRD_TEMPLATE.format(pid="p", title="t", team="tm", platform="pf",
+                              components="c", date="2026-01-01", discovery="none",
+                              problem="P", metrics="M", ps=co.PRD_SECTIONS,
+                              component_list="- c", governance_checklist="- [ ] none")
+check("R-4.3 PRD_SECTIONS drives the template",
+      all(f"## {s}" in _prd for s in co.PRD_SECTIONS))
 
 print(f"\nselftest: {len(fails)} failure(s)" if fails else "\nselftest: PASS")
 sys.exit(1 if fails else 0)

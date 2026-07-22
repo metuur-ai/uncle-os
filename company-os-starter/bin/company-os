@@ -167,12 +167,30 @@ def format_checks_enforced(ws, team):
     return bool(cfg.get("enforce"))
 
 
+# A directory is a workspace root if it holds at least one canonical federation
+# root. A standalone team workspace has only `teams/`, so ANY one suffices.
+CANONICAL_ROOTS = ("company-os", "platforms", "teams", "company-ontology")
+
+
 class Workspace:
     def __init__(self, root):
         self.root = Path(root).resolve()
         self.company = self.root / "company-os"
         self.platforms = self.root / "platforms"
         self.teams = self.root / "teams"
+
+    def is_root(self):
+        return any((self.root / name).is_dir() for name in CANONICAL_ROOTS)
+
+    def require_root(self):
+        """Fail-fast: a workspace-scoped command run outside a workspace root
+        must exit non-zero rather than silently succeeding against empty/wrong
+        roots (GPF-R-8.1). The message names the resolution order."""
+        if not self.is_root():
+            die(f"'{self.root}' is not a workspace root: none of "
+                f"{'/, '.join(CANONICAL_ROOTS)}/ found here.\n"
+                "  workspace root resolution order: "
+                "--root -> $COMPANY_OS_WORKSPACE_ROOT -> current directory")
 
     def platform_dir(self, pid):
         d = self.platforms / pid
@@ -308,6 +326,11 @@ def cmd_governance(ws, args):
 
 # ---------------------------------------------------------------- discovery
 
+# Required discovery sections — the SINGLE source shared by the template
+# (interpolated as `{{ds[i]}}`) and the `discover validate` heading check, so a
+# heading can never be renamed in one place and missed in the other (GPF-R-4.3).
+DISCOVERY_SECTIONS = ("Problem signal", "Hypothesis", "Success criteria")
+
 DISCOVERY_TEMPLATE = """---
 type: discovery-brief
 id: {bid}
@@ -320,13 +343,13 @@ tags: [kind/discovery, team/{team}, status/draft]
 
 # Discovery: {title}
 
-## Problem signal
+## {ds[0]}
 <!-- What evidence triggered this? Support tickets, metrics, stakeholder ask. -->
 
-## Hypothesis
+## {ds[1]}
 <!-- We believe that <change> for <who> will achieve <outcome>. -->
 
-## Success criteria
+## {ds[2]}
 <!-- Measurable. How will we know the hypothesis is true/false? -->
 
 ## Affected components (initial guess)
@@ -349,7 +372,8 @@ def cmd_discover(ws, args):
         if brief.exists():
             die(f"{brief} already exists")
         brief.write_text(DISCOVERY_TEMPLATE.format(
-            bid=bid, title=args.title, team=args.team, date=TODAY))
+            bid=bid, title=args.title, team=args.team, date=TODAY,
+            ds=DISCOVERY_SECTIONS))
         print(f"created {brief.relative_to(ws.root)}")
         print("next: fill Problem signal, Hypothesis, Success criteria, "
               "then run: company-os discover validate --team "
@@ -361,7 +385,7 @@ def cmd_discover(ws, args):
         meta, body = frontmatter(brief)
         errors = core_field_errors(meta)
         format_issues = []
-        for section in ["Problem signal", "Hypothesis", "Success criteria"]:
+        for section in DISCOVERY_SECTIONS:
             m = re.search(rf"## {section}\n(.*?)(\n## |\Z)", body, re.DOTALL)
             content = re.sub(r"<!--.*?-->", "", m.group(1), flags=re.DOTALL).strip() if m else ""
             if not content:
@@ -386,6 +410,10 @@ def cmd_discover(ws, args):
 
 # ---------------------------------------------------------------- prd
 
+# Required PRD sections — the SINGLE source shared by the template (interpolated
+# as `{{ps[i]}}`) and the `prd validate` heading check (GPF-R-4.3).
+PRD_SECTIONS = ("Problem statement", "Success metrics", "Proposed change")
+
 PRD_TEMPLATE = """---
 type: prd
 id: {pid}
@@ -403,13 +431,13 @@ tags: [kind/prd, platform/{platform}, team/{team}, status/proposed]
 
 # PRD: {title}
 
-## Problem statement
+## {ps[0]}
 {problem}
 
-## Success metrics
+## {ps[1]}
 {metrics}
 
-## Proposed change
+## {ps[2]}
 <!-- What will be different in the Representation of Reality when done? -->
 
 ## Affected components
@@ -488,7 +516,7 @@ def cmd_prd(ws, args):
         prd.write_text(PRD_TEMPLATE.format(
             pid=pid, title=args.title, team=args.team, platform=args.platform,
             components=", ".join(components), date=TODAY, discovery=discovery,
-            problem=problem, metrics=metrics,
+            problem=problem, metrics=metrics, ps=PRD_SECTIONS,
             component_list="\n".join(f"- `{c}`" for c in components),
             governance_checklist=checklist or "- [ ] none resolved"))
         print(f"created {prd.relative_to(ws.root)}")
@@ -507,7 +535,7 @@ def cmd_prd(ws, args):
             if not meta.get(field) or meta.get(field) == "TODO":
                 errors.append(f"process contract field '{field}' missing or TODO")
         format_issues = []
-        for section in ["Problem statement", "Success metrics", "Proposed change"]:
+        for section in PRD_SECTIONS:
             m = re.search(rf"## {section}\n(.*?)(\n## |\Z)", body, re.DOTALL)
             content = re.sub(r"<!--.*?-->", "", m.group(1), flags=re.DOTALL).strip() if m else ""
             if not content:
@@ -883,16 +911,17 @@ def derive_tags(meta, extra=None):
 
 
 def rewrite_frontmatter_tags(path, tags):
-    text = Path(path).read_text()
-    m = re.match(r"^---\n(.*?)\n---\n(.*)$", text, re.DOTALL)
-    if not m:
+    # Parse through the single frontmatter() contract (GPF-R-8.2). This is a
+    # read-modify-write, so it re-serializes the frontmatter, but it never
+    # re-implements the `^---\n...\n---\n` parse — frontmatter() owns that.
+    meta, body = frontmatter(path)
+    if not meta:
         return False
-    meta = yaml.safe_load(m.group(1)) or {}
     if meta.get("tags") == tags:
         return False
     meta["tags"] = tags
     fm = yaml.safe_dump(meta, sort_keys=False, default_flow_style=None).strip()
-    Path(path).write_text(f"---\n{fm}\n---\n{m.group(2)}")
+    Path(path).write_text(f"---\n{fm}\n---\n{body}")
     return True
 
 
@@ -1348,6 +1377,11 @@ def main():
 
     args = p.parse_args()
     ws = Workspace(args.root)
+    # `scratchpad` operates on --repo (any repo), not the workspace catalog, so
+    # it is exempt; every other command scans the workspace and must fail-fast
+    # outside a workspace root (GPF-R-8.1).
+    if args.cmd != "scratchpad":
+        ws.require_root()
     args.fn(ws, args)
 
 
