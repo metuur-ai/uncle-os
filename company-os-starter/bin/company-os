@@ -714,6 +714,175 @@ def cmd_check(ws, args):
     compose_checklist(ws, args.team, components, "ready" if args.kind == "ready" else "done")
 
 
+# ---------------------------------------------------------------- skills (Unit 5)
+# Four additive layers, discovered and merged (GPF-R-5.1): company
+# (`company-os/skills/`), platform (`platforms/<p>/skills/`), team
+# (`teams/<t>/skills/`) — all shared/versioned — plus personal
+# `scratchpad/personal-rules/` (git-ignored). Each discovered skill is labeled
+# with its origin layer. Canonical skills (`authority: canonical`, typically the
+# company/platform layer) are the single authority: a team/personal skill that
+# reuses a canonical skill's id or name is SHADOWING and fails validate
+# (GPF-R-5.2). The sanctioned alternative is `extends: platform-skill://<p>/<name>`,
+# which layers extension steps onto a base skill (GPF-R-5.3). In the merged view
+# canonical (mandatory) steps are ordered above personal rules, and personal
+# rules are labeled non-overriding (GPF-R-5.4).
+#
+# platform-skill:// reconciliation: existing skills carry an `id: skill://<scope>/
+# <name>` whose <scope> is a semantic namespace (product, governance), unrelated
+# to the platform. `extends: platform-skill://<p>/<name>` therefore addresses the
+# platform-LAYER skill FILE `platforms/<p>/skills/<name>.SKILL.md` (whose own
+# canonical id remains a `skill://<scope>/<name>`), not that id. <name> is the
+# base skill's file-stem name; <p> is the platform directory.
+
+SKILL_SUFFIX = ".SKILL.md"
+STEP_RE = re.compile(r"^\s*\d+\.\s*\((mandatory|default|guidance)\)")
+
+
+def _skill_name(path):
+    """The skill name (identity for shadowing) — the filename stem with the
+    `.SKILL` marker stripped for canonical skills, or the plain stem for a
+    personal rule."""
+    n = Path(path).name
+    if n.endswith(SKILL_SUFFIX):
+        return n[:-len(SKILL_SUFFIX)]
+    return Path(path).stem
+
+
+def _read_skill(path, layer, platform=None, team=None):
+    meta, body = frontmatter(path)
+    meta = meta or {}
+    return {"path": Path(path), "layer": layer, "platform": platform, "team": team,
+            "name": _skill_name(path), "meta": meta, "body": body,
+            "id": meta.get("id"), "authority": meta.get("authority"),
+            "extends": meta.get("extends")}
+
+
+def discover_skills(ws):
+    """Merge the four skill layers, each labeled with its origin (GPF-R-5.1).
+    Absence-tolerant: a missing layer/dir is simply skipped, so a standalone team
+    with no skills yields an empty (but valid) result rather than crashing."""
+    found = []
+    cdir = ws.company / "skills"
+    if cdir.is_dir():
+        for p in sorted(cdir.glob("*" + SKILL_SUFFIX)):
+            found.append(_read_skill(p, "company"))
+    for pdir in ws.all_platforms():
+        sdir = pdir / "skills"
+        if sdir.is_dir():
+            for p in sorted(sdir.glob("*" + SKILL_SUFFIX)):
+                found.append(_read_skill(p, "platform", platform=pdir.name))
+    for tdir in ws.all_teams():
+        sdir = tdir / "skills"
+        if sdir.is_dir():
+            for p in sorted(sdir.glob("*" + SKILL_SUFFIX)):
+                found.append(_read_skill(p, "team", team=tdir.name))
+        prdir = tdir / "scratchpad" / "personal-rules"
+        if prdir.is_dir():
+            for p in sorted(prdir.glob("*.md")):
+                found.append(_read_skill(p, "personal", team=tdir.name))
+    return found
+
+
+def parse_skill_steps(body):
+    """Return each numbered, tier-tagged step's head line (which carries its own
+    `(mandatory|default|guidance)` marker), in authored order."""
+    return [line.strip() for line in (body or "").splitlines() if STEP_RE.match(line)]
+
+
+def resolve_extends(ws, uri):
+    """Resolve `platform-skill://<p>/<name>` to the platform-layer skill file
+    `platforms/<p>/skills/<name>.SKILL.md` (GPF-R-5.3). Returns the base skill
+    dict, or None when the target does not exist (dangling)."""
+    m = re.match(r"^platform-skill://([^/]+)/(.+)$", str(uri or ""))
+    if not m:
+        return None
+    path = ws.platforms / m.group(1) / "skills" / (m.group(2) + SKILL_SUFFIX)
+    return _read_skill(path, "platform", platform=m.group(1)) if path.exists() else None
+
+
+def skill_conflicts(ws, skills=None):
+    """Problem strings for the skills gate: shadowing (GPF-R-5.2) and dangling
+    extends (GPF-R-5.3). Empty list when there are no skills or no conflicts."""
+    if skills is None:
+        skills = discover_skills(ws)
+    canonical = [s for s in skills
+                 if s["authority"] == "canonical" and s["layer"] in ("company", "platform")]
+    problems = []
+    for s in skills:
+        if s["layer"] not in ("team", "personal"):
+            continue
+        for k in canonical:
+            if s["path"] == k["path"]:
+                continue
+            reason = None
+            if s["id"] and s["id"] == k["id"]:
+                reason = f"id '{s['id']}'"
+            elif s["name"] == k["name"]:
+                reason = f"name '{s['name']}'"
+            if reason:
+                problems.append(
+                    f"skill shadowing: {s['path'].relative_to(ws.root)} reuses the "
+                    f"canonical {reason} of {k['path'].relative_to(ws.root)} — extend "
+                    f"it with `extends: platform-skill://...` instead of replacing it")
+    for s in skills:
+        if s["extends"] and resolve_extends(ws, s["extends"]) is None:
+            problems.append(
+                f"dangling extends: {s['path'].relative_to(ws.root)} declares "
+                f"extends: {s['extends']} but no such base skill exists")
+    return problems
+
+
+def cmd_skills(ws, args):
+    skills = discover_skills(ws)
+    print("== agent skills (merged view across 4 layers) ==\n")
+
+    # 1. origin-labeled discovery (GPF-R-5.1) — every layer shown, empty or not.
+    print("layers (origin-labeled):")
+    for layer in ("company", "platform", "team", "personal"):
+        items = [s for s in skills if s["layer"] == layer]
+        if not items:
+            print(f"  [{layer}] <none>")
+            continue
+        for s in items:
+            scope = s["platform"] or s["team"]
+            tag = f"{layer}:{scope}" if scope else layer
+            if layer == "personal":
+                extra = "  personal rule (non-overriding; canonical mandatory steps win)"
+            else:
+                extra = f"  id={s['id']} authority={s['authority']}"
+                if s["extends"]:
+                    extra += f" extends={s['extends']}"
+            print(f"  [{tag}] {s['name']}{extra}")
+
+    # 2. merged guidance — canonical skills first (GPF-R-5.4: their mandatory
+    #    steps rank above personal rules), each `extends` skill layered base-then-
+    #    extension (GPF-R-5.3); personal rules rendered last, non-overriding.
+    print("\nmerged guidance (canonical steps first; personal rules last, non-overriding):")
+    for s in [x for x in skills if x["layer"] in ("company", "platform", "team")]:
+        scope = s["platform"] or s["team"]
+        label = f"{s['name']} [{s['layer']}" + (f":{scope}" if scope else "") \
+                + f", authority={s['authority']}]"
+        print(f"\n  {label}")
+        base = resolve_extends(ws, s["extends"]) if s["extends"] else None
+        if s["extends"]:
+            if base:
+                print(f"    layered on base {s['extends']}:")
+                for head in parse_skill_steps(base["body"]):
+                    print(f"      [base] {head}")
+            else:
+                print(f"    [warn] extends {s['extends']} does not resolve "
+                      f"(dangling — validate will fail)")
+        for head in parse_skill_steps(s["body"]):
+            print(f"      {head}")
+    personal = [s for s in skills if s["layer"] == "personal"]
+    if personal:
+        print("\n  personal rules (non-overriding — canonical mandatory steps always win):")
+        for s in personal:
+            print(f"    [personal:{s['team']}] {s['name']}")
+    print(f"\n{len(skills)} skill(s) across "
+          f"{len({s['layer'] for s in skills})} populated layer(s).")
+
+
 # ---------------------------------------------------------------- validate
 
 def cmd_validate(ws, args):
@@ -721,7 +890,7 @@ def cmd_validate(ws, args):
     print(f"validating workspace {ws.root}\n")
 
     # 1. ownership <-> descriptor reconciliation
-    print("[1/6] ownership reconciliation")
+    print("[1/7] ownership reconciliation")
     for tdir in ws.all_teams():
         team_id = tdir.name
         ownership = load_yaml(tdir / "ownership" / "components.yaml", {}) or {}
@@ -742,7 +911,7 @@ def cmd_validate(ws, args):
                 ok(f"{cid}: registry and descriptor agree ({platform})")
 
     # 2. expiries
-    print("\n[2/6] deviation and exception expiry")
+    print("\n[2/7] deviation and exception expiry")
     for tdir in ws.all_teams():
         dev = load_yaml(tdir / "governance" / "deviations.yaml", {}) or {}
         for d in dev.get("deviations", []):
@@ -765,7 +934,7 @@ def cmd_validate(ws, args):
                 ok(f"{tdir.name}: exception {e.get('rule')} valid until {ex}")
 
     # 3. active PRD contracts
-    print("\n[3/6] active PRD contracts")
+    print("\n[3/7] active PRD contracts")
     for pdir in ws.all_platforms():
         active = pdir / "change-records" / "active"
         if not active.exists():
@@ -785,7 +954,7 @@ def cmd_validate(ws, args):
 
     # 4. frontmatter core + tag derivation — the OKF/Obsidian interop contract.
     #    This is the only doc-level gate; body format is never inspected here.
-    print("\n[4/6] frontmatter core and tag derivation (interop contract)")
+    print("\n[4/7] frontmatter core and tag derivation (interop contract)")
     for md, meta, derived in iter_graph_docs(ws):
         rel = md.relative_to(ws.root)
         core = core_field_errors(meta)
@@ -806,7 +975,7 @@ def cmd_validate(ws, args):
     # 5. CLAUDE.md context-node drift — per federation root, canonical-string
     #    compare the committed generated block to a fresh render. Team identity
     #    shape is blocking; the node itself is absence-tolerant (enrichment opt-in).
-    print("\n[5/6] CLAUDE.md context node drift (fail-safe, absence-tolerant)")
+    print("\n[5/7] CLAUDE.md context node drift (fail-safe, absence-tolerant)")
     groups = group_docs_by_root(ws)
     for root in node_roots(ws):
         rel_root = root.relative_to(ws.root)
@@ -833,7 +1002,7 @@ def cmd_validate(ws, args):
 
     # 6. feature-index drift — derived component→artifact map per platform.
     #    Absence-tolerant: a platform without an index PASSES (enrichment opt-in).
-    print("\n[6/6] feature-index drift (derived component->artifact map)")
+    print("\n[6/7] feature-index drift (derived component->artifact map)")
     for pdir in ws.all_platforms():
         committed_path = pdir / "generated" / "feature-index.yaml"
         fresh = build_feature_index(ws, pdir)
@@ -856,6 +1025,24 @@ def cmd_validate(ws, args):
         else:
             ok(f"{pdir.name}: feature-index in sync "
                f"({len(fresh['components'])} component(s))")
+
+    # 7. custom skills layering — a team/personal skill may not shadow a canonical
+    #    skill's id/name (GPF-R-5.2) and every `extends: platform-skill://…` must
+    #    resolve to a base skill (GPF-R-5.3). Absence-tolerant: no skills, or no
+    #    conflicts, PASSES (like generated/ gates, enrichment is opt-in).
+    print("\n[7/7] custom skills layering (shadowing + extends resolution)")
+    skills = discover_skills(ws)
+    conflicts = skill_conflicts(ws, skills)
+    if conflicts:
+        for c in conflicts:
+            fail(c)
+            problems += 1
+    else:
+        n_can = sum(1 for s in skills if s["authority"] == "canonical")
+        n_team = sum(1 for s in skills if s["layer"] == "team")
+        n_pers = sum(1 for s in skills if s["layer"] == "personal")
+        ok(f"skills layered cleanly ({n_can} canonical, {n_team} team, "
+           f"{n_pers} personal; no shadowing or dangling extends)")
 
     print(f"\n{'PASS' if problems == 0 else f'FAIL — {problems} problem(s)'}")
     sys.exit(0 if problems == 0 else 1)
@@ -1861,6 +2048,10 @@ def main():
     idc.add_argument("--prefix", help="filter to IDs starting with this prefix")
     idc.add_argument("--role", help="also show a plain-language glossary for this role")
     idc.set_defaults(fn=cmd_ids)
+
+    sk = sub.add_parser("skills", help="list merged agent skills across the four layers")
+    sk.add_argument("action", choices=["list"])
+    sk.set_defaults(fn=cmd_skills)
 
     args = p.parse_args()
     ws = Workspace(args.root)

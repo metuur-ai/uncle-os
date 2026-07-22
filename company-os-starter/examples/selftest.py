@@ -219,5 +219,91 @@ check("R-3.1 mapped role shows plain-language alongside canonical term",
 check("R-3.3 unmapped role -> no glossary, no error",
       co.role_glossary_lines("nobody-role") == [])
 
+# GPF-R-5.1/5.2/5.3/5.4 — custom skills layering. Build a four-layer fixture in a
+# temp workspace (outside any "scratchpad" path so graph gates ignore it) and
+# exercise discovery+labels, merged ordering, shadowing, and extends resolution.
+SKILL_FM = ("---\nid: {id}\ntype: skill\nversion: '1.0'\nauthority: {auth}\n"
+            "tags: [authority/{auth}]\n{ext}---\n\n# {id}\n\n{steps}\n")
+
+
+def _mkskill(path, sid, auth="canonical", extends=None, steps="1. (mandatory) do it"):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    ext = f"extends: {extends}\n" if extends else ""
+    path.write_text(SKILL_FM.format(id=sid, auth=auth, ext=ext, steps=steps))
+
+
+with tempfile.TemporaryDirectory(dir="/tmp") as d:
+    root = Path(d)
+    (root / "company-os").mkdir()
+    ws = co.Workspace(root)
+    # one skill per shared layer + one personal rule = all four layers
+    _mkskill(root / "company-os" / "skills" / "governing.SKILL.md",
+             "skill://company/governing")
+    _mkskill(root / "platforms" / "communications" / "skills" / "creating-prd.SKILL.md",
+             "skill://product/creating-prd")
+    _mkskill(root / "teams" / "core" / "skills" / "team-extra.SKILL.md",
+             "skill://team/team-extra", auth="team")
+    (root / "teams" / "core" / "scratchpad" / "personal-rules").mkdir(parents=True)
+    (root / "teams" / "core" / "scratchpad" / "personal-rules" / "maria.md").write_text(
+        "---\ntype: personal-rule\ntags: [authority/personal]\n---\n\n# Maria\n- my rule\n")
+
+    sk = co.discover_skills(ws)
+    layers = {s["layer"] for s in sk}
+    # GPF-R-5.1 — all four layers discovered, each origin-labeled
+    check("R-5.1 four layers discovered",
+          layers == {"company", "platform", "team", "personal"} and len(sk) == 4)
+    _plat = [s for s in sk if s["layer"] == "platform"][0]
+    check("R-5.1 platform skill labeled with its platform origin",
+          _plat["platform"] == "communications" and _plat["name"] == "creating-prd")
+    _pers = [s for s in sk if s["layer"] == "personal"][0]
+    check("R-5.1 personal rule labeled personal (no canonical authority)",
+          _pers["team"] == "core" and _pers["authority"] != "canonical")
+
+    # GPF-R-5.4 — merged view orders canonical (company/platform) skills, whose
+    # mandatory steps rank above personal rules (rendered last, non-overriding).
+    canon = [s for s in sk if s["layer"] in ("company", "platform", "team")]
+    check("R-5.4 canonical skills precede personal rules in the merged view",
+          len(canon) == 3 and _pers["layer"] == "personal")
+
+    # GPF-R-5.2 — no shadowing yet -> no conflicts (absence/clean tolerant)
+    check("R-5.2 clean layering has no conflicts", co.skill_conflicts(ws) == [])
+
+    # GPF-R-5.2 — a team skill reusing the canonical name -> shadowing names BOTH
+    _mkskill(root / "teams" / "core" / "skills" / "creating-prd.SKILL.md",
+             "skill://team/creating-prd-copy", auth="team")
+    probs = co.skill_conflicts(ws)
+    check("R-5.2 shadowing detected", any("shadowing" in p for p in probs))
+    check("R-5.2 shadowing names both files",
+          any("teams/core/skills/creating-prd.SKILL.md" in p
+              and "platforms/communications/skills/creating-prd.SKILL.md" in p
+              for p in probs))
+
+with tempfile.TemporaryDirectory(dir="/tmp") as d:
+    root = Path(d)
+    (root / "company-os").mkdir()
+    ws = co.Workspace(root)
+    _mkskill(root / "platforms" / "communications" / "skills" / "creating-prd.SKILL.md",
+             "skill://product/creating-prd")
+    # GPF-R-5.3 — extends resolves to the platform-layer base skill FILE
+    _base = co.resolve_extends(ws, "platform-skill://communications/creating-prd")
+    check("R-5.3 extends resolves to the platform base skill",
+          _base is not None and _base["name"] == "creating-prd")
+    check("R-5.3 unknown extends target resolves to None",
+          co.resolve_extends(ws, "platform-skill://communications/ghost") is None)
+    # a distinct-named team skill extending the base is NOT shadowing, and valid
+    _mkskill(root / "teams" / "core" / "skills" / "creating-prd-mobile.SKILL.md",
+             "skill://team/creating-prd-mobile", auth="team",
+             extends="platform-skill://communications/creating-prd",
+             steps="1. (default) add mobile mock")
+    check("R-5.3 valid extends is not a conflict", co.skill_conflicts(ws) == [])
+    # GPF-R-5.3 — a dangling extends target fails, naming the URI
+    _mkskill(root / "teams" / "core" / "skills" / "broken.SKILL.md",
+             "skill://team/broken", auth="team",
+             extends="platform-skill://communications/nonexistent")
+    dang = co.skill_conflicts(ws)
+    check("R-5.3 dangling extends detected and names the URI",
+          any("dangling extends" in p and "platform-skill://communications/nonexistent" in p
+              for p in dang))
+
 print(f"\nselftest: {len(fails)} failure(s)" if fails else "\nselftest: PASS")
 sys.exit(1 if fails else 0)

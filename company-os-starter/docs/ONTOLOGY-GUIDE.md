@@ -55,7 +55,21 @@ capability://communications/message-delivery
 context://communications
 req://communications/delivery-reliability   # a requirement (see Part 3)
 map://crm--communications                   # a context map
+skill://product/creating-prd                # a canonical skill (scope/name)
+platform-skill://communications/creating-prd # extend-reference to a platform-layer skill
 ```
+
+Two schemes address custom skills (Unit 5, `docs/ears/golden-path-flavor-federation.md`):
+
+- `skill://<scope>/<name>` is a skill's own canonical `id:`. The `<scope>` is a
+  semantic namespace (`product`, `governance`, `company`…), **not** the platform.
+- `platform-skill://<platform>/<name>` is the reference form used in a skill's
+  `extends:` frontmatter to layer on a platform-layer base. It resolves to the
+  base skill **file** `platforms/<platform>/skills/<name>.SKILL.md` — whose own
+  `id:` is a `skill://<scope>/<name>` — where `<name>` is that file's stem name
+  and `<platform>` is the platform directory. A team/personal skill reusing a
+  canonical skill's `skill://` id or name is *shadowing* and fails `validate`;
+  `extends: platform-skill://…` is the sanctioned, additive alternative.
 
 Register every ID in `company-ontology/ids/registry.yaml` with a `definedIn`
 pointer. One ID, one definition location — validation fails on unregistered

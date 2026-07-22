@@ -167,7 +167,7 @@ gate strings.
 
 ## Phase 3 — Custom skills layering (Unit 5)
 
-- [ ] 3.1 Four-layer skill discovery + merged view (deps: 0.1, est: ~60m)
+- [x] 3.1 Four-layer skill discovery + merged view (deps: 0.1, est: ~60m)
   - why: Teams and individuals add process guidance additively; the merge
     order is the whole model — company, platform, team, personal.
   - acceptance: GPF-R-5.1 — skills discovered and merged across
@@ -177,7 +177,7 @@ gate strings.
   - verify: fixture with one skill per layer — merged view lists all four,
     canonical steps first.
 
-- [ ] 3.2 Shadowing is a validate error (deps: 3.1, est: ~30m)
+- [x] 3.2 Shadowing is a validate error (deps: 3.1, est: ~30m)
   - why: Conflicts must be impossible by construction, not adjudicated — a
     lower layer silently replacing a canonical skill is the failure mode that
     destroys trust in the merged view.
@@ -186,7 +186,7 @@ gate strings.
   - verify: duplicate a canonical skill id at team layer → validate FAIL names
     both paths; rename it → green.
 
-- [ ] 3.3 `extends: platform-skill://…` layering + scheme registration (deps: 3.1, est: ~40m)
+- [x] 3.3 `extends: platform-skill://…` layering + scheme registration (deps: 3.1, est: ~40m)
   - why: The sanctioned alternative to shadowing: extend, don't replace. The
     scheme must be a first-class canonical ID scheme or references can't be
     checked.
