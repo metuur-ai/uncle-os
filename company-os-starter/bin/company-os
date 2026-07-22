@@ -1066,11 +1066,14 @@ def cmd_validate(ws, args):
             fail(c)
             problems += 1
     else:
+        # Report only committed layers: personal rules live in the git-ignored
+        # scratchpad/, so counting them here would make validate output depend on
+        # untracked files and drift on a fresh clone. skill_conflicts() above
+        # still scans the personal layer for shadowing — only the count is omitted.
         n_can = sum(1 for s in skills if s["authority"] == "canonical")
         n_team = sum(1 for s in skills if s["layer"] == "team")
-        n_pers = sum(1 for s in skills if s["layer"] == "personal")
-        ok(f"skills layered cleanly ({n_can} canonical, {n_team} team, "
-           f"{n_pers} personal; no shadowing or dangling extends)")
+        ok(f"skills layered cleanly ({n_can} canonical, {n_team} team; "
+           f"no shadowing or dangling extends)")
 
     # 8. federated slice integrity — materialized slices are read-only derived
     #    content (like generated/); a content-hash mismatch vs workspace.lock.yaml

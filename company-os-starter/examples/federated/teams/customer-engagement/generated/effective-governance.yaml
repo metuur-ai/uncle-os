@@ -1,0 +1,38 @@
+generatedAt: '2026-07-18T14:39:06Z'
+team: customer-engagement
+components:
+  customer-notification-service:
+    platforms:
+    - id: communications
+      relationship: belongs-to
+    requirements:
+      company:
+      - id: security-service-baseline
+        level: mandatory
+        version: '3.0'
+      - id: customer-data-privacy
+        level: mandatory
+        version: '2.2'
+      - id: tier-1-observability
+        level: default
+        version: '1.4'
+      platform:
+        communications:
+        - id: delivery-reliability
+          level: mandatory
+          version: '2.1'
+          title: Message Delivery Reliability
+        - id: message-schema
+          level: mandatory
+          version: '1.3'
+          title: Standard Message Envelope
+        - id: prd-structure
+          level: default
+          version: '1.0'
+          title: Platform PRD Structure
+          deviation:
+            status: approved
+            rationale: Team uses a two-page lean PRD for changes under 2 weeks; the
+              full structure is used for larger initiatives.
+deviationsApplied:
+- platform-standard://communications/prd-structure

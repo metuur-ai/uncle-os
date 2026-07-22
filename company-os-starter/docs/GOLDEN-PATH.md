@@ -226,15 +226,19 @@ company-os --root "$W" validate
 ```
 
 ```text
-[1/6] ownership reconciliation
-[2/6] deviation and exception expiry
-[3/6] active PRD contracts
-[4/6] frontmatter core and tag derivation (interop contract)
-[5/6] CLAUDE.md context node drift (fail-safe, absence-tolerant)
-[6/6] feature-index drift (derived component->artifact map)
+[1/7] ownership reconciliation
+[2/7] deviation and exception expiry
+[3/7] active PRD contracts
+[4/7] frontmatter core and tag derivation (interop contract)
+[5/7] CLAUDE.md context node drift (fail-safe, absence-tolerant)
+[6/7] feature-index drift (derived component->artifact map)
+[7/7] custom skills layering (shadowing + extends resolution)
 
 PASS
 ```
+
+(A federated workspace — one with a `workspace.yaml` manifest — adds an eighth
+gate, `[8/8] federated slice integrity`; monorepo mode shows the seven above.)
 
 `PASS` (exit 0) means the whole loop closed: discovery validated, PRD archived,
 reality updated, outcome review scheduled, and every derived artifact in sync.

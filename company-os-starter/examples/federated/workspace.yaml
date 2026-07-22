@@ -1,0 +1,18 @@
+version: 1
+# Federated workspace fixture — the communications platform is pulled as a
+# read-only governance slice from a separate repo. Committed together with
+# workspace.lock.yaml and the materialized slice so `company-os validate`
+# passes on a fresh checkout with NO network and NO source repo (gate [8/8]
+# compares the committed slice bytes to the committed lock hashes).
+repos:
+  - name: platform-communications
+    url: https://git.example.com/acme/platform-communications.git
+    root: platforms/communications
+    pin:
+      commit: 714635868b0048af719450b9dd333f245cf541df
+    paths:
+      - governance/
+      - components/
+      - reality/
+      - skills/
+      - templates/

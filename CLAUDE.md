@@ -37,6 +37,17 @@ company-os validate                                  # workspace CI gate (see be
 company-os graph build                               # derive tags from frontmatter for the whole workspace
 company-os today --role developer|product-owner|...  # role-aware daily view
 company-os scratchpad init --repo <path>             # create git-ignored local working area
+
+# Growth + flavor (Phases 1–3): scaffold new units and inspect the ontology/skills
+company-os init                                      # scaffold a fresh workspace (refuses to re-init)
+company-os add platform|team|component ...           # grow the federation from the same templates as init
+company-os reality new --platform <p> <component-id> # scaffold reality/components/<id>.md
+company-os ids list                                  # list canonical IDs from ids/registry.yaml
+company-os skills list                               # merged four-layer skill view
+
+# Federation (Phase 4 — Option B; requires a workspace.yaml manifest + git ≥2.27)
+company-os workspace sync [--frozen] [--only <repo>] # materialize read-only governance slices + write workspace.lock.yaml
+company-os workspace status                          # per-repo pin/lock/slice drift status
 ```
 
 There is no test suite. To exercise changes, run the CLI against `examples/workspace` and confirm `company-os validate` still exits 0. `docs/TUTORIAL.md` is an end-to-end walkthrough with real command output — use it as the acceptance path after changing CLI behavior.
@@ -56,13 +67,13 @@ A workspace is one directory containing four peer roots. Platforms are "teams" r
 
 1. **Rule tiers.** Every requirement/control is `mandatory` (only escapable via an expiring, approved *exception*), `default` (comply-or-explain via a *deviation*), or `guidance` (untracked). Mandatory rules must be written as verifiable **outcomes, not implementations** — this is what preserves team flexibility. `resolve_team_governance` rejects any deviation aimed at a mandatory rule.
 
-2. **Single source of truth.** The component descriptor (`platforms/<p>/components/<id>.yaml`) is authoritative for both component↔platform relationships *and* the accountable team. `company-os validate` step [1/6] fails if a team's ownership registry claims `accountable` but the descriptor's `ownership.accountableTeam` disagrees. Humans edit one file; tooling reconciles the rest.
+2. **Single source of truth.** The component descriptor (`platforms/<p>/components/<id>.yaml`) is authoritative for both component↔platform relationships *and* the accountable team. `company-os validate` step [1/7] fails if a team's ownership registry claims `accountable` but the descriptor's `ownership.accountableTeam` disagrees. Humans edit one file; tooling reconciles the rest.
 
 3. **Generated files are derived, never hand-edited.** `teams/<t>/generated/effective-governance.yaml` is produced by `governance resolve` (merges company baseline + platform requirements filtered by relationship/componentType + team deviations). CI regenerates and diffs. The same rule applies to frontmatter `tags:` — `graph build` derives them from IDs (`derive_tags`); editing tags by hand is overwritten on the next build.
 
 4. **A change is done only when reality is updated.** `prd complete` refuses to archive while any `- [ ]` governance checklist item is unchecked, or while a component's `reality/components/<id>.md` has an `updated:` date older than the PRD's `created:` date. On success it moves the PRD to `archive/prds/`, writes an `outcome.md` due in 90 days, and appends `log.md`.
 
-5. **Deviations and exceptions expire.** `validate` step [2/6] fails on any past `reviewDate` (deviation) or missing/past `expires` (exception).
+5. **Deviations and exceptions expire.** `validate` step [2/7] fails on any past `reviewDate` (deviation) or missing/past `expires` (exception).
 
 ### Product lifecycle (where artifacts live and move)
 

@@ -1,0 +1,11 @@
+schemaVersion: '1.0'
+kind: IdRegistry
+ids:
+- {id: 'platform://communications', definedIn: platforms/communications/platform.yaml}
+- {id: 'team://customer-engagement', definedIn: teams/customer-engagement/team.yaml}
+- {id: 'component://customer-notification-service', definedIn: platforms/communications/components/customer-notification-service.yaml}
+- {id: 'capability://communications/message-delivery', definedIn: company-ontology/concepts/capability--message-delivery.md}
+- {id: 'context://communications', definedIn: company-ontology/contexts/communications.md}
+- {id: 'req://communications/delivery-reliability', definedIn: platforms/communications/governance/requirements.yaml}
+- {id: 'req://communications/message-schema', definedIn: platforms/communications/governance/requirements.yaml}
+tags: [ontology/registry]

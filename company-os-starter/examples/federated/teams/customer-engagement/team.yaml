@@ -1,0 +1,16 @@
+schemaVersion: '1.0'
+kind: Team
+metadata: {id: customer-engagement, name: Customer Engagement}
+agentSkills: {canonicalPath: skills/, personalPath: scratchpad/personal-rules/, precedence: canonical-mandatory
+    > personal > canonical-default > canonical-guidance, onConflict: prefer-canonical-and-inform-user}
+# Team identity (Unit 5) — optional, queryable across teams; feeds the CLAUDE.md node.
+roster:
+  - {name: Maria Lopez, role: product-owner}
+  - {name: Devon Park, role: developer}
+  - {name: Aria Chen, role: team-lead}
+channels:
+  - {name: '#customer-engagement', system: slack, id: C0CE00001}
+  - {name: on-call, system: pagerduty, id: PDCE01}
+pointers:
+  - {label: Team charter, system: notion, url: 'https://example.invalid/ce-charter'}
+tags: [kind/team, team/customer-engagement]

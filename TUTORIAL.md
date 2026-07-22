@@ -336,24 +336,33 @@ note: mandatory rules require approval by the rule owner before this is valid.
 
 ```bash
 $ company-os validate
-[1/6] ownership reconciliation
+[1/7] ownership reconciliation
   [ok] customer-notification-service: registry and descriptor agree (communications)
-[2/6] deviation and exception expiry
+[2/7] deviation and exception expiry
   [ok] customer-engagement: deviation platform-standard://communications/prd-structure current (review 2027-01-15)
   [ok] customer-engagement: deviation company-standard://estimation/story-points current (review 2027-01-14)
   [ok] customer-engagement: exception platform-standard://communications/message-schema valid until 2026-12-31
-[3/6] active PRD contracts
-[4/6] frontmatter core and tag derivation (interop contract)
+[3/7] active PRD contracts
+[4/7] frontmatter core and tag derivation (interop contract)
   [ok] platforms/communications/reality/components/customer-notification-service.md: frontmatter core and tags in sync
-[5/6] CLAUDE.md context node drift (fail-safe, absence-tolerant)
+[5/7] CLAUDE.md context node drift (fail-safe, absence-tolerant)
   [ok] company-os/CLAUDE.md: context node in sync
   [ok] platforms/communications/CLAUDE.md: context node in sync
   [ok] teams/customer-engagement/CLAUDE.md: context node in sync
   [ok] company-ontology/CLAUDE.md: context node in sync
-[6/6] feature-index drift (derived component->artifact map)
+[6/7] feature-index drift (derived component->artifact map)
   [ok] communications: feature-index in sync (1 component(s))
+[7/7] custom skills layering (shadowing + extends resolution)
+  [ok] skills layered cleanly (1 canonical, 0 team, 1 personal; no shadowing or dangling extends)
 PASS
 ```
+
+The gate count is dynamic: the seven gates above run in monorepo mode. In a
+**federated** workspace (a `workspace.yaml` manifest is present) validate adds an
+eighth gate — `[8/8] federated slice integrity` — which fails if a materialized
+governance slice was hand-edited (its content hash no longer matches
+`workspace.lock.yaml`). With no manifest the eighth gate does not exist and the
+output is byte-for-byte the seven-gate form above.
 
 It fails (exit 1, blocking merge) when: a team claims ownership the component
 descriptor doesn't confirm (single-source rule), a deviation passes its

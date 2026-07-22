@@ -250,7 +250,7 @@ gate strings.
   - verify: federated fixture — validate and aggregates include slice docs;
     monorepo snapshot from 0.4 still byte-identical.
 
-- [ ] 4.6 Federation runbook (deps: 4.2–4.5, est: ~30m)
+- [x] 4.6 Federation runbook (deps: 4.2–4.5, est: ~30m)
   - why: Operational failure modes (pin bump, desync, removing a repo) are
     where federation dies in practice; document the recovery paths the CLI's
     error messages point at.
@@ -263,7 +263,7 @@ gate strings.
 
 ## Phase 5 — Acceptance & backward compatibility (throughout)
 
-- [ ] 5.1 Fixtures per unit + committed exemplars (deps: 1.3, 2.2, 3.3, 4.5, est: ~60m)
+- [x] 5.1 Fixtures per unit + committed exemplars (deps: 1.3, 2.2, 3.3, 4.5, est: ~60m)
   - why: The only acceptance path is a green validate on fixtures that
     exercise every unit — golden-path e2e, custom-template team, layered
     skills, and a two-repo federated workspace.
@@ -272,7 +272,7 @@ gate strings.
     checkout, no `sync`/`graph build` needed for the committed state.
   - verify: fresh clone → `validate` exits 0 on all fixtures.
 
-- [ ] 5.2 Freeze existing gates + CLI conventions (deps: all phases, est: ~30m)
+- [x] 5.2 Freeze existing gates + CLI conventions (deps: all phases, est: ~30m)
   - why: New surface must not perturb existing gates, the `die/ok/warn/fail`
     helpers, or the guidance chain adopters depend on.
   - acceptance: existing gate output identical (modulo gate-count headers) vs
