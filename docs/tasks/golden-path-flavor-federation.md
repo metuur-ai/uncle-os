@@ -118,7 +118,7 @@ gate strings.
     status` clean; scripted init with flags only produces a validate-green
     workspace with no TTY attached.
 
-- [ ] 1.5 Golden-path document (deps: 1.1–1.4, est: ~40m)
+- [x] 1.5 Golden-path document (deps: 1.1–1.4, est: ~40m)
   - why: One doc, extending `docs/GETTING-STARTED.md`, that matches the CLI's
     printed chain exactly — including environment prerequisites (Python,
     pyyaml, PATH), which is where real first runs actually fail.
@@ -132,7 +132,7 @@ gate strings.
 
 ## Phase 2 — Flavor: custom templates + role views (Units 3–4)
 
-- [ ] 2.1 Template resolution, first-found-wins (deps: 0.3, est: ~60m)
+- [x] 2.1 Template resolution, first-found-wins (deps: 0.3, est: ~60m)
   - why: Teams flavor their process without forking the CLI. Resolution order
     `teams/<t>/templates/` → `platforms/<p>/templates/` → `company-os/templates/`
     → built-in makes override locality predictable.
@@ -143,7 +143,7 @@ gate strings.
   - verify: place a team-level override → scaffold uses it and records the
     source; remove it → falls through to platform/company/built-in in order.
 
-- [ ] 2.2 Custom-template outputs still face the validate contract (deps: 2.1, 0.3, est: ~30m)
+- [x] 2.2 Custom-template outputs still face the validate contract (deps: 2.1, 0.3, est: ~30m)
   - why: Flexibility must not erode the contract: a custom template that drops
     a required heading should fail loudly at the artifact, naming the heading.
   - acceptance: GPF-R-4.3/4.4 — default templates scaffold byte-identically to
@@ -153,7 +153,7 @@ gate strings.
     validate FAILs naming exactly that heading; default-template scaffolds
     byte-match Phase 0 baselines.
 
-- [ ] 2.3 Role views: display-only terminology translation (deps: 0.1, est: ~45m)
+- [x] 2.3 Role views: display-only terminology translation (deps: 0.1, est: ~45m)
   - why: Different audiences read the same graph; translation must never touch
     canonical terms on disk or the single vocabulary fractures.
   - acceptance: GPF-R-3.1–3.3 — translation is display-only; canonical terms

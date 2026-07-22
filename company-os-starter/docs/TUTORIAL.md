@@ -13,6 +13,9 @@ against this kit — you can reproduce the whole session.
 The CLI and skills guide you; the validators enforce only the contract. How you
 think, draft, or prompt your agent is your business.
 
+New here? Start with [GOLDEN-PATH.md](GOLDEN-PATH.md) — it takes an empty
+directory to a completed change on a fresh workspace you scaffold yourself.
+
 ## 0. Setup
 
 ```bash

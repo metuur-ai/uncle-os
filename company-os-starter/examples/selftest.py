@@ -143,5 +143,81 @@ with tempfile.TemporaryDirectory(dir="/tmp") as d:
     check("R-1.7 workspace still validates green after add + reality",
           _cli(d, "validate").returncode == 0)
 
+# GPF-R-2.1 — ids list reads canonical IDs from the ontology registry (never a
+# parallel index). load_registry is the single reader.
+_reg = co.load_registry(co.Workspace(HERE / "workspace"))
+_reg_ids = [e.get("id") for e in _reg]
+check("R-2.1 load_registry reads registry entries",
+      "component://customer-notification-service" in _reg_ids
+      and "team://customer-engagement" in _reg_ids)
+# absent/empty registry -> [] (helpful empty result, not a crash)
+with tempfile.TemporaryDirectory() as d:
+    check("R-2.1 missing registry -> empty list, no crash",
+          co.load_registry(co.Workspace(d)) == [])
+
+# GPF-R-2.3 — closest-match suggestion for an unknown component id (difflib).
+_sug = co.suggest_ids(co.Workspace(HERE / "workspace"),
+                      "customer-notifcation-servce", scheme="component")
+check("R-2.3 closest-match suggests the real component id",
+      _sug[:1] == ["component://customer-notification-service"])
+check("R-2.3 suggestions scoped by scheme (<=3)", len(_sug) <= 3)
+
+# GPF-R-4.1/4.2 — resolve_template first-found-wins, then byte-identical builtin.
+with tempfile.TemporaryDirectory(dir="/tmp") as d:
+    root = Path(d)
+    ws = co.Workspace(root)
+    txt, src = co.resolve_template(ws, "prd")
+    check("R-4.2 builtin fallback is the *_TEMPLATE string, verbatim",
+          txt == co.PRD_TEMPLATE and "PRD_TEMPLATE" in src)
+    (root / "company-os" / "templates").mkdir(parents=True)
+    (root / "company-os" / "templates" / "prd.md").write_text("COMPANY")
+    txt, src = co.resolve_template(ws, "prd", team="t", platform="p")
+    check("R-4.1 company override beats builtin",
+          txt == "COMPANY" and src == "company-os/templates/prd.md")
+    (root / "platforms" / "p" / "templates").mkdir(parents=True)
+    (root / "platforms" / "p" / "templates" / "prd.md").write_text("PLATFORM")
+    txt, src = co.resolve_template(ws, "prd", team="t", platform="p")
+    check("R-4.1 platform override beats company",
+          txt == "PLATFORM" and src == "platforms/p/templates/prd.md")
+    (root / "teams" / "t" / "templates").mkdir(parents=True)
+    (root / "teams" / "t" / "templates" / "prd.md").write_text("TEAM")
+    txt, src = co.resolve_template(ws, "prd", team="t", platform="p")
+    check("R-4.1 team override wins the whole chain",
+          txt == "TEAM" and src == "teams/t/templates/prd.md")
+
+# GPF-R-4.4 — an artifact scaffolded from a CUSTOM override template that omits a
+# required heading FAILS validate naming exactly that heading (outputs validated,
+# templates not). Driven through the process boundary with flags only.
+with tempfile.TemporaryDirectory(dir="/tmp") as d:
+    _cli(d, "init", "--company", "Acme", "--team", "core", "--platform", "payments")
+    _cli(d, "add", "component", "checkout-service", "--platform", "payments")
+    tdir = Path(d) / "teams" / "core" / "templates"
+    tdir.mkdir(parents=True, exist_ok=True)
+    # omits `## {ps[1]}` (Success metrics); keeps ps[0] and ps[2]
+    (tdir / "prd.md").write_text(
+        "---\ntype: prd\nid: {pid}\ntitle: {title}\nstatus: proposed\n"
+        "team: {team}\nplatform: {platform}\ncomponents: [{components}]\n"
+        "governanceSnapshot: {date}\ndecisionOwner: {title}-owner\ncreated: {date}\n"
+        "fromDiscovery: {discovery}\n"
+        "tags: [kind/prd, platform/{platform}, team/{team}, status/proposed]\n---\n\n"
+        "# PRD: {title}\n\n## {ps[0]}\nP\n\n## {ps[2]}\nC\n\n"
+        "## Affected components\n{component_list}\n\n"
+        "## Applicable governance (snapshot {date})\n{governance_checklist}\n")
+    _cli(d, "prd", "new", "--team", "core", "--platform", "payments",
+         "--components", "checkout-service", "--title", "Broken")
+    r = _cli(d, "prd", "validate", "--platform", "payments", "2026-broken")
+    check("R-4.4 custom-template PRD fails validate (non-zero)", r.returncode != 0)
+    check("R-4.4 failure names the missing heading",
+          "Success metrics" in (r.stdout + r.stderr))
+
+# GPF-R-3.1/3.2/3.3 — role translation is display-only: a mapped role yields a
+# legend containing the canonical term; an unmapped role yields nothing (unchanged
+# display, no error). role_glossary_lines is a pure function (touches no files).
+_po = co.role_glossary_lines("product-owner")
+check("R-3.1 mapped role shows plain-language alongside canonical term",
+      any("exception" in ln for ln in _po) and len(_po) >= 2)
+check("R-3.3 unmapped role -> no glossary, no error",
+      co.role_glossary_lines("nobody-role") == [])
+
 print(f"\nselftest: {len(fails)} failure(s)" if fails else "\nselftest: PASS")
 sys.exit(1 if fails else 0)
