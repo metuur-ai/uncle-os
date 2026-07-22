@@ -201,7 +201,7 @@ gate strings.
 
 ## Phase 4 — Federation Option B: manifest + sync + lock (Units 6–7)
 
-- [ ] 4.1 `workspace.yaml` detection in root resolution (deps: 0.2, est: ~30m)
+- [x] 4.1 `workspace.yaml` detection in root resolution (deps: 0.2, est: ~30m)
   - why: Activation must ride the existing root-resolution touch point —
     presence of the manifest is the *only* switch; absence must leave monorepo
     mode byte-for-byte untouched.
@@ -211,7 +211,7 @@ gate strings.
   - verify: run the 0.4 characterization script with no manifest — snapshot
     identical; add an empty-repos manifest — federated code path activates.
 
-- [ ] 4.2 `company-os workspace sync`: sparse fetch + read-only slices + lock (deps: 4.1, est: ~90m)
+- [x] 4.2 `company-os workspace sync`: sparse fetch + read-only slices + lock (deps: 4.1, est: ~90m)
   - why: The crown jewel of Option B — one governance view over many repos
     without submodules, fetching only governance-relevant paths.
   - acceptance: GPF-R-7.1/7.2 — sync fetches only `governance/`, `components/`,
@@ -223,7 +223,7 @@ gate strings.
     read-only, lock records SHAs + hashes; re-sync with no upstream change is
     a no-op diff.
 
-- [ ] 4.3 `--frozen` CI mode (deps: 4.2, est: ~40m)
+- [x] 4.3 `--frozen` CI mode (deps: 4.2, est: ~40m)
   - why: CI must be reproducible and offline; the lock is the contract.
   - acceptance: GPF-R-7.x — `--frozen` performs no network access,
     materializes strictly from `workspace.lock.yaml`, and fails if the lock is
@@ -231,7 +231,7 @@ gate strings.
   - verify: run `--frozen` with network access stubbed out/unavailable →
     succeeds from lock; delete a lock entry → fails naming the uncovered repo.
 
-- [ ] 4.4 Hand-edit detection on slices (deps: 4.2, est: ~35m)
+- [x] 4.4 Hand-edit detection on slices (deps: 4.2, est: ~35m)
   - why: Slices are derived content, like `generated/` — a hand-edit is drift
     that must be caught, not silently synced over or shipped.
   - acceptance: GPF-R-7.x — a slice file whose content hash differs from
@@ -240,7 +240,7 @@ gate strings.
   - verify: hand-edit a slice file → validate FAIL names the path; re-sync →
     green.
 
-- [ ] 4.5 Slice-aware path resolution (touch point 2 of 2) (deps: 4.2, est: ~45m)
+- [x] 4.5 Slice-aware path resolution (touch point 2 of 2) (deps: 4.2, est: ~45m)
   - why: Aggregates and validate must see federated slices exactly as they see
     local docs — one resolution seam keeps the rest of the CLI
     federation-ignorant.

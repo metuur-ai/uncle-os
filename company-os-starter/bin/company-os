@@ -17,9 +17,11 @@ Workspace root = $COMPANY_OS_WORKSPACE_ROOT or --root or current directory.
 import argparse
 import datetime as dt
 import difflib
+import hashlib
 import os
 import re
 import shutil
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -177,6 +179,22 @@ def format_checks_enforced(ws, team):
 # root. A standalone team workspace has only `teams/`, so ANY one suffices.
 CANONICAL_ROOTS = ("company-os", "platforms", "teams", "company-ontology")
 
+# -------------------------------------------------- federation (Option B) config
+# Presence of `workspace.yaml` at the root is the ONLY switch into federated mode
+# (GPF-R-6.1/6.2). Absence => monorepo mode, zero behavior change. A manifest also
+# marks a directory as a workspace root (slices/canonical dirs may not exist yet,
+# before the first sync).
+MANIFEST_NAME = "workspace.yaml"        # federation manifest (hand-owned)
+LOCK_NAME = "workspace.lock.yaml"       # machine-owned lock (committed, CI reads it)
+FEDERATION_CACHE = ".company-os/federation-cache"  # git clones/caches (git-ignored)
+# Governance-only allowlist (Option B — never full repo content). Directory
+# entries pull the whole subtree; a file entry pulls just that file.
+DEFAULT_SLICE_PATHS = ["governance/", "components/", "governance/requirements.yaml",
+                       "reality/", "skills/", "templates/"]
+# Cone-mode sparse-checkout defaults + stable partial clone landed by git 2.27;
+# require it so the sync flags below behave predictably (GPF-R-7.7).
+MIN_GIT = (2, 27)
+
 
 class Workspace:
     def __init__(self, root):
@@ -186,6 +204,10 @@ class Workspace:
         self.teams = self.root / "teams"
 
     def is_root(self):
+        # A federation manifest marks a root even before any canonical dir/slice
+        # exists (pre-first-sync federated workspace); GPF-R-6.2.
+        if (self.root / MANIFEST_NAME).exists():
+            return True
         return any((self.root / name).is_dir() for name in CANONICAL_ROOTS)
 
     def require_root(self):
@@ -889,8 +911,14 @@ def cmd_validate(ws, args):
     problems = 0
     print(f"validating workspace {ws.root}\n")
 
+    # Gate count is dynamic: federation adds gate 8 ONLY when a manifest exists.
+    # No manifest => ng == 7 and the strings below are byte-identical to the
+    # monorepo golden snapshot (GPF-R-6.1). Never renumber gates 1-7.
+    manifest = load_manifest(ws)
+    ng = 8 if manifest is not None else 7
+
     # 1. ownership <-> descriptor reconciliation
-    print("[1/7] ownership reconciliation")
+    print(f"[1/{ng}] ownership reconciliation")
     for tdir in ws.all_teams():
         team_id = tdir.name
         ownership = load_yaml(tdir / "ownership" / "components.yaml", {}) or {}
@@ -911,7 +939,7 @@ def cmd_validate(ws, args):
                 ok(f"{cid}: registry and descriptor agree ({platform})")
 
     # 2. expiries
-    print("\n[2/7] deviation and exception expiry")
+    print(f"\n[2/{ng}] deviation and exception expiry")
     for tdir in ws.all_teams():
         dev = load_yaml(tdir / "governance" / "deviations.yaml", {}) or {}
         for d in dev.get("deviations", []):
@@ -934,7 +962,7 @@ def cmd_validate(ws, args):
                 ok(f"{tdir.name}: exception {e.get('rule')} valid until {ex}")
 
     # 3. active PRD contracts
-    print("\n[3/7] active PRD contracts")
+    print(f"\n[3/{ng}] active PRD contracts")
     for pdir in ws.all_platforms():
         active = pdir / "change-records" / "active"
         if not active.exists():
@@ -954,7 +982,7 @@ def cmd_validate(ws, args):
 
     # 4. frontmatter core + tag derivation — the OKF/Obsidian interop contract.
     #    This is the only doc-level gate; body format is never inspected here.
-    print("\n[4/7] frontmatter core and tag derivation (interop contract)")
+    print(f"\n[4/{ng}] frontmatter core and tag derivation (interop contract)")
     for md, meta, derived in iter_graph_docs(ws):
         rel = md.relative_to(ws.root)
         core = core_field_errors(meta)
@@ -975,7 +1003,7 @@ def cmd_validate(ws, args):
     # 5. CLAUDE.md context-node drift — per federation root, canonical-string
     #    compare the committed generated block to a fresh render. Team identity
     #    shape is blocking; the node itself is absence-tolerant (enrichment opt-in).
-    print("\n[5/7] CLAUDE.md context node drift (fail-safe, absence-tolerant)")
+    print(f"\n[5/{ng}] CLAUDE.md context node drift (fail-safe, absence-tolerant)")
     groups = group_docs_by_root(ws)
     for root in node_roots(ws):
         rel_root = root.relative_to(ws.root)
@@ -1002,7 +1030,7 @@ def cmd_validate(ws, args):
 
     # 6. feature-index drift — derived component→artifact map per platform.
     #    Absence-tolerant: a platform without an index PASSES (enrichment opt-in).
-    print("\n[6/7] feature-index drift (derived component->artifact map)")
+    print(f"\n[6/{ng}] feature-index drift (derived component->artifact map)")
     for pdir in ws.all_platforms():
         committed_path = pdir / "generated" / "feature-index.yaml"
         fresh = build_feature_index(ws, pdir)
@@ -1030,7 +1058,7 @@ def cmd_validate(ws, args):
     #    skill's id/name (GPF-R-5.2) and every `extends: platform-skill://…` must
     #    resolve to a base skill (GPF-R-5.3). Absence-tolerant: no skills, or no
     #    conflicts, PASSES (like generated/ gates, enrichment is opt-in).
-    print("\n[7/7] custom skills layering (shadowing + extends resolution)")
+    print(f"\n[7/{ng}] custom skills layering (shadowing + extends resolution)")
     skills = discover_skills(ws)
     conflicts = skill_conflicts(ws, skills)
     if conflicts:
@@ -1043,6 +1071,22 @@ def cmd_validate(ws, args):
         n_pers = sum(1 for s in skills if s["layer"] == "personal")
         ok(f"skills layered cleanly ({n_can} canonical, {n_team} team, "
            f"{n_pers} personal; no shadowing or dangling extends)")
+
+    # 8. federated slice integrity — materialized slices are read-only derived
+    #    content (like generated/); a content-hash mismatch vs workspace.lock.yaml
+    #    is a hand-edit and blocks (GPF-R-7.5). SELF-SUPPRESSING: in monorepo mode
+    #    (no workspace.yaml) this gate does not exist — ng stays 7 and validate
+    #    output is byte-identical to the golden snapshot.
+    if manifest is not None:
+        print(f"\n[8/{ng}] federated slice integrity (read-only derived content)")
+        fed_problems, n_files = federated_slice_problems(ws, manifest)
+        if fed_problems:
+            for pr in fed_problems:
+                fail(pr)
+                problems += 1
+        else:
+            ok(f"federated slices match {LOCK_NAME} ({n_files} file(s) across "
+               f"{len(manifest['repos'])} repo(s); no hand-edits)")
 
     print(f"\n{'PASS' if problems == 0 else f'FAIL — {problems} problem(s)'}")
     sys.exit(0 if problems == 0 else 1)
@@ -1950,6 +1994,430 @@ def cmd_reality(ws, args):
           f"company-os prd complete --platform {args.platform} <prd-id>")
 
 
+# ---------------------------------------------------------- federation (Option B)
+# Manifest-optional, multi-repo governance federation. Two CLI touch points only:
+# (1) `is_root`/`load_manifest` detect the manifest; (2) `workspace sync` lands
+# read-only governance slices into the canonical layout, so every other command
+# (templates, skills, validate, aggregates) sees federated content identically to
+# a monorepo (GPF-R-7.6). No manifest => none of this runs (GPF-R-6.1).
+#
+# workspace.yaml (hand-owned) — Option B shape:
+#   version: 1
+#   repos:
+#     - name: platform-communications      # cache key + status/lock label
+#       url:  file:///abs/path  OR  https://host/acme/platform-comms.git
+#       root: platforms/communications      # where the slice lands (canonical layout)
+#       pin:  {commit: <sha>}  OR  {tag: <tag>}   # EXACTLY ONE; branches rejected
+#       paths: [governance/, components/, reality/, skills/, templates/]  # allowlist
+#
+# workspace.lock.yaml (machine-owned, committed) records per repo: the original
+# pin, the resolved commit SHA (tags resolved at sync — GPF-R-6.4), an aggregate
+# sliceHash, and a {relpath: sha256} map that is the hand-edit oracle (GPF-R-7.5).
+
+def manifest_path(ws):
+    return ws.root / MANIFEST_NAME
+
+
+def load_manifest(ws):
+    """Parsed manifest dict, or None when absent (monorepo mode — GPF-R-6.1).
+    Validates structure and every pin eagerly, so a malformed manifest fails the
+    same way for `sync`, `status`, and `validate`."""
+    p = manifest_path(ws)
+    if not p.exists():
+        return None
+    data = load_yaml(p, {}) or {}
+    if not isinstance(data, dict) or not isinstance(data.get("repos"), list):
+        die(f"{MANIFEST_NAME}: must be a mapping with a 'repos:' list. "
+            f"then: company-os workspace sync")
+    if not data["repos"]:
+        die(f"{MANIFEST_NAME}: 'repos:' is empty — remove the file for monorepo "
+            f"mode, or add at least one repo. then: company-os workspace sync")
+    seen = set()
+    for i, repo in enumerate(data["repos"]):
+        _validate_repo_entry(repo, i)
+        if repo["name"] in seen:
+            die(f"{MANIFEST_NAME}: duplicate repo name '{repo['name']}'")
+        seen.add(repo["name"])
+    return data
+
+
+def _validate_repo_entry(repo, i):
+    if not isinstance(repo, dict):
+        die(f"{MANIFEST_NAME}: repos[{i}] must be a mapping")
+    for f in ("name", "url", "root"):
+        if not repo.get(f):
+            die(f"{MANIFEST_NAME}: repos[{i}] missing required '{f}:'")
+    repo_pin(repo)  # raises on floating / ambiguous pins
+    paths = repo.get("paths", DEFAULT_SLICE_PATHS)
+    if not isinstance(paths, list) or not paths:
+        die(f"repo '{repo['name']}': 'paths:' must be a non-empty allowlist")
+
+
+def repo_pin(repo):
+    """Return ('commit'|'tag', value). Reject floating refs — a branch name or a
+    bare `ref:` is non-reproducible (GPF-R-6.3). Exactly one of commit:/tag:."""
+    name = repo.get("name", "?")
+    pin = repo.get("pin")
+    remedy = "use commit:/tag: only, then: company-os workspace sync"
+    if not isinstance(pin, dict):
+        die(f"repo '{name}': 'pin:' must be a mapping with exactly one of "
+            f"commit:/tag: — floating refs (branch/ref) are rejected (GPF-R-6.3). "
+            f"{remedy}")
+    floating = [k for k in pin if k not in ("commit", "tag")]
+    if floating:
+        die(f"repo '{name}': pin key(s) {floating} are floating and "
+            f"non-reproducible; {remedy} (GPF-R-6.3)")
+    present = [k for k in ("commit", "tag") if pin.get(k)]
+    if len(present) != 1:
+        die(f"repo '{name}': pin must set EXACTLY ONE of commit:/tag: "
+            f"(got {present or 'neither'}). {remedy}")
+    return present[0], str(pin[present[0]])
+
+
+def repo_target_root(ws, repo):
+    """Resolve a repo's target root inside the canonical layout, refusing paths
+    that escape the workspace or land outside a canonical root."""
+    raw = str(repo["root"])
+    rel = raw.strip("/")
+    if os.path.isabs(raw) or ".." in Path(rel).parts or not rel:
+        die(f"repo '{repo['name']}': root '{raw}' must be a relative path inside "
+            f"the workspace (no absolute paths, no '..').")
+    top = rel.split("/")[0]
+    if top not in CANONICAL_ROOTS:
+        die(f"repo '{repo['name']}': root '{raw}' must land under one of "
+            f"{'/, '.join(CANONICAL_ROOTS)}/")
+    return (ws.root / rel)
+
+
+# ---- git plumbing (version-robust; the ONLY subprocess users) ----
+
+def _git_available():
+    return shutil.which("git") is not None
+
+
+def _run_git(args, cwd=None, check=True):
+    try:
+        r = subprocess.run(["git", *args], cwd=str(cwd) if cwd else None,
+                           capture_output=True, text=True)
+    except FileNotFoundError:
+        die("git not found on PATH — federation commands require git; "
+            "monorepo commands do not. (GPF-R-7.7)")
+    if check and r.returncode != 0:
+        die(f"`git {' '.join(args)}` failed (exit {r.returncode}):\n"
+            f"{(r.stderr or r.stdout).strip()}")
+    return r
+
+
+def _git_version():
+    m = re.search(r"(\d+)\.(\d+)(?:\.(\d+))?", _run_git(["--version"]).stdout)
+    if not m:
+        die("could not parse `git --version`")
+    return (int(m.group(1)), int(m.group(2)), int(m.group(3) or 0))
+
+
+def require_git():
+    """Guard federation entry points. Monorepo commands never call this, so a
+    missing/old git only breaks federation (GPF-R-7.7)."""
+    if not _git_available():
+        die("git is required for federation (workspace sync/status) but was not "
+            "found on PATH. monorepo commands do not need git. "
+            "install git, then: company-os workspace sync")
+    ver = _git_version()
+    if ver < MIN_GIT:
+        die(f"git {'.'.join(map(str, ver))} is too old for federation; "
+            f">= {'.'.join(map(str, MIN_GIT))} is required (cone-mode "
+            f"sparse-checkout + partial clone). upgrade git, then: "
+            f"company-os workspace sync")
+
+
+def _sparse_dirs(paths):
+    """Top-level directories for cone-mode sparse-checkout, derived from the
+    allowlist. Cone mode always keeps root files anyway; precise allowlist
+    enforcement happens in materialize_slice (the copy step)."""
+    dirs = []
+    for p in paths:
+        top = str(p).strip("/").split("/")[0]
+        if top and top not in dirs:
+            dirs.append(top)
+    return dirs
+
+
+def _fetch_pinned(cache, url, kind, ref):
+    """Blobless, shallow fetch of the pinned object; return the resolved commit
+    SHA (tags resolved here — GPF-R-6.4). Deterministic given the SHA."""
+    cache.parent.mkdir(parents=True, exist_ok=True)
+    if not (cache / ".git").is_dir():
+        _run_git(["init", "--quiet", str(cache)])
+        _run_git(["remote", "add", "origin", url], cwd=cache)
+    else:
+        _run_git(["remote", "set-url", "origin", url], cwd=cache)
+    fetch_ref = ref if kind == "commit" else f"refs/tags/{ref}"
+    # --filter=blob:none keeps the fetch to commits+trees on capable servers
+    # (ignored with a warning elsewhere); --depth 1 keeps it shallow (GPF-R-7.1).
+    _run_git(["fetch", "--filter=blob:none", "--depth", "1", "origin", fetch_ref],
+             cwd=cache)
+    resolved = _run_git(["rev-parse", "FETCH_HEAD^{commit}"], cwd=cache).stdout.strip()
+    if kind == "commit" and not resolved.startswith(ref) and ref != resolved:
+        die(f"pinned commit '{ref}' resolved to '{resolved}' — pin a full commit SHA")
+    return resolved
+
+
+def _checkout_slice(cache, sha, sparse_dirs):
+    """Limit the cache working tree to the allowlisted top dirs and check out the
+    pinned SHA. Same SHA + same sparse set => identical tree (reproducible)."""
+    _run_git(["sparse-checkout", "init", "--cone"], cwd=cache)
+    _run_git(["sparse-checkout", "set", *sparse_dirs], cwd=cache)
+    _run_git(["checkout", "--quiet", "--detach", sha], cwd=cache)
+
+
+# ---- read-only materialization + content hashing ----
+
+def _chmod_writable(path):
+    try:
+        os.chmod(path, 0o755 if path.is_dir() else 0o644)
+    except OSError:
+        pass
+
+
+def _force_remove(path):
+    """Remove a path even if a prior materialization left it read-only."""
+    if not path.exists() and not path.is_symlink():
+        return
+    if path.is_dir() and not path.is_symlink():
+        for p in sorted(path.rglob("*"), reverse=True):
+            _chmod_writable(p)
+        _chmod_writable(path)
+        shutil.rmtree(path, onerror=lambda fn, p, e: (_chmod_writable(Path(p)), fn(p)))
+    else:
+        _chmod_writable(path)
+        path.unlink()
+
+
+def _make_readonly(root):
+    """Mark a materialized slice read-only (files 0444, dirs 0555) so hand-edits
+    take deliberate effort — slices are derived content like generated/."""
+    for p in sorted(root.rglob("*"), reverse=True):
+        try:
+            os.chmod(p, 0o555 if p.is_dir() else 0o444)
+        except OSError:
+            pass
+
+
+def materialize_slice(ws, cache, target, paths):
+    """Copy ONLY allowlisted paths from the cache working tree into `target`,
+    then mark them read-only. Never copies non-allowlisted content, so the
+    workspace layout holds governance slices only (GPF-R-7.1). Allowlisted paths
+    absent upstream are simply skipped (a platform repo may have no skills/)."""
+    for p in paths:
+        rel = str(p).strip("/")
+        if rel:
+            _force_remove(target / rel)
+    for p in paths:
+        rel = str(p).strip("/")
+        if not rel:
+            continue
+        src, dst = cache / rel, target / rel
+        if src.is_dir():
+            shutil.copytree(src, dst)
+        elif src.is_file():
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dst)
+    if target.exists():
+        _make_readonly(target)
+
+
+def _sha256_file(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(65536), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def hash_slice(ws, target):
+    """(per-file {ws-relative posix path: sha256}, aggregate sliceHash) for a
+    materialized slice — deterministic (sorted) given identical bytes."""
+    files = {}
+    if target.exists():
+        for p in sorted(target.rglob("*")):
+            if p.is_file() and not p.is_symlink():
+                files[p.relative_to(ws.root).as_posix()] = _sha256_file(p)
+    agg = hashlib.sha256()
+    for rel in sorted(files):
+        agg.update(rel.encode() + b"\0" + files[rel].encode() + b"\n")
+    return files, agg.hexdigest()
+
+
+def slice_state(ws, lock_repo):
+    """'clean' | 'drifted' | 'missing' by comparing on-disk slice files to the
+    hashes recorded in the lock (GPF-R-7.4)."""
+    files = lock_repo.get("files") or {}
+    if not files:
+        return "missing"
+    for rel, want in files.items():
+        p = ws.root / rel
+        if not p.is_file():
+            return "missing"
+        if _sha256_file(p) != want:
+            return "drifted"
+    return "clean"
+
+
+def federated_slice_problems(ws, manifest):
+    """Problem strings for the validate federated-slice gate (GPF-R-7.5).
+    Returns (problems, n_files). Only called when a manifest is present, so it
+    never runs in monorepo mode (the gate self-suppresses — golden-snapshot safe)."""
+    lock = load_yaml(ws.root / LOCK_NAME, None)
+    problems, n_files = [], 0
+    if lock is None or not isinstance(lock.get("repos"), list):
+        problems.append(f"{MANIFEST_NAME} present but {LOCK_NAME} is missing or "
+                        f"malformed — run: company-os workspace sync")
+        return problems, 0
+    locked = {r["name"]: r for r in lock["repos"]}
+    for repo in manifest["repos"]:
+        name = repo["name"]
+        lr = locked.get(name)
+        if lr is None:
+            problems.append(f"repo '{name}' in {MANIFEST_NAME} has no {LOCK_NAME} "
+                            f"entry (lock does not cover the manifest) — "
+                            f"run: company-os workspace sync")
+            continue
+        for rel, want in (lr.get("files") or {}).items():
+            n_files += 1
+            p = ws.root / rel
+            if not p.is_file():
+                problems.append(f"federated slice file missing: {rel} (recorded in "
+                                f"{LOCK_NAME}) — re-sync: company-os workspace sync")
+            elif _sha256_file(p) != want:
+                problems.append(f"federated slice hand-edited: {rel} — content hash "
+                                f"differs from {LOCK_NAME}; slices are read-only "
+                                f"derived content — re-sync: company-os workspace sync")
+    return problems, n_files
+
+
+def ensure_cache_gitignored(ws):
+    """The git cache is machine-owned; ensure `.company-os/` is git-ignored so it
+    never lands in the workspace repo (the lock + slices ARE tracked)."""
+    gi = ws.root / ".gitignore"
+    entry = FEDERATION_CACHE.split("/")[0] + "/"   # ".company-os/"
+    lines = gi.read_text().splitlines() if gi.exists() else []
+    if entry in lines or FEDERATION_CACHE + "/" in lines:
+        return
+    with open(gi, "a") as f:
+        if lines and lines[-1].strip():
+            f.write("\n")
+        f.write("# company-os federation cache (machine-owned; do not commit)\n"
+                f"{entry}\n")
+
+
+def cmd_workspace(ws, args):
+    manifest = load_manifest(ws)
+    if manifest is None:
+        die(f"no {MANIFEST_NAME} at {ws.root} — this is a monorepo workspace and "
+            f"needs no federation. add {MANIFEST_NAME} to federate.")
+    if args.action == "sync":
+        cmd_workspace_sync(ws, manifest, frozen=args.frozen, only=args.only)
+    elif args.action == "status":
+        cmd_workspace_status(ws, manifest)
+
+
+def cmd_workspace_sync(ws, manifest, frozen=False, only=None):
+    require_git()
+    repos = manifest["repos"]
+    if only:
+        repos = [r for r in repos if r["name"] == only]
+        if not repos:
+            die(f"--only '{only}' matches no repo in {MANIFEST_NAME}")
+    base_lock = load_yaml(ws.root / LOCK_NAME, None)
+    if frozen and (base_lock is None or not isinstance(base_lock.get("repos"), list)):
+        die(f"--frozen requires {LOCK_NAME}, but it is missing or malformed at "
+            f"{ws.root}. run online first: company-os workspace sync")
+    lock_by_name = {r["name"]: r for r in (base_lock or {}).get("repos", [])}
+    locked = dict(lock_by_name)  # preserve entries for repos not in this --only run
+
+    print(f"workspace sync{' --frozen' if frozen else ''} "
+          f"({len(repos)} repo(s))\n")
+    for repo in repos:
+        name = repo["name"]
+        kind, ref = repo_pin(repo)
+        target = repo_target_root(ws, repo)
+        paths = repo.get("paths", DEFAULT_SLICE_PATHS)
+        cache = ws.root / FEDERATION_CACHE / name
+        if frozen:
+            lr = lock_by_name.get(name)
+            if lr is None:
+                die(f"--frozen: {LOCK_NAME} has no entry for repo '{name}' (lock "
+                    f"does not cover the manifest). re-run online: "
+                    f"company-os workspace sync")
+            sha = lr["resolvedCommit"]
+            if not (cache / ".git").is_dir():
+                die(f"--frozen: no local cache for '{name}' at "
+                    f"{cache.relative_to(ws.root)} and network is disabled. run "
+                    f"online first: company-os workspace sync")
+            _checkout_slice(cache, sha, _sparse_dirs(paths))
+            materialize_slice(ws, cache, target, paths)
+            files, agg = hash_slice(ws, target)
+            if agg != lr.get("sliceHash"):
+                die(f"--frozen: materialized slice for '{name}' does not match the "
+                    f"hash in {LOCK_NAME} (cache/objects inconsistent with lock). "
+                    f"run online: company-os workspace sync")
+            print(f"  restored {name} @ {sha[:12]} (from lock) -> {repo['root']} "
+                  f"({len(files)} file(s))")
+        else:
+            sha = _fetch_pinned(cache, repo["url"], kind, ref)
+            _checkout_slice(cache, sha, _sparse_dirs(paths))
+            materialize_slice(ws, cache, target, paths)
+            files, agg = hash_slice(ws, target)
+            locked[name] = {
+                "name": name, "url": repo["url"], "root": repo["root"],
+                "pin": {kind: ref}, "resolvedCommit": sha,
+                "sliceHash": agg, "files": files,
+            }
+            print(f"  synced {name} @ {sha[:12]} ({kind} {ref}) -> {repo['root']} "
+                  f"({len(files)} file(s))")
+
+    ensure_cache_gitignored(ws)
+    if not frozen:
+        ordered = [locked[r["name"]] for r in manifest["repos"] if r["name"] in locked]
+        dump_yaml({"version": 1, "generatedFrom": MANIFEST_NAME, "repos": ordered},
+                  ws.root / LOCK_NAME)
+        print(f"\nwrote {LOCK_NAME} ({len(ordered)} repo(s))")
+    else:
+        print(f"\nmaterialized strictly from {LOCK_NAME} (no network)")
+    print("next: company-os workspace status   # then: company-os validate")
+
+
+def cmd_workspace_status(ws, manifest):
+    lock = load_yaml(ws.root / LOCK_NAME, None)
+    locked = {r["name"]: r for r in (lock or {}).get("repos", [])}
+    print(f"workspace federation status ({len(manifest['repos'])} repo(s))\n")
+    action_needed = False
+    for repo in manifest["repos"]:
+        name = repo["name"]
+        kind, ref = repo_pin(repo)
+        lr = locked.get(name)
+        if lr is None:
+            print(f"  {name}: {kind}:{ref} — missing (never synced)")
+            action_needed = True
+            continue
+        sha = lr.get("resolvedCommit", "?")
+        pin_lock = lr.get("pin", {})
+        pin_drift = pin_lock.get(kind) != ref or [k for k in pin_lock if pin_lock[k]] != [kind]
+        state = slice_state(ws, lr)
+        if pin_drift:
+            label = f"drifted (manifest pin {kind}:{ref} != lock {pin_lock})"
+            action_needed = True
+        else:
+            label = state
+            if state != "clean":
+                action_needed = True
+        print(f"  {name}: {kind}:{ref} @ {sha[:12]} -> {repo['root']} — {label}")
+    if action_needed:
+        print("\nnext: company-os workspace sync")
+    else:
+        print("\nnext: company-os validate")
+
+
 # ---------------------------------------------------------------- main
 
 def main():
@@ -2052,6 +2520,14 @@ def main():
     sk = sub.add_parser("skills", help="list merged agent skills across the four layers")
     sk.add_argument("action", choices=["list"])
     sk.set_defaults(fn=cmd_skills)
+
+    wk = sub.add_parser("workspace",
+                        help="federated multi-repo governance sync/status (Option B)")
+    wk.add_argument("action", choices=["sync", "status"])
+    wk.add_argument("--frozen", action="store_true",
+                    help="CI: materialize strictly from workspace.lock.yaml, no network")
+    wk.add_argument("--only", help="limit sync to a single repo by name")
+    wk.set_defaults(fn=cmd_workspace)
 
     args = p.parse_args()
     ws = Workspace(args.root)

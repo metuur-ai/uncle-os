@@ -305,5 +305,148 @@ with tempfile.TemporaryDirectory(dir="/tmp") as d:
           any("dangling extends" in p and "platform-skill://communications/nonexistent" in p
               for p in dang))
 
+# ---------------------------------------------------------- Phase 4 federation
+# Pure-function coverage for the pin-validation contract (GPF-R-6.3) and the
+# hand-edit content-hash oracle (GPF-R-7.5); the git parts are a guarded
+# integration check that skips when git is unavailable/too old.
+import contextlib
+import hashlib
+import io
+import os
+import shutil
+
+
+def _dies(fn):
+    """True iff fn() calls die() (SystemExit), stderr suppressed."""
+    try:
+        with contextlib.redirect_stderr(io.StringIO()):
+            fn()
+        return False
+    except SystemExit:
+        return True
+
+
+# GPF-R-6.3 — exactly one of commit:/tag:; floating refs rejected
+check("R-6.3 commit pin accepted",
+      co.repo_pin({"name": "r", "pin": {"commit": "abc123"}}) == ("commit", "abc123"))
+check("R-6.3 tag pin accepted",
+      co.repo_pin({"name": "r", "pin": {"tag": "v1.0.0"}}) == ("tag", "v1.0.0"))
+check("R-6.3 branch pin rejected (floating)",
+      _dies(lambda: co.repo_pin({"name": "r", "pin": {"branch": "main"}})))
+check("R-6.3 bare ref pin rejected (floating)",
+      _dies(lambda: co.repo_pin({"name": "r", "pin": {"ref": "HEAD"}})))
+check("R-6.3 both commit+tag rejected (ambiguous)",
+      _dies(lambda: co.repo_pin({"name": "r", "pin": {"commit": "a", "tag": "v1"}})))
+check("R-6.3 empty pin rejected",
+      _dies(lambda: co.repo_pin({"name": "r", "pin": {}})))
+
+# GPF-R-6.1 — absent manifest => monorepo mode (None), no behavior change
+with tempfile.TemporaryDirectory(dir="/tmp") as d:
+    check("R-6.1 no workspace.yaml => load_manifest None",
+          co.load_manifest(co.Workspace(Path(d))) is None)
+
+# GPF-R-7.5 — slice_state / federated_slice_problems detect a hand-edit by hash
+with tempfile.TemporaryDirectory(dir="/tmp") as d:
+    root = Path(d)
+    ws = co.Workspace(root)
+    slice_file = root / "platforms" / "p" / "governance" / "requirements.yaml"
+    slice_file.parent.mkdir(parents=True)
+    slice_file.write_text("schemaVersion: '1.0'\n")
+    good = hashlib.sha256(slice_file.read_bytes()).hexdigest()
+    lock_repo = {"name": "p", "resolvedCommit": "deadbeef", "sliceHash": "x",
+                 "files": {"platforms/p/governance/requirements.yaml": good}}
+    check("R-7.5 clean slice => state 'clean'",
+          co.slice_state(ws, lock_repo) == "clean")
+    (root / "workspace.yaml").write_text(
+        "version: 1\nrepos:\n  - name: p\n    url: file:///x\n"
+        "    root: platforms/p\n    pin: {commit: deadbeef}\n    paths: [governance/]\n")
+    (root / "workspace.lock.yaml").write_text(
+        co.yaml.safe_dump({"version": 1, "repos": [lock_repo]}, sort_keys=False))
+    manifest = co.load_manifest(ws)
+    probs0, n0 = co.federated_slice_problems(ws, manifest)
+    check("R-7.5 in-sync slice => no problems", probs0 == [] and n0 == 1)
+    # hand-edit the read-derived slice
+    slice_file.write_text("schemaVersion: '1.0'\n# sneaky\n")
+    check("R-7.5 hand-edit => state 'drifted'",
+          co.slice_state(ws, lock_repo) == "drifted")
+    probs1, _ = co.federated_slice_problems(ws, manifest)
+    check("R-7.5 hand-edit => problem names path + re-sync remedy",
+          any("platforms/p/governance/requirements.yaml" in p
+              and "workspace sync" in p for p in probs1))
+
+# Guarded git integration — sparse governance-only materialization + frozen
+# reproducibility. Skips cleanly when git is missing/too old (GPF-R-7.7).
+def _git_ok():
+    if not co._git_available():
+        return False
+    try:
+        return co._git_version() >= co.MIN_GIT
+    except SystemExit:
+        return False
+
+
+if not _git_ok():
+    check("R-7.1/7.3 git integration SKIPPED (git unavailable/too old)", True)
+else:
+    with tempfile.TemporaryDirectory(dir="/tmp") as d:
+        d = Path(d)
+        src = d / "src"
+        src.mkdir()
+
+        def _g(*a):
+            subprocess.run(["git", "-C", str(src), *a], check=True,
+                           capture_output=True, text=True)
+        subprocess.run(["git", "init", "-q", str(src)], check=True)
+        _g("config", "user.email", "a@b.c")
+        _g("config", "user.name", "t")
+        (src / "governance").mkdir()
+        (src / "governance" / "requirements.yaml").write_text("r: 1\n")
+        (src / "README.md").write_text("NOT governance\n")  # must NOT materialize
+        _g("add", "-A")
+        _g("commit", "-q", "-m", "c1")
+        sha = subprocess.run(["git", "-C", str(src), "rev-parse", "HEAD"],
+                             check=True, capture_output=True, text=True).stdout.strip()
+        ws_dir = d / "ws"
+        (ws_dir / "teams").mkdir(parents=True)
+        (ws_dir / "workspace.yaml").write_text(
+            "version: 1\nrepos:\n  - name: p\n    url: file://%s\n"
+            "    root: platforms/p\n    pin: {commit: %s}\n"
+            "    paths: [governance/]\n" % (src, sha))
+        cli = str(CLI)
+        r = subprocess.run([sys.executable, cli, "--root", str(ws_dir),
+                            "workspace", "sync"], capture_output=True, text=True)
+        mat = list((ws_dir / "platforms" / "p").rglob("*"))
+        files = [p.relative_to(ws_dir).as_posix() for p in mat if p.is_file()]
+        check("R-7.1 sync materializes only allowlisted governance paths",
+              r.returncode == 0 and files == ["platforms/p/governance/requirements.yaml"])
+        check("R-7.1 non-governance file (README.md) NOT materialized",
+              not any("README" in f for f in files))
+        lock = co.load_yaml(ws_dir / "workspace.lock.yaml", {})
+        check("R-7.2 lock records resolved SHA + per-file hash",
+              lock["repos"][0]["resolvedCommit"] == sha
+              and "platforms/p/governance/requirements.yaml" in lock["repos"][0]["files"])
+
+        def _tree():
+            items = []
+            for p in sorted((ws_dir / "platforms").rglob("*")):
+                if p.is_file():
+                    items.append(p.relative_to(ws_dir).as_posix() + hashlib.sha256(
+                        p.read_bytes()).hexdigest())
+            return hashlib.sha256("\n".join(items).encode()).hexdigest()
+        h_before = _tree()
+        # wipe slice, make source unreachable, materialize --frozen from lock
+        for p in sorted((ws_dir / "platforms").rglob("*"), reverse=True):
+            os.chmod(p, 0o755)
+        shutil.rmtree(ws_dir / "platforms")
+        os.rename(src, d / "src.gone")
+        rf = subprocess.run([sys.executable, cli, "--root", str(ws_dir),
+                             "workspace", "sync", "--frozen"],
+                            capture_output=True, text=True)
+        check("R-7.3 --frozen materializes offline from lock (source removed)",
+              rf.returncode == 0)
+        check("R-7.3 frozen tree hash == online sync tree hash (reproducible)",
+              _tree() == h_before)
+
+
 print(f"\nselftest: {len(fails)} failure(s)" if fails else "\nselftest: PASS")
 sys.exit(1 if fails else 0)
