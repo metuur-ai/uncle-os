@@ -113,5 +113,35 @@ _prd = co.PRD_TEMPLATE.format(pid="p", title="t", team="tm", platform="pf",
 check("R-4.3 PRD_SECTIONS drives the template",
       all(f"## {s}" in _prd for s in co.PRD_SECTIONS))
 
+# GPF-R-1.x — init/add/reality scaffolding: a fresh scaffold validates green,
+# and every scaffolder refuses to overwrite. Driven through the process boundary
+# (subprocess) with flags only, so no TTY is needed (GPF-R-1.3). Temp dirs must
+# live outside any path containing "scratchpad" (iter_graph_docs filters those).
+def _cli(root, *a):
+    return subprocess.run([sys.executable, str(CLI), "--root", str(root), *a],
+                          capture_output=True, text=True)
+
+
+with tempfile.TemporaryDirectory(dir="/tmp") as d:
+    r = _cli(d, "init", "--company", "Acme", "--team", "core", "--platform", "payments")
+    check("R-1.1 init exits 0 (headless flags)", r.returncode == 0)
+    check("R-1.7 init workspace validates green",
+          _cli(d, "validate").returncode == 0)
+    # GPF-R-1.2 — re-init inside an existing workspace refuses, mutates nothing
+    check("R-1.2 re-init refuses (non-zero)",
+          _cli(d, "init", "--company", "X", "--team", "y", "--platform", "z").returncode != 0)
+    # GPF-R-1.9 — add grows the workspace and refuses to overwrite
+    check("R-1.9 add component exits 0",
+          _cli(d, "add", "component", "checkout-service", "--platform", "payments").returncode == 0)
+    check("R-1.9 add refuses to overwrite (non-zero)",
+          _cli(d, "add", "component", "checkout-service", "--platform", "payments").returncode != 0)
+    # Unit 2 — reality new scaffolds a green reality doc and refuses to overwrite
+    check("R-2.x reality new exits 0",
+          _cli(d, "reality", "new", "checkout-service", "--platform", "payments").returncode == 0)
+    check("R-2.x reality new refuses to overwrite (non-zero)",
+          _cli(d, "reality", "new", "checkout-service", "--platform", "payments").returncode != 0)
+    check("R-1.7 workspace still validates green after add + reality",
+          _cli(d, "validate").returncode == 0)
+
 print(f"\nselftest: {len(fails)} failure(s)" if fails else "\nselftest: PASS")
 sys.exit(1 if fails else 0)

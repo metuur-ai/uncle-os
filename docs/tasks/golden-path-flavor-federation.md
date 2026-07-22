@@ -75,7 +75,7 @@ gate strings.
 
 ## Phase 1 — Golden path MVP: growth commands + guidance chain (Units 1–2)
 
-- [ ] 1.1 `company-os add platform|team|component` (deps: 0.2, 0.3, est: ~75m)
+- [x] 1.1 `company-os add platform|team|component` (deps: 0.2, 0.3, est: ~75m)
   - why: Closes friction F2 — the second team/platform/component today means
     hand-copying YAML. Growth must reuse the exact scaffolding templates
     `init` uses so there is one shape, not two.
@@ -87,7 +87,7 @@ gate strings.
     each yield validate-green artifacts; re-running the same `add` fails
     without mutating; piped/non-TTY invocation works via flags.
 
-- [ ] 1.2 `company-os reality new` + `templates/reality-component.md` (deps: 0.3, est: ~45m)
+- [x] 1.2 `company-os reality new` + `templates/reality-component.md` (deps: 0.3, est: ~45m)
   - why: Closes friction F3 — the guidance chain currently dead-ends when a
     target component has no reality doc; the user is left to invent structure.
   - acceptance: GPF-R-2.1/2.2 — `reality new --platform <p> <component-id>`
@@ -96,7 +96,7 @@ gate strings.
   - verify: run against a component without a reality doc → file created,
     validate exits 0; against an existing doc → refuses, no mutation.
 
-- [ ] 1.3 Guidance-chain extension through the reality step (deps: 1.1, 1.2, est: ~30m)
+- [x] 1.3 Guidance-chain extension through the reality step (deps: 1.1, 1.2, est: ~30m)
   - why: The chain is the product: "every mutating command prints the next
     command." `prd new` must point at `reality new` when the reality doc is
     missing, and `prd complete` must include the reality-update step —
@@ -108,7 +108,7 @@ gate strings.
   - verify: walk the full chain in a fresh workspace copying only printed
     next-commands — no step requires out-of-band knowledge.
 
-- [ ] 1.4 Init hardening: refuse re-init, terminal-only wizard parity (deps: 0.2, est: ~25m)
+- [x] 1.4 Init hardening: refuse re-init, terminal-only wizard parity (deps: 0.2, est: ~25m)
   - why: `init` inside an existing workspace must not clobber; and every
     wizard answer needs a flag equivalent or CI/scripting can't reproduce it.
   - acceptance: GPF-R-1.x — `init` in an existing workspace refuses and exits

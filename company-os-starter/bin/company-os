@@ -20,12 +20,17 @@ import os
 import re
 import shutil
 import sys
+import tempfile
 from pathlib import Path
 
 import yaml
 
 TODAY = dt.date.today()
 NOW = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+# The reference template files (source of flavor) ship alongside the CLI.
+SCRIPT_DIR = Path(__file__).resolve().parent
+TEMPLATES_DIR = SCRIPT_DIR.parent / "templates"
 
 
 # ---------------------------------------------------------------- helpers
@@ -520,6 +525,14 @@ def cmd_prd(ws, args):
             component_list="\n".join(f"- `{c}`" for c in components),
             governance_checklist=checklist or "- [ ] none resolved"))
         print(f"created {prd.relative_to(ws.root)}")
+        # GPF-R-1.8: keep the guidance chain unbroken through `prd complete` —
+        # any component still missing its reality doc gets the exact scaffold
+        # command it needs.
+        for cid in components:
+            if not (pdir / "reality" / "components" / f"{cid}.md").exists():
+                print(f"  note: component '{cid}' has no reality doc yet — "
+                      f"scaffold it: company-os reality new "
+                      f"--platform {args.platform} {cid}")
         print(f"next: fill Proposed change + decisionOwner, then: "
               f"company-os prd validate --platform {args.platform} {pid}")
 
@@ -567,11 +580,13 @@ def cmd_prd(ws, args):
         if unchecked:
             errors.append(f"{len(unchecked)} governance checklist item(s) unchecked "
                           "(check them off with linked evidence)")
+        missing_reality = []
         for cid in meta.get("components", []):
             reality = pdir / "reality" / "components" / f"{cid}.md"
             if not reality.exists():
                 errors.append(f"no reality doc for component '{cid}' "
                               f"({reality.relative_to(ws.root)})")
+                missing_reality.append(cid)
             else:
                 r_meta, _ = frontmatter(reality)
                 if str(r_meta.get("updated", "")) < str(meta.get("created", "")):
@@ -581,6 +596,10 @@ def cmd_prd(ws, args):
             print("done-check failed — a change is not done until reality is updated:")
             for e in errors:
                 fail(e)
+            # Point the reality-update step of the chain at the scaffold command
+            # for any component whose reality doc is still missing (GPF-R-1.8).
+            for cid in missing_reality:
+                print(f"  fix: company-os reality new --platform {args.platform} {cid}")
             sys.exit(1)
         dst = pdir / "archive" / "prds" / args.id
         dst.parent.mkdir(parents=True, exist_ok=True)
@@ -1302,6 +1321,278 @@ def cmd_graph(ws, args):
     print(f"graph build: {scanned} doc(s) scanned, {changed} updated")
 
 
+# ---------------------------------------------- scaffolding engine (init/add/reality)
+# One engine writes the SOURCE artifacts for every unit (company, ontology,
+# platform, team, component); generated artifacts (CLAUDE.md nodes,
+# feature-index, derived tags) are then produced by the same `graph build` code
+# path so a fresh scaffold validates green (GPF-R-1.7). Every writer refuses to
+# clobber an existing file (GPF-R-1.9). YAML sources are built as dicts and
+# dumped so they are always well-formed; markdown sources carry pre-derived
+# tags so `graph build` leaves them byte-stable.
+
+def _write_new(path, text):
+    """Write a source file, refusing to overwrite anything existing (never
+    clobber — GPF-R-1.9)."""
+    p = Path(path)
+    if p.exists():
+        die(f"refusing to overwrite existing file: {p}")
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(text)
+    return p
+
+
+def rebuild_generated(ws):
+    """Re-derive tags and generated aggregates (CLAUDE.md nodes, feature-index)
+    through the same steps as `graph build`, so scaffolded output validates
+    green without a separate build step."""
+    for md, meta, tags in iter_graph_docs(ws):
+        rewrite_frontmatter_tags(md, tags)
+    write_feature_indexes(ws)
+    write_claude_nodes(ws)
+
+
+def register_id(root, canonical_id, defined_in):
+    """Append a canonical ID to company-ontology/ids/registry.yaml (the single
+    canonical source; never a parallel index). Idempotent per id."""
+    path = Path(root) / "company-ontology" / "ids" / "registry.yaml"
+    data = load_yaml(path, None) or {
+        "schemaVersion": "1.0", "kind": "IdRegistry", "ids": [],
+        "tags": ["ontology/registry"]}
+    ids = data.setdefault("ids", [])
+    if not any(e.get("id") == canonical_id for e in ids):
+        ids.append({"id": canonical_id, "definedIn": defined_in})
+    dump_yaml(data, path)
+
+
+def scaffold_company(root, company):
+    slug = slugify(company)
+    _write_new(Path(root) / "company-os" / "company.yaml", canonical_or_block({
+        "schemaVersion": "1.0", "kind": "Company",
+        "metadata": {"id": slug, "name": company},
+        "tags": ["kind/company"]}))
+    _write_new(Path(root) / "company-os" / "standards" / "company-baseline.yaml",
+               canonical_or_block({
+                   "schemaVersion": "1.0", "kind": "CompanyBaseline",
+                   "controls": [{
+                       "id": "security-baseline", "version": "1.0",
+                       "level": "default",
+                       "requirement": "Services authenticate inbound calls and "
+                                      "encrypt data in transit."}],
+                   "tags": ["kind/baseline", "scope/company", "tier/mixed"]}))
+
+
+def scaffold_platform(root, pid):
+    _write_new(Path(root) / "platforms" / pid / "platform.yaml", canonical_or_block({
+        "schemaVersion": "1.0", "kind": "Platform",
+        "metadata": {"id": pid, "name": pid.replace("-", " ").title()},
+        "conformance": {"companyOsVersion": "2026.2", "profile": "standard"},
+        "tags": ["kind/platform", f"platform/{pid}"]}))
+    _write_new(Path(root) / "platforms" / pid / "governance" / "requirements.yaml",
+               canonical_or_block({
+                   "schemaVersion": "1.0", "kind": "PlatformRequirements",
+                   "platform": {"id": pid}, "requirements": [],
+                   "tags": ["kind/requirements", f"platform/{pid}"]}))
+
+
+def scaffold_team(root, tid):
+    tname = tid.replace("-", " ").title()
+    _write_new(Path(root) / "teams" / tid / "team.yaml", canonical_or_block({
+        "schemaVersion": "1.0", "kind": "Team",
+        "metadata": {"id": tid, "name": tname},
+        "agentSkills": {
+            "canonicalPath": "skills/",
+            "personalPath": "scratchpad/personal-rules/",
+            "precedence": "canonical-mandatory > personal > canonical-default "
+                          "> canonical-guidance",
+            "onConflict": "prefer-canonical-and-inform-user"},
+        "tags": ["kind/team", f"team/{tid}"]}))
+    _write_new(Path(root) / "teams" / tid / "standards" / "definition-of-ready.md",
+               DOR_TEMPLATE.format(tid=tid))
+    _write_new(Path(root) / "teams" / tid / "standards" / "definition-of-done.md",
+               DOD_TEMPLATE.format(tid=tid))
+    _write_new(Path(root) / "teams" / tid / "onboarding" / "developer.md",
+               ONBOARDING_TEMPLATE.format(tid=tid, tname=tname))
+
+
+def scaffold_component(root, pid, cid):
+    name = cid.replace("-", " ").title()
+    _write_new(Path(root) / "platforms" / pid / "components" / f"{cid}.yaml",
+               canonical_or_block({
+                   "schemaVersion": "1.0", "kind": "Component",
+                   "metadata": {"id": cid, "name": name, "type": "service",
+                                "status": "active"},
+                   "ownership": {"accountableTeam": "team://TODO",
+                                 "repository": f"repo://{cid}"},
+                   "platformRelationships": [
+                       {"platform": f"platform://{pid}",
+                        "relationship": "belongs-to"}],
+                   "tags": [f"component/{cid}", "kind/component",
+                            f"platform/{pid}"]}))
+
+
+def canonical_or_block(data):
+    """Serialize a source YAML dict in stable block form (validate never
+    inspects YAML formatting; this only needs to be well-formed and readable)."""
+    return yaml.safe_dump(data, sort_keys=False, default_flow_style=False)
+
+
+# Markdown scaffolds carry tags pre-derived to match derive_tags(), so the
+# graph build inside a scaffold is a no-op on them (only CLAUDE.md nodes and
+# feature-index are newly written).
+DOR_TEMPLATE = """---
+id: team-standard://{tid}/definition-of-ready
+type: team-standard
+tags: [team/{tid}]
+---
+
+## Team Definition of Ready
+- The problem and expected outcome are clear.
+- The affected components are identified.
+- Dependencies are known.
+- Acceptance criteria are testable.
+- The work is small enough to execute.
+"""
+
+DOD_TEMPLATE = """---
+id: team-standard://{tid}/definition-of-done
+type: team-standard
+tags: [team/{tid}]
+---
+
+## Team Definition of Done
+- Implementation is complete and tests pass.
+- Peer review is complete.
+- Operational documentation is updated.
+- Relevant Representation of Reality documents are updated.
+"""
+
+ONBOARDING_TEMPLATE = """---
+type: onboarding-guide
+id: onboarding-{tid}-developer
+role: developer
+team: {tid}
+tags: [kind/onboarding, role/developer, team/{tid}]
+---
+
+# Developer onboarding ({tname})
+
+Start here. Your team's effective governance is composed from the company
+baseline, the platforms your components belong to, and this team's standards.
+
+Daily view:  company-os today --role developer
+"""
+
+
+def _scaffold_workspace(base, company, pid, tid):
+    """Write every SOURCE root for a fresh workspace (GPF-R-1.1)."""
+    scaffold_company(base, company)
+    scaffold_platform(base, pid)
+    scaffold_team(base, tid)
+    register_id(base, f"platform://{pid}", f"platforms/{pid}/platform.yaml")
+    register_id(base, f"team://{tid}", f"teams/{tid}/team.yaml")
+
+
+def _prompt(val, flag, label, default):
+    """Return the flag value if given; otherwise prompt (interactive only).
+    Non-TTY without the flag fails fast so scripted/CI runs are reproducible
+    (GPF-R-1.3)."""
+    if val:
+        return val
+    if not sys.stdin.isatty():
+        die(f"non-interactive run: --{flag} is required when no terminal is "
+            "attached (pass --company, --team, and --platform)")
+    resp = input(f"{label} [{default}]: ").strip()
+    return resp or default
+
+
+def cmd_init(ws, args):
+    target = ws.root
+    # GPF-R-1.2: refuse inside an existing workspace, mutating nothing.
+    if ws.is_root():
+        die(f"'{target}' is already a workspace root "
+            f"({'/, '.join(CANONICAL_ROOTS)}/ present) — refusing to re-init")
+    company = _prompt(args.company, "company", "Company name", "My Company")
+    tid = slugify(_prompt(args.team, "team", "First team id", "core"))
+    pid = slugify(_prompt(args.platform, "platform", "First platform id", "platform-1"))
+
+    # GPF-R-1.4: scaffold into a staging dir and move the roots in atomically,
+    # so an abort mid-scaffold leaves no partial workspace behind.
+    staging = Path(tempfile.mkdtemp(prefix="company-os-init-"))
+    try:
+        _scaffold_workspace(staging, company, pid, tid)
+        rebuild_generated(Workspace(staging))
+        target.mkdir(parents=True, exist_ok=True)
+        moved = []
+        try:
+            for name in CANONICAL_ROOTS:
+                src = staging / name
+                if src.exists():
+                    shutil.move(str(src), str(target / name))
+                    moved.append(target / name)
+        except Exception:
+            for m in moved:
+                shutil.rmtree(m, ignore_errors=True)
+            raise
+    finally:
+        shutil.rmtree(staging, ignore_errors=True)
+
+    print(f"initialized workspace at {target}")
+    print(f"  company: {company} | first team: {tid} | first platform: {pid}")
+    print(f"next: cd {target} && company-os discover new --team {tid} "
+          "\"<discovery title>\"")
+
+
+def cmd_add(ws, args):
+    if args.kind == "platform":
+        pid = slugify(args.name)
+        scaffold_platform(ws.root, pid)
+        register_id(ws.root, f"platform://{pid}", f"platforms/{pid}/platform.yaml")
+        rebuild_generated(ws)
+        print(f"added platform '{pid}'")
+        print(f"next: company-os add component --platform {pid} <component-id>")
+    elif args.kind == "team":
+        tid = slugify(args.name)
+        scaffold_team(ws.root, tid)
+        register_id(ws.root, f"team://{tid}", f"teams/{tid}/team.yaml")
+        rebuild_generated(ws)
+        print(f"added team '{tid}'")
+        print(f"next: company-os discover new --team {tid} \"<discovery title>\"")
+    elif args.kind == "component":
+        if not args.platform:
+            die("add component requires --platform <platform-id>")
+        pid = ws.platform_dir(args.platform).name
+        cid = slugify(args.name)
+        scaffold_component(ws.root, pid, cid)
+        register_id(ws.root, f"component://{cid}",
+                    f"platforms/{pid}/components/{cid}.yaml")
+        rebuild_generated(ws)
+        print(f"added component '{cid}' to platform '{pid}'")
+        print(f"next: company-os reality new --platform {pid} {cid}")
+
+
+def cmd_reality(ws, args):
+    pdir = ws.platform_dir(args.platform)
+    cid = args.component
+    out = pdir / "reality" / "components" / f"{cid}.md"
+    if out.exists():
+        die(f"{out.relative_to(ws.root)} already exists — refusing to overwrite")
+    tmpl_path = TEMPLATES_DIR / "reality-component.md"
+    if not tmpl_path.exists():
+        die(f"reality template not found: {tmpl_path}")
+    _, desc = ws.find_component(cid)
+    name = (desc or {}).get("metadata", {}).get("name") or cid
+    content = (tmpl_path.read_text()
+               .replace("reality-<component-id>", f"reality-{cid}")
+               .replace("<YYYY-MM-DD>", str(TODAY))
+               .replace("<Component Name>", name))
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(content)
+    rebuild_generated(ws)
+    print(f"created {out.relative_to(ws.root)}")
+    print("next: fill in Business rules / Current limitations, then continue: "
+          f"company-os prd complete --platform {args.platform} <prd-id>")
+
+
 # ---------------------------------------------------------------- main
 
 def main():
@@ -1309,6 +1600,24 @@ def main():
     p.add_argument("--root", default=os.environ.get("COMPANY_OS_WORKSPACE_ROOT", "."),
                    help="workspace root (default: $COMPANY_OS_WORKSPACE_ROOT or cwd)")
     sub = p.add_subparsers(dest="cmd", required=True)
+
+    ini = sub.add_parser("init", help="scaffold a new workspace (four peer roots)")
+    ini.add_argument("--company", help="company name (skips the prompt)")
+    ini.add_argument("--team", help="first team id (skips the prompt)")
+    ini.add_argument("--platform", help="first platform id (skips the prompt)")
+    ini.set_defaults(fn=cmd_init)
+
+    ad = sub.add_parser("add", help="grow a workspace: add a platform, team, or component")
+    ad.add_argument("kind", choices=["platform", "team", "component"])
+    ad.add_argument("name", help="id of the new platform/team/component")
+    ad.add_argument("--platform", help="target platform (required for add component)")
+    ad.set_defaults(fn=cmd_add)
+
+    rl = sub.add_parser("reality", help="scaffold a component reality doc")
+    rl.add_argument("action", choices=["new"])
+    rl.add_argument("component", help="component id")
+    rl.add_argument("--platform", required=True)
+    rl.set_defaults(fn=cmd_reality)
 
     d = sub.add_parser("discover", help="discovery brief workflow")
     d.add_argument("action", choices=["new", "validate"])
@@ -1377,10 +1686,10 @@ def main():
 
     args = p.parse_args()
     ws = Workspace(args.root)
-    # `scratchpad` operates on --repo (any repo), not the workspace catalog, so
-    # it is exempt; every other command scans the workspace and must fail-fast
-    # outside a workspace root (GPF-R-8.1).
-    if args.cmd != "scratchpad":
+    # `scratchpad` operates on --repo (any repo) and `init` creates a workspace
+    # where none exists yet, so both are exempt; every other command scans the
+    # workspace and must fail-fast outside a workspace root (GPF-R-8.1).
+    if args.cmd not in ("scratchpad", "init"):
         ws.require_root()
     args.fn(ws, args)
 
