@@ -1,0 +1,4483 @@
+{
+  "directed": false,
+  "multigraph": false,
+  "graph": {
+    "edges": "vector",
+    "repo": "uncle-os"
+  },
+  "nodes": [
+    {
+      "id": "754",
+      "label": "Research: Where the Company OS process overwhelms users, and the best simplification option",
+      "norm_label": "research: where the company os process overwhelms users, and the best simplification option",
+      "repo": "uncle-os",
+      "project": ".devlocal",
+      "path": ".devlocal/research/2026-07-18-process-simplification.md",
+      "name": "2026-07-18-process-simplification",
+      "title": "Research: Where the Company OS process overwhelms users, and the best simplification option",
+      "summary": "- **Date:** 2026-07-18 - **Question:** \"The user might feel overwhelmed by this process; can we try to simplify it? Consider the best option, but do not modify the code.\" - **Scope:** `company-os-starter/` (CLI, docs, templates, example workspace). Documentation-only analysis — no code changed. - **",
+      "file_type": "md"
+    },
+    {
+      "id": "755",
+      "label": "Design: Custom Templates \u0026 Custom Skills (Team/Org Flavor)",
+      "norm_label": "design: custom templates \u0026 custom skills (team/org flavor)",
+      "repo": "uncle-os",
+      "project": ".devlocal",
+      "path": ".devlocal/research/2026-07-22-custom-templates-and-skills.md",
+      "name": "2026-07-22-custom-templates-and-skills",
+      "title": "Design: Custom Templates \u0026 Custom Skills (Team/Org Flavor)",
+      "summary": "- **Date:** 2026-07-22 - **Branch:** os-samples - **Status:** Proposed - **Need:** Teams/orgs want CLI- and skill-generated artifacts (briefs, PRDs, outcome reviews) to follow **their own template**, and want to register **custom skills** for org-specific \"flavor,\" without breaking validation contra",
+      "file_type": "md"
+    },
+    {
+      "id": "756",
+      "label": "Research: Team OS Example Repo vs Uncle OS (company-os-starter)",
+      "norm_label": "research: team os example repo vs uncle os (company-os-starter)",
+      "repo": "uncle-os",
+      "project": ".devlocal",
+      "path": ".devlocal/research/2026-07-21-team-os-example-repo-comparison.md",
+      "name": "2026-07-21-team-os-example-repo-comparison",
+      "title": "Research: Team OS Example Repo vs Uncle OS (company-os-starter)",
+      "summary": "- **Date:** 2026-07-21 - **Question:** Analyze `/Users/javierbenavides/others/agentic/team-os-example-repo` (Hannah Stulberg's public Team OS example, fictional company \"Forge\") and compare it with what Uncle OS proposes for teams (`company-os-starter/`). Identify what may be useful for Company OS. ",
+      "file_type": "md"
+    },
+    {
+      "id": "757",
+      "label": "Uncle OS / Company OS — Architecture Review \u0026 Scaling Research",
+      "norm_label": "uncle os / company os — architecture review \u0026 scaling research",
+      "repo": "uncle-os",
+      "project": ".devlocal",
+      "path": ".devlocal/research/2026-07-22-company-os-scaling-architecture-review.md",
+      "name": "2026-07-22-company-os-scaling-architecture-review",
+      "title": "Uncle OS / Company OS — Architecture Review \u0026 Scaling Research",
+      "summary": "**Date:** 2026-07-22 **Question:** How should Uncle OS evolve to support different organizational levels (Individual/User OS, Team OS, Platform OS, Company OS) while remaining consistent and easy to adopt — from a ~10-person startup to a 200+ person bank?",
+      "file_type": "md"
+    },
+    {
+      "id": "758",
+      "label": "Research: Simplicity Review — Full Flow, User Journey, and Friction Inventory",
+      "norm_label": "research: simplicity review — full flow, user journey, and friction inventory",
+      "repo": "uncle-os",
+      "project": ".devlocal",
+      "path": ".devlocal/research/2026-07-22-simplicity-user-journey-review.md",
+      "name": "2026-07-22-simplicity-user-journey-review",
+      "title": "Research: Simplicity Review — Full Flow, User Journey, and Friction Inventory",
+      "summary": "- **Date:** 2026-07-22 - **Branch:** os-samples - **Question:** Review the overall flow and every step of the user journey with one primary goal: simplicity. Uncle OS must serve non-technical users (POs, PMs, Designers, BAs, business stakeholders), not only engineers. Identify friction, unnecessary ",
+      "file_type": "md"
+    },
+    {
+      "id": "759",
+      "label": "Design: Manifest-Optional Workspace Federation (Monorepo ↔ Multi-Repo)",
+      "norm_label": "design: manifest-optional workspace federation (monorepo ↔ multi-repo)",
+      "repo": "uncle-os",
+      "project": ".devlocal",
+      "path": ".devlocal/research/2026-07-22-multi-repo-workspace-federation.md",
+      "name": "2026-07-22-multi-repo-workspace-federation",
+      "title": "Design: Manifest-Optional Workspace Federation (Monorepo ↔ Multi-Repo)",
+      "summary": "- **Date:** 2026-07-22 - **Branch:** os-samples - **Status:** Proposed (Option B selected; git submodules explicitly rejected — no full-repo inclusion wanted) - **Builds on:** `.devlocal/research/2026-07-22-simplicity-user-journey-review.md` (F2, F8, F13), `2026-07-22-company-os-scaling-architecture",
+      "file_type": "md"
+    },
+    {
+      "id": "760",
+      "label": "Research: Knowledge Graph as Primary / Markdown as Projection — Ground Truth in Uncle OS",
+      "norm_label": "research: knowledge graph as primary / markdown as projection — ground truth in uncle os",
+      "repo": "uncle-os",
+      "project": ".devlocal",
+      "path": ".devlocal/research/2026-07-22-knowledge-graph-primary-architecture.md",
+      "name": "2026-07-22-knowledge-graph-primary-architecture",
+      "title": "Research: Knowledge Graph as Primary / Markdown as Projection — Ground Truth in Uncle OS",
+      "summary": "- **Date:** 2026-07-22 - **Question:** What exists today in uncle-os (company-os-starter + docs + prior research) that the \"Knowledge Graph is the source of truth; Markdown is one projection of it\" vision would invert, extend, or build upon? - **Method:** Three parallel documentarian scouts — (A) gr",
+      "tags": [
+        "link:x"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "761",
+      "label": "Uncle OS — Multi-Repository \u0026 Multi-User Use Cases, Layer Architecture, and Pattern Catalog",
+      "norm_label": "uncle os — multi-repository \u0026 multi-user use cases, layer architecture, and pattern catalog",
+      "repo": "uncle-os",
+      "project": ".devlocal",
+      "path": ".devlocal/research/2026-07-22-multi-repo-multi-user-use-cases.md",
+      "name": "2026-07-22-multi-repo-multi-user-use-cases",
+      "title": "Uncle OS — Multi-Repository \u0026 Multi-User Use Cases, Layer Architecture, and Pattern Catalog",
+      "summary": "- **Date:** 2026-07-22 - **Question:** Identify and document the most common multi-repository and multi-user use cases for Uncle OS; define the User OS / Team OS / Platform OS / Company OS layers; model a banking organization; produce a catalog of deployment/collaboration patterns; identify gaps and",
+      "tags": [
+        "spec:payments/settlement-finality",
+        "spec:communications/delivery-reliability"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "762",
+      "label": "Uncle OS — the Federated Company / Platform / Team OS",
+      "norm_label": "uncle os — the federated company / platform / team os",
+      "repo": "uncle-os",
+      "project": ".devlocal",
+      "path": ".devlocal/research/2026-07-22-uncle-os-company-os-starter.md",
+      "name": "2026-07-22-uncle-os-company-os-starter",
+      "title": "Uncle OS — the Federated Company / Platform / Team OS",
+      "summary": "\u003e Documentation of **what is**, per the `/uncle-dev-research` contract. No critiques or recommendations.",
+      "tags": [
+        "[uncle-os",
+        "company-os",
+        "federation",
+        "governance",
+        "ontology",
+        "reference]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "763",
+      "label": "Recommendation: local-search as the Local-First Knowledge Graph for Distributed Sources",
+      "norm_label": "recommendation: local-search as the local-first knowledge graph for distributed sources",
+      "repo": "uncle-os",
+      "project": ".devlocal",
+      "path": ".devlocal/research/2026-07-22-knowledge-graph-recommendation.md",
+      "name": "2026-07-22-knowledge-graph-recommendation",
+      "title": "Recommendation: local-search as the Local-First Knowledge Graph for Distributed Sources",
+      "summary": "- **Date:** 2026-07-22 - **Companion to:** `2026-07-22-knowledge-graph-primary-architecture.md` (ground-truth research) - **Naming note (2026-07-22):** This design was originally drafted under the working name `kg` (a hypothetical new binary). After code review of `/Users/javierbenavides/others/metu",
+      "tags": [
+        "link:target",
+        "link:name",
+        "link:x"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "764",
+      "label": "Uncle OS — the Federated Company / Platform / Team OS",
+      "norm_label": "uncle os — the federated company / platform / team os",
+      "repo": "uncle-os",
+      "project": ".devlocal",
+      "path": ".devlocal/research/2026-07-22-uncle-os-company-os-starter copy.md",
+      "name": "2026-07-22-uncle-os-company-os-starter copy",
+      "title": "Uncle OS — the Federated Company / Platform / Team OS",
+      "summary": "\u003e Documentation of **what is**, per the `/uncle-dev-research` contract. No critiques or recommendations.",
+      "tags": [
+        "[uncle-os",
+        "company-os",
+        "federation",
+        "governance",
+        "ontology",
+        "reference]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "765",
+      "label": "company-os Starter Kit",
+      "norm_label": "company-os starter kit",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/README.md",
+      "name": "README",
+      "title": "company-os Starter Kit",
+      "summary": "Reference implementation of the Federated Company / Platform / Team OS: tiered governance (mandatory / default / guidance), canonical skills, a guiding CLI, validation gates, and a fully worked example.",
+      "tags": [
+        "[doc/company-os-starter",
+        "kind/readme]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "766",
+      "label": "CLAUDE.md",
+      "norm_label": "claude.md",
+      "repo": "uncle-os",
+      "project": "_root",
+      "path": "CLAUDE.md",
+      "name": "CLAUDE",
+      "title": "CLAUDE.md",
+      "summary": "This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.",
+      "file_type": "md"
+    },
+    {
+      "id": "769",
+      "label": "The Minimal Frontmatter Core",
+      "norm_label": "the minimal frontmatter core",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/docs/FRONTMATTER-CORE.md",
+      "name": "FRONTMATTER-CORE",
+      "title": "The Minimal Frontmatter Core",
+      "summary": "The smallest field set a Markdown document needs to participate in the operating system. This core — not the document's section structure — is the whole interop contract between teams, the company layer, `graph build`, `validate`, Obsidian, and any other tool that reads Markdown + YAML frontmatter.",
+      "tags": [
+        "[doc/company-os-starter",
+        "kind/frontmatter-core]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "770",
+      "label": "Golden Path: from an empty directory to a completed change",
+      "norm_label": "golden path: from an empty directory to a completed change",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/docs/GOLDEN-PATH.md",
+      "name": "GOLDEN-PATH",
+      "title": "Golden Path: from an empty directory to a completed change",
+      "summary": "This is the shortest route through `company-os`, start to finish, on a workspace **you** scaffold — no example repo required. Every command below was executed against the reference CLI in `bin/company-os`; the `next:` lines are quoted verbatim from what the CLI prints, so you can follow the tool ins",
+      "tags": [
+        "[doc/company-os-starter",
+        "kind/golden-path]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "773",
+      "label": "Tutorial: From Idea to Archived PRD with `company-os`",
+      "norm_label": "tutorial: from idea to archived prd with `company-os`",
+      "repo": "uncle-os",
+      "project": "_root",
+      "path": "TUTORIAL.md",
+      "name": "TUTORIAL",
+      "title": "Tutorial: From Idea to Archived PRD with `company-os`",
+      "summary": "This walkthrough uses the populated example in `examples/workspace/` and the reference CLI in `bin/company-os`. Every command and output below was executed against this kit — you can reproduce the whole session.",
+      "tags": [
+        "[doc/company-os-starter",
+        "kind/tutorial]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "774",
+      "label": "Ontology Guide: Defining Meaning, Correlating with Tags, Tracing with EARS `@spec`",
+      "norm_label": "ontology guide: defining meaning, correlating with tags, tracing with ears `@spec`",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/docs/ONTOLOGY-GUIDE.md",
+      "name": "ONTOLOGY-GUIDE",
+      "title": "Ontology Guide: Defining Meaning, Correlating with Tags, Tracing with EARS `@spec`",
+      "summary": "**Companion to:** the Federated OS proposal and the `company-os-starter` kit. A worked example lives in `examples/workspace/company-ontology/`.",
+      "tags": [
+        "[doc/company-os-starter",
+        "kind/guide",
+        "ontology/guide]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "782",
+      "label": "Banking Example — Multi-Repo \u0026 Multi-User Pattern Catalog",
+      "norm_label": "banking example — multi-repo \u0026 multi-user pattern catalog",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/README.md",
+      "name": "README",
+      "title": "Banking Example — Multi-Repo \u0026 Multi-User Pattern Catalog",
+      "summary": "Companion to `.devlocal/research/2026-07-22-multi-repo-multi-user-use-cases.md`. Two org profiles built from the same substrate (same layout, same commands):",
+      "file_type": "md"
+    },
+    {
+      "id": "785",
+      "label": "Example: `bank/` — a ~250-person federated bank",
+      "norm_label": "example: `bank/` — a ~250-person federated bank",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/bank/EXAMPLE_README.md",
+      "name": "EXAMPLE_README",
+      "title": "Example: `bank/` — a ~250-person federated bank",
+      "summary": "**What it demonstrates:** patterns P1-P7 and P9 (index in `../README.md`) across three zones:",
+      "file_type": "md"
+    },
+    {
+      "id": "787",
+      "label": "Example: `banking/` — multi-repo \u0026 multi-user pattern catalog",
+      "norm_label": "example: `banking/` — multi-repo \u0026 multi-user pattern catalog",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/EXAMPLE_README.md",
+      "name": "EXAMPLE_README",
+      "title": "Example: `banking/` — multi-repo \u0026 multi-user pattern catalog",
+      "summary": "**What it demonstrates:** the nine collaboration patterns (P1-P9) from the research doc `.devlocal/research/2026-07-22-multi-repo-multi-user-use-cases.md`, staged as two org profiles built from the **same substrate**:",
+      "file_type": "md"
+    },
+    {
+      "id": "789",
+      "label": "Flexibility, Skills, and Role Views for the Federated OS",
+      "norm_label": "flexibility, skills, and role views for the federated os",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/docs/01-flexibility-skills-and-role-views.md",
+      "name": "01-flexibility-skills-and-role-views",
+      "title": "Flexibility, Skills, and Role Views for the Federated OS",
+      "summary": "**Companion to:** Federated Company, Platform, and Team Operating System (OKF v0.1) **Purpose:** Define how teams get flexibility without breaking the standard, how skills/commands/scripts guide users through the canonical process, and what the system looks like for each role.",
+      "tags": [
+        "[doc/company-os-starter",
+        "kind/proposal]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "790",
+      "label": "Federation Runbook: Running Company OS Across Many Repos",
+      "norm_label": "federation runbook: running company os across many repos",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/docs/FEDERATION-RUNBOOK.md",
+      "name": "FEDERATION-RUNBOOK",
+      "title": "Federation Runbook: Running Company OS Across Many Repos",
+      "summary": "This is the day-2 operations manual for **federated mode** — one governance view composed from many Git repositories, without submodules and without copying files by hand. It satisfies `GPF-R-7.8` and covers the four flows that federation adds to the golden path: **pin bump → sync → resolve → commit",
+      "tags": [
+        "[doc/company-os-starter",
+        "kind/runbook]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "791",
+      "label": "Tutorial: From Idea to Archived PRD with `company-os`",
+      "norm_label": "tutorial: from idea to archived prd with `company-os`",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/docs/TUTORIAL.md",
+      "name": "TUTORIAL",
+      "title": "Tutorial: From Idea to Archived PRD with `company-os`",
+      "summary": "This walkthrough uses the populated example in `examples/workspace/` and the reference CLI in `bin/company-os`. Every command and output below was executed against this kit — you can reproduce the whole session.",
+      "tags": [
+        "[doc/company-os-starter",
+        "kind/tutorial]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "792",
+      "label": "Initiative: Instant Refunds",
+      "norm_label": "initiative: instant refunds",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/bank/initiatives/instant-refunds/initiative.md",
+      "name": "initiative",
+      "title": "Initiative: Instant Refunds",
+      "summary": "Today the CLI has NO cross-platform artifact: this work decomposes into one PRD per platform, each validated/completed independently against its own platform (`prd new --platform \u003cp\u003e`). This file models the proposed lightweight initiative doc: it references member PRDs by platform + path (IDs canoni",
+      "tags": [
+        "[kind/initiative]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "793",
+      "label": "Context Map: Payments -\u003e Fraud",
+      "norm_label": "context map: payments -\u003e fraud",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/bank/repos/company-ontology/context-maps/fraud-to-payments.md",
+      "name": "fraud-to-payments",
+      "title": "Context Map: Payments -\u003e Fraud",
+      "summary": "| Payments term | Fraud term | Translation rule | |---|---|---| | Payment Order | Transaction | A Payment Order becomes a Transaction when emitted to the screening stream | | Settlement | (not modeled) | Fraud screens pre-settlement only |",
+      "tags": [
+        "[ontology/context-map]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "794",
+      "label": "Instant Transfer (capability)",
+      "norm_label": "instant transfer (capability)",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/bank/repos/company-ontology/concepts/capability--instant-transfer.md",
+      "name": "capability--instant-transfer",
+      "title": "Instant Transfer (capability)",
+      "summary": "The ability to execute a Payment Order over an instant rail with Settlement confirmed to the debtor within seconds, and status observable end to end. Vocabulary is bound to `context://payments` — this doc says \"Payment Order\", never \"Transaction\" (see `contexts/payments.md` forbiddenTerms).",
+      "tags": [
+        "[context/payments",
+        "ontology/capability",
+        "ontology/concept]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "795",
+      "label": "Bounded Context: Payments",
+      "norm_label": "bounded context: payments",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/bank/repos/company-ontology/contexts/payments.md",
+      "name": "payments",
+      "title": "Bounded Context: Payments",
+      "summary": "Same word, different meaning: what Fraud calls a \"Transaction\" is an observed event; Payments reasons about Payment Orders and Settlements. Canonical docs declaring `boundedContext: context://payments` are vocabulary-linted against this list (`validate --ontology`, roadmap).",
+      "tags": [
+        "[ontology/context]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "796",
+      "label": "Federated Company, Platform, and Team Operating System",
+      "norm_label": "federated company, platform, and team operating system",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/docs/00-original-proposal.md",
+      "name": "00-original-proposal",
+      "title": "Federated Company, Platform, and Team Operating System",
+      "summary": "**Documentation standard: Google Open Knowledge Format (OKF) v0.1**",
+      "file_type": "md"
+    },
+    {
+      "id": "797",
+      "label": "Bounded Context: Fraud",
+      "norm_label": "bounded context: fraud",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/bank/repos/company-ontology/contexts/fraud.md",
+      "name": "fraud",
+      "title": "Bounded Context: Fraud",
+      "summary": "Owns \"Transaction\". Cross-context translation with Payments is defined in `context-maps/fraud-to-payments.md` — never redefine terms locally.",
+      "tags": [
+        "[ontology/context]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "798",
+      "label": "Card Issuing — Current Behavior",
+      "norm_label": "card issuing — current behavior",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/bank/repos/platform-cards/reality/components/card-issuing.md",
+      "name": "card-issuing",
+      "title": "Card Issuing — Current Behavior",
+      "summary": "Issues virtual and physical cards; exposes tokenized card references consumed by Fraud screening and Customer Service case desk.",
+      "tags": [
+        "[authority/canonical",
+        "component/card-issuing",
+        "kind/reality",
+        "platform/cards]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "799",
+      "label": "Developer onboarding (bank)",
+      "norm_label": "developer onboarding (bank)",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/bank/repos/company-os/onboarding/developer.md",
+      "name": "developer",
+      "title": "Developer onboarding (bank)",
+      "summary": "Company-wide orientation: governance tiers (mandatory / default / guidance), the change lifecycle (discovery -\u003e PRD -\u003e reality update), data-residency as the non-negotiable outermost control, and how your team workspace materializes platform slices via `workspace sync`. Domain vocabulary is owned by",
+      "tags": [
+        "[kind/onboarding",
+        "role/developer]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "800",
+      "label": "PRD: Instant refunds — card disputes",
+      "norm_label": "prd: instant refunds — card disputes",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/bank/repos/platform-cards/change-records/active/2026-instant-refunds-disputes/prd.md",
+      "name": "prd",
+      "title": "PRD: Instant refunds — card disputes",
+      "summary": "A won dispute today credits the card in 2-3 days via the legacy batch. The initiative commits an instant refund the moment a dispute is resolved.",
+      "tags": [
+        "[component/card-issuing",
+        "kind/prd",
+        "platform/cards",
+        "status/proposed",
+        "team/cards-issuing]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "801",
+      "label": "log",
+      "norm_label": "log",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/bank/repos/platform-fraud/log.md",
+      "name": "log",
+      "title": "log",
+      "summary": "- 2026-07-20: PRD `2026-alert-triage-queues` completed and archived; outcome review due 2026-10-18",
+      "file_type": "md"
+    },
+    {
+      "id": "802",
+      "label": "Transaction Screening — Current Behavior",
+      "norm_label": "transaction screening — current behavior",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/bank/repos/platform-fraud/reality/components/transaction-screening.md",
+      "name": "transaction-screening",
+      "title": "Transaction Screening — Current Behavior",
+      "summary": "Consumes PaymentOrderAccepted events (translated to Transactions at the boundary per `map://payments--fraud`), scores them, raises Alerts into Cases.",
+      "tags": [
+        "[authority/canonical",
+        "component/transaction-screening",
+        "kind/reality",
+        "platform/fraud]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "803",
+      "label": "log",
+      "norm_label": "log",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/bank/repos/platform-payments/log.md",
+      "name": "log",
+      "title": "log",
+      "summary": "- 2026-07-21: PRD `2026-instant-refunds-rails` proposed (initiative://instant-refunds)",
+      "file_type": "md"
+    },
+    {
+      "id": "804",
+      "label": "Outcome review: Priority queues for alert triage",
+      "norm_label": "outcome review: priority queues for alert triage",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/bank/repos/platform-fraud/archive/prds/2026-alert-triage-queues/outcome.md",
+      "name": "outcome",
+      "title": "Outcome review: Priority queues for alert triage",
+      "tags": [
+        "[kind/outcome",
+        "platform/fraud",
+        "prd/2026-alert-triage-queues",
+        "status/pending]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "805",
+      "label": "PRD: Instant refunds — payments rails",
+      "norm_label": "prd: instant refunds — payments rails",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/bank/repos/platform-payments/change-records/active/2026-instant-refunds-rails/prd.md",
+      "name": "prd",
+      "title": "PRD: Instant refunds — payments rails",
+      "summary": "Refunds settle in 2-3 business days; 62% of refund-related CS Cases are pure status inquiries. The instant-refunds initiative commits to seconds, not days.",
+      "tags": [
+        "[component/payment-gateway",
+        "component/settlement-engine",
+        "kind/prd",
+        "platform/payments"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "806",
+      "label": "PRD: Priority queues for alert triage",
+      "norm_label": "prd: priority queues for alert triage",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/bank/repos/platform-fraud/archive/prds/2026-alert-triage-queues/prd.md",
+      "name": "prd",
+      "title": "PRD: Priority queues for alert triage",
+      "summary": "High-risk Alerts dispositioned in 6.4h median against a 2h SLA; single FIFO queue is 71% low-risk noise.",
+      "tags": [
+        "[component/transaction-screening",
+        "discovery/2026-alert-triage-queues",
+        "kind/prd"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "807",
+      "label": "PRD: Instant refunds — servicing view",
+      "norm_label": "prd: instant refunds — servicing view",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/bank/repos/platform-customer-service/change-records/active/2026-instant-refunds-servicing/prd.md",
+      "name": "prd",
+      "title": "PRD: Instant refunds — servicing view",
+      "summary": "Agents cannot see refund status; 62% of refund Cases are status inquiries the customer could self-serve if status were visible.",
+      "tags": [
+        "[component/case-desk",
+        "kind/prd",
+        "platform/customer-service",
+        "status/proposed",
+        "team/cs-servicing]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "808",
+      "label": "Payment Gateway — Current Behavior",
+      "norm_label": "payment gateway — current behavior",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/bank/repos/platform-payments/reality/components/payment-gateway.md",
+      "name": "payment-gateway",
+      "title": "Payment Gateway — Current Behavior",
+      "summary": "Accepts Payment Orders over API, routes to SEPA and instant rails, emits PaymentOrderAccepted events consumed by Fraud screening. Settlement status is queryable per order.",
+      "tags": [
+        "[authority/canonical",
+        "component/payment-gateway",
+        "kind/reality",
+        "platform/payments]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "809",
+      "label": "Creating a PRD (payments platform copy)",
+      "norm_label": "creating a prd (payments platform copy)",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/bank/repos/platform-payments/skills/creating-prd.SKILL.md",
+      "name": "creating-prd.SKILL",
+      "title": "Creating a PRD (payments platform copy)",
+      "summary": "1. (mandatory) Scaffold from the validated discovery — never copy an old PRD: `company-os prd new --team \u003cteam\u003e --platform payments \\ --components \u003cid,...\u003e --from-discovery \u003cdiscovery-id\u003e` 2. (mandatory) Set `decisionOwner` in the frontmatter. 3. (mandatory) Write **Proposed change** as the future R",
+      "tags": [
+        "[authority/canonical",
+        "platform/payments]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "810",
+      "label": "What `workspace sync` would materialize here",
+      "norm_label": "what `workspace sync` would materialize here",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/bank/workspaces/team-fraud-detection/SYNC-NOTE.md",
+      "name": "SYNC-NOTE",
+      "title": "What `workspace sync` would materialize here",
+      "summary": "This sample commits only the team's own writable content. Running `company-os workspace sync` against real repos would additionally materialize read-only slices from `../../repos/`:",
+      "file_type": "md"
+    },
+    {
+      "id": "811",
+      "label": "fraud-detection",
+      "norm_label": "fraud-detection",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/bank/workspaces/team-fraud-detection/teams/fraud-detection/CLAUDE.md",
+      "name": "CLAUDE",
+      "title": "fraud-detection",
+      "summary": "_Hand-owned context. The block below is generated by `company-os graph build` — edit outside the markers only._",
+      "file_type": "md"
+    },
+    {
+      "id": "812",
+      "label": "Discovery: Priority queues for alert triage",
+      "norm_label": "discovery: priority queues for alert triage",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/bank/workspaces/team-fraud-detection/teams/fraud-detection/product/discovery/2026-alert-triage-queues/brief.md",
+      "name": "brief",
+      "title": "Discovery: Priority queues for alert triage",
+      "summary": "Median time-to-disposition for high-risk Alerts was 6.4h in Q2 (SLA: 2h). Analysts triage a single FIFO queue; 71% of the queue is low-risk noise.",
+      "tags": [
+        "[kind/discovery",
+        "status/validated",
+        "team/fraud-detection]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "813",
+      "label": "Priya — screening review checklist (personal)",
+      "norm_label": "priya — screening review checklist (personal)",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/bank/workspaces/team-fraud-detection/teams/fraud-detection/scratchpad/personal-rules/priya-review-checklist.md",
+      "name": "priya-review-checklist",
+      "title": "Priya — screening review checklist (personal)",
+      "summary": "P1: personal rules are per-workspace and git-ignored (`scratchpad init`). Priya also works in the team-payments-rails workspace; anything worth sharing gets promoted scratchpad -\u003e team skill -\u003e PR, never referenced across repos.",
+      "tags": [
+        "[authority/personal",
+        "kind/personal-rule]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "814",
+      "label": "definition-of-done",
+      "norm_label": "definition-of-done",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/bank/workspaces/team-fraud-detection/teams/fraud-detection/standards/definition-of-done.md",
+      "name": "definition-of-done",
+      "title": "definition-of-done",
+      "summary": "- Implementation complete, tests pass, peer review done. - `@spec` markers cover every mandatory clause the change touches. - Representation of Reality docs updated (the done-gate checks this). - If the legacy-engine exception was touched, its compensating controls re-verified.",
+      "tags": [
+        "[team/fraud-detection]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "815",
+      "label": "definition-of-ready",
+      "norm_label": "definition-of-ready",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/bank/workspaces/team-fraud-detection/teams/fraud-detection/standards/definition-of-ready.md",
+      "name": "definition-of-ready",
+      "title": "definition-of-ready",
+      "summary": "- The problem is stated in Fraud vocabulary (Transaction, Alert, Case, Disposition — see context://fraud). - Expected effect on false-negative rate is stated. - Affected components and consumed platform clauses are identified. - Acceptance criteria are testable.",
+      "tags": [
+        "[team/fraud-detection]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "816",
+      "label": "payments-rails",
+      "norm_label": "payments-rails",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/bank/workspaces/team-payments-rails/teams/payments-rails/CLAUDE.md",
+      "name": "CLAUDE",
+      "title": "payments-rails",
+      "summary": "_Hand-owned context. The block below is generated by `company-os graph build` — edit outside the markers only._",
+      "file_type": "md"
+    },
+    {
+      "id": "817",
+      "label": "Example: `small-company/` — pattern P8, the ~10-person startup",
+      "norm_label": "example: `small-company/` — pattern p8, the ~10-person startup",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/small-company/EXAMPLE_README.md",
+      "name": "EXAMPLE_README",
+      "title": "Example: `small-company/` — pattern P8, the ~10-person startup",
+      "summary": "**What it demonstrates:** the minimum honest deployment. One monorepo workspace, **no `workspace.yaml`** (federation is manifest-optional: no manifest, zero federation overhead), one platform (`product`), one team (`core`), a four-entry ID registry, and a two-control company baseline.",
+      "file_type": "md"
+    },
+    {
+      "id": "818",
+      "label": "company-ontology",
+      "norm_label": "company-ontology",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/small-company/company-ontology/CLAUDE.md",
+      "name": "CLAUDE",
+      "title": "company-ontology",
+      "summary": "_Hand-owned context. The block below is generated by `company-os graph build` — edit outside the markers only._",
+      "file_type": "md"
+    },
+    {
+      "id": "819",
+      "label": "company-os",
+      "norm_label": "company-os",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/small-company/company-os/CLAUDE.md",
+      "name": "CLAUDE",
+      "title": "company-os",
+      "summary": "_Hand-owned context. The block below is generated by `company-os graph build` — edit outside the markers only._",
+      "file_type": "md"
+    },
+    {
+      "id": "820",
+      "label": "log",
+      "norm_label": "log",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/small-company/platforms/product/log.md",
+      "name": "log",
+      "title": "log",
+      "summary": "- 2026-07-17: PRD `2026-instant-statements` proposed (from discovery 2026-instant-statements)",
+      "file_type": "md"
+    },
+    {
+      "id": "821",
+      "label": "product",
+      "norm_label": "product",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/small-company/platforms/product/CLAUDE.md",
+      "name": "CLAUDE",
+      "title": "product",
+      "summary": "_Hand-owned context. The block below is generated by `company-os graph build` — edit outside the markers only._",
+      "file_type": "md"
+    },
+    {
+      "id": "822",
+      "label": "PRD: Instant statement downloads",
+      "norm_label": "prd: instant statement downloads",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/small-company/platforms/product/change-records/active/2026-instant-statements/prd.md",
+      "name": "prd",
+      "title": "PRD: Instant statement downloads",
+      "summary": "31% of June support email was \"where is my statement PDF?\"; statements only exist after the nightly batch runs.",
+      "tags": [
+        "[component/banking-app",
+        "discovery/2026-instant-statements",
+        "kind/prd",
+        "platform/product"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "823",
+      "label": "Banking App — Current Behavior",
+      "norm_label": "banking app — current behavior",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/small-company/platforms/product/reality/components/banking-app.md",
+      "name": "banking-app",
+      "title": "Banking App — Current Behavior",
+      "summary": "Single web app: accounts, transfers, statements. Deployed daily; feature flags gate unreleased work. One team (core) wears all hats — the PO, lead, and developers are the same five people using `today --role` to switch views.",
+      "tags": [
+        "[authority/canonical",
+        "component/banking-app",
+        "kind/reality",
+        "platform/product]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "824",
+      "label": "core",
+      "norm_label": "core",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/small-company/teams/core/CLAUDE.md",
+      "name": "CLAUDE",
+      "title": "core",
+      "summary": "_Hand-owned context. The block below is generated by `company-os graph build` — edit outside the markers only._",
+      "file_type": "md"
+    },
+    {
+      "id": "825",
+      "label": "definition-of-done",
+      "norm_label": "definition-of-done",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/small-company/teams/core/standards/definition-of-done.md",
+      "name": "definition-of-done",
+      "title": "definition-of-done",
+      "summary": "- Implementation complete, tests pass, peer review done. - The PR description tells the story (our change-log deviation). - The Representation of Reality doc is updated.",
+      "tags": [
+        "[team/core]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "826",
+      "label": "Discovery: Instant statement downloads",
+      "norm_label": "discovery: instant statement downloads",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/small-company/teams/core/product/discovery/2026-instant-statements/brief.md",
+      "name": "brief",
+      "title": "Discovery: Instant statement downloads",
+      "summary": "31% of support email in June was \"where is my statement PDF?\" (87 of 280 messages). Statements are generated nightly; users opening the app during the day see nothing for the current period.",
+      "tags": [
+        "[kind/discovery",
+        "status/validated",
+        "team/core]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "827",
+      "label": "Example: `federated/` — a real multi-repo workspace fixture (Phase 4, Option B)",
+      "norm_label": "example: `federated/` — a real multi-repo workspace fixture (phase 4, option b)",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/federated/EXAMPLE_README.md",
+      "name": "EXAMPLE_README",
+      "title": "Example: `federated/` — a real multi-repo workspace fixture (Phase 4, Option B)",
+      "summary": "**What it demonstrates:** the federation machinery with **real, verifiable hashes**. The `communications` platform is declared in `workspace.yaml` as a read-only governance slice pulled from a separate repo, pinned by commit (`714635868b00…`). `workspace.lock.yaml` records the resolved commit, a sli",
+      "file_type": "md"
+    },
+    {
+      "id": "828",
+      "label": "definition-of-ready",
+      "norm_label": "definition-of-ready",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/banking/small-company/teams/core/standards/definition-of-ready.md",
+      "name": "definition-of-ready",
+      "title": "definition-of-ready",
+      "summary": "- The problem and expected outcome are clear. - Someone on the team of five can own it end to end. - It fits in one week; otherwise split it.",
+      "tags": [
+        "[team/core]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "829",
+      "label": "company-ontology",
+      "norm_label": "company-ontology",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/federated/company-ontology/CLAUDE.md",
+      "name": "CLAUDE",
+      "title": "company-ontology",
+      "summary": "_Hand-owned context. The block below is generated by `company-os graph build` — edit outside the markers only._",
+      "file_type": "md"
+    },
+    {
+      "id": "830",
+      "label": "Component",
+      "norm_label": "component",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/federated/company-ontology/concepts/component.md",
+      "name": "component",
+      "title": "Component",
+      "summary": "A deployable or maintainable unit of software with a single accountable team. A component may relate to several platforms (`belongs-to`, `supports`, `publishes-to`) but has exactly one canonical descriptor, which is the single source of truth for its relationships and ownership.",
+      "tags": [
+        "[ontology/concept]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "831",
+      "label": "Message Delivery (capability)",
+      "norm_label": "message delivery (capability)",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/federated/company-ontology/concepts/capability--message-delivery.md",
+      "name": "capability--message-delivery",
+      "title": "Message Delivery (capability)",
+      "summary": "The ability to deliver a message to a recipient over a channel with observable delivery status and recoverable failures.",
+      "tags": [
+        "[context/communications",
+        "ontology/capability",
+        "ontology/concept]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "832",
+      "label": "communications",
+      "norm_label": "communications",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/federated/platforms/communications/CLAUDE.md",
+      "name": "CLAUDE",
+      "title": "communications",
+      "summary": "_Hand-owned context. The block below is generated by `company-os graph build` — edit outside the markers only._",
+      "file_type": "md"
+    },
+    {
+      "id": "833",
+      "label": "Context Map: CRM -\u003e Communications",
+      "norm_label": "context map: crm -\u003e communications",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/federated/company-ontology/context-maps/crm-to-communications.md",
+      "name": "crm-to-communications",
+      "title": "Context Map: CRM -\u003e Communications",
+      "summary": "| CRM term | Communications term | Translation rule | |---|---|---| | Customer | Recipient | A Customer becomes a Recipient when subscribed to \u003e=1 Channel | | Contact preference | Channel subscription | Preferences project onto per-channel subscriptions |",
+      "tags": [
+        "[ontology/context-map]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "834",
+      "label": "Bounded Context: Communications",
+      "norm_label": "bounded context: communications",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/federated/company-ontology/contexts/communications.md",
+      "name": "communications",
+      "title": "Bounded Context: Communications",
+      "summary": "One model, one vocabulary. Documents whose frontmatter declares `boundedContext: context://communications` must use this ubiquitous language. `company-os validate --ontology` flags forbidden terms in canonical docs.",
+      "tags": [
+        "[ontology/context]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "835",
+      "label": "company-os",
+      "norm_label": "company-os",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/federated/company-os/CLAUDE.md",
+      "name": "CLAUDE",
+      "title": "company-os",
+      "summary": "_Hand-owned context. The block below is generated by `company-os graph build` — edit outside the markers only._",
+      "file_type": "md"
+    },
+    {
+      "id": "836",
+      "label": "Developer onboarding (company)",
+      "norm_label": "developer onboarding (company)",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/federated/company-os/onboarding/developer.md",
+      "name": "developer",
+      "title": "Developer onboarding (company)",
+      "summary": "Company-wide orientation for developers: how governance tiers work (mandatory / default / guidance), the change lifecycle (discovery → PRD → reality update), and where the validate gates draw the line. Team-specific quirks live in each team's own onboarding guide.",
+      "tags": [
+        "[kind/onboarding",
+        "role/developer]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "837",
+      "label": "Customer Notification Service — Current Behavior",
+      "norm_label": "customer notification service — current behavior",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/federated/platforms/communications/reality/components/customer-notification-service.md",
+      "name": "customer-notification-service",
+      "title": "Customer Notification Service — Current Behavior",
+      "summary": "Delivers templated outbound customer notifications over email and push. Supports delivery tracking, retries with idempotency keys, and enforcement of customer channel preferences.",
+      "tags": [
+        "[authority/canonical",
+        "component/customer-notification-service",
+        "kind/reality"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "838",
+      "label": "Creating a PRD",
+      "norm_label": "creating a prd",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/federated/platforms/communications/skills/creating-prd.SKILL.md",
+      "name": "creating-prd.SKILL",
+      "title": "Creating a PRD",
+      "summary": "1. (mandatory) Scaffold from the validated discovery — never copy an old PRD: `company-os prd new --team \u003cteam\u003e --platform \u003cplatform\u003e \\ --components \u003cid,...\u003e --from-discovery \u003cdiscovery-id\u003e` This injects the governance snapshot for the affected components, including any approved team deviations. 2. ",
+      "tags": [
+        "[authority/canonical",
+        "platform/communications]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "839",
+      "label": "customer-engagement",
+      "norm_label": "customer-engagement",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/federated/teams/customer-engagement/CLAUDE.md",
+      "name": "CLAUDE",
+      "title": "customer-engagement",
+      "summary": "_Hand-owned context. The block below is generated by `company-os graph build` — edit outside the markers only._",
+      "file_type": "md"
+    },
+    {
+      "id": "840",
+      "label": "Developer onboarding (Customer Engagement)",
+      "norm_label": "developer onboarding (customer engagement)",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/federated/teams/customer-engagement/onboarding/developer.md",
+      "name": "developer",
+      "title": "Developer onboarding (Customer Engagement)",
+      "summary": "This team's local quirks: the PRD-structure deviation we run, our Definition of Ready/Done, and the customer-notification-service reality doc you will most often update. Read the company developer guide first for the governance model.",
+      "tags": [
+        "[kind/onboarding",
+        "role/developer",
+        "team/customer-engagement]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "841",
+      "label": "Discovery: Per-channel quiet hours",
+      "norm_label": "discovery: per-channel quiet hours",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/federated/teams/customer-engagement/product/discovery/2026-per-channel-quiet-hours/brief.md",
+      "name": "brief",
+      "title": "Discovery: Per-channel quiet hours",
+      "summary": "412 support tickets in Q2 about notifications arriving at night. Opt-out rate for push is 3x email; exit surveys cite \"too many pings after hours\".",
+      "tags": [
+        "[kind/discovery",
+        "status/validated",
+        "team/customer-engagement]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "842",
+      "label": "definition-of-done",
+      "norm_label": "definition-of-done",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/federated/teams/customer-engagement/standards/definition-of-done.md",
+      "name": "definition-of-done",
+      "title": "definition-of-done",
+      "summary": "- Implementation is complete and tests pass. - Peer review is complete. - Operational documentation is updated. - Relevant Representation of Reality documents are updated.",
+      "tags": [
+        "[team/customer-engagement]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "843",
+      "label": "definition-of-ready",
+      "norm_label": "definition-of-ready",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/federated/teams/customer-engagement/standards/definition-of-ready.md",
+      "name": "definition-of-ready",
+      "title": "definition-of-ready",
+      "summary": "- The problem and expected outcome are clear. - The affected repositories and components are identified. - Dependencies are known. - Acceptance criteria are testable. - The work is small enough to execute.",
+      "tags": [
+        "[team/customer-engagement]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "844",
+      "label": "federated-golden-validate",
+      "norm_label": "federated-golden-validate",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/federated-golden-validate.txt",
+      "name": "federated-golden-validate",
+      "title": "federated-golden-validate",
+      "summary": "validating workspace \u003cWORKSPACE\u003e",
+      "file_type": "txt"
+    },
+    {
+      "id": "845",
+      "label": "golden-validate",
+      "norm_label": "golden-validate",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/golden-validate.txt",
+      "name": "golden-validate",
+      "title": "golden-validate",
+      "summary": "validating workspace \u003cWORKSPACE\u003e",
+      "file_type": "txt"
+    },
+    {
+      "id": "846",
+      "label": "Example: `standalone-team/` — a single team adopting Team OS alone",
+      "norm_label": "example: `standalone-team/` — a single team adopting team os alone",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/standalone-team/EXAMPLE_README.md",
+      "name": "EXAMPLE_README",
+      "title": "Example: `standalone-team/` — a single team adopting Team OS alone",
+      "summary": "**What it demonstrates:** absence tolerance. One team (`teams/solo/`) uses the methodology with **no** `company-os/`, **no** `platforms/`, **no** `company-ontology/` present. Every command degrades gracefully: missing layers are simply skipped (e.g. `skills list` discovers zero company/platform skil",
+      "file_type": "md"
+    },
+    {
+      "id": "847",
+      "label": "solo",
+      "norm_label": "solo",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/standalone-team/teams/solo/CLAUDE.md",
+      "name": "CLAUDE",
+      "title": "solo",
+      "summary": "_Hand-owned context. The block below is generated by `company-os graph build` — edit outside the markers only._",
+      "file_type": "md"
+    },
+    {
+      "id": "848",
+      "label": "Developer onboarding (Solo Adopters)",
+      "norm_label": "developer onboarding (solo adopters)",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/standalone-team/teams/solo/onboarding/developer.md",
+      "name": "developer",
+      "title": "Developer onboarding (Solo Adopters)",
+      "summary": "A single-team adoption with no platform or company layer. Governance here is whatever the team writes down; validate still checks frontmatter core, tag derivation, and (opt-in) the generated CLAUDE.md node.",
+      "tags": [
+        "[kind/onboarding",
+        "role/developer",
+        "team/solo]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "849",
+      "label": "Example: `workspace/` — the fully worked monorepo workspace",
+      "norm_label": "example: `workspace/` — the fully worked monorepo workspace",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/workspace/EXAMPLE_README.md",
+      "name": "EXAMPLE_README",
+      "title": "Example: `workspace/` — the fully worked monorepo workspace",
+      "summary": "**What it demonstrates:** the complete Company OS / Platform OS / Team OS layout in a single repository — the canonical reference every other example derives its file shapes from. This is also the acceptance path: after changing CLI behavior, run the lifecycle here and confirm `company-os validate` ",
+      "file_type": "md"
+    },
+    {
+      "id": "850",
+      "label": "company-ontology",
+      "norm_label": "company-ontology",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/workspace/company-ontology/CLAUDE.md",
+      "name": "CLAUDE",
+      "title": "company-ontology",
+      "summary": "_Hand-owned context. The block below is generated by `company-os graph build` — edit outside the markers only._",
+      "file_type": "md"
+    },
+    {
+      "id": "851",
+      "label": "Message Delivery (capability)",
+      "norm_label": "message delivery (capability)",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/workspace/company-ontology/concepts/capability--message-delivery.md",
+      "name": "capability--message-delivery",
+      "title": "Message Delivery (capability)",
+      "summary": "The ability to deliver a message to a recipient over a channel with observable delivery status and recoverable failures.",
+      "tags": [
+        "[context/communications",
+        "ontology/capability",
+        "ontology/concept]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "852",
+      "label": "Component",
+      "norm_label": "component",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/workspace/company-ontology/concepts/component.md",
+      "name": "component",
+      "title": "Component",
+      "summary": "A deployable or maintainable unit of software with a single accountable team. A component may relate to several platforms (`belongs-to`, `supports`, `publishes-to`) but has exactly one canonical descriptor, which is the single source of truth for its relationships and ownership.",
+      "tags": [
+        "[ontology/concept]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "853",
+      "label": "Context Map: CRM -\u003e Communications",
+      "norm_label": "context map: crm -\u003e communications",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/workspace/company-ontology/context-maps/crm-to-communications.md",
+      "name": "crm-to-communications",
+      "title": "Context Map: CRM -\u003e Communications",
+      "summary": "| CRM term | Communications term | Translation rule | |---|---|---| | Customer | Recipient | A Customer becomes a Recipient when subscribed to \u003e=1 Channel | | Contact preference | Channel subscription | Preferences project onto per-channel subscriptions |",
+      "tags": [
+        "[ontology/context-map]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "854",
+      "label": "Bounded Context: Communications",
+      "norm_label": "bounded context: communications",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/workspace/company-ontology/contexts/communications.md",
+      "name": "communications",
+      "title": "Bounded Context: Communications",
+      "summary": "One model, one vocabulary. Documents whose frontmatter declares `boundedContext: context://communications` must use this ubiquitous language. `company-os validate --ontology` flags forbidden terms in canonical docs.",
+      "tags": [
+        "[ontology/context]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "855",
+      "label": "company-os",
+      "norm_label": "company-os",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/workspace/company-os/CLAUDE.md",
+      "name": "CLAUDE",
+      "title": "company-os",
+      "summary": "_Hand-owned context. The block below is generated by `company-os graph build` — edit outside the markers only._",
+      "file_type": "md"
+    },
+    {
+      "id": "856",
+      "label": "Developer onboarding (company)",
+      "norm_label": "developer onboarding (company)",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/workspace/company-os/onboarding/developer.md",
+      "name": "developer",
+      "title": "Developer onboarding (company)",
+      "summary": "Company-wide orientation for developers: how governance tiers work (mandatory / default / guidance), the change lifecycle (discovery → PRD → reality update), and where the validate gates draw the line. Team-specific quirks live in each team's own onboarding guide.",
+      "tags": [
+        "[kind/onboarding",
+        "role/developer]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "857",
+      "label": "communications",
+      "norm_label": "communications",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/workspace/platforms/communications/CLAUDE.md",
+      "name": "CLAUDE",
+      "title": "communications",
+      "summary": "_Hand-owned context. The block below is generated by `company-os graph build` — edit outside the markers only._",
+      "file_type": "md"
+    },
+    {
+      "id": "858",
+      "label": "Outcome review: Per-channel quiet hours",
+      "norm_label": "outcome review: per-channel quiet hours",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/workspace/platforms/communications/archive/prds/2026-per-channel-quiet-hours/outcome.md",
+      "name": "outcome",
+      "title": "Outcome review: Per-channel quiet hours",
+      "tags": [
+        "[kind/outcome",
+        "platform/communications",
+        "prd/2026-per-channel-quiet-hours",
+        "status/pending]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "859",
+      "label": "PRD: Per-channel quiet hours",
+      "norm_label": "prd: per-channel quiet hours",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/workspace/platforms/communications/archive/prds/2026-per-channel-quiet-hours/prd.md",
+      "name": "prd",
+      "title": "PRD: Per-channel quiet hours",
+      "summary": "412 support tickets in Q2 about notifications arriving at night. Opt-out rate for push is 3x email; exit surveys cite \"too many pings after hours\".",
+      "tags": [
+        "[component/customer-notification-service",
+        "discovery/2026-per-channel-quiet-hours"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "860",
+      "label": "log",
+      "norm_label": "log",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/workspace/platforms/communications/log.md",
+      "name": "log",
+      "title": "log",
+      "summary": "- 2026-07-18: PRD `2026-per-channel-quiet-hours` completed and archived; outcome review due 2026-10-16",
+      "file_type": "md"
+    },
+    {
+      "id": "861",
+      "label": "Customer Notification Service — Current Behavior",
+      "norm_label": "customer notification service — current behavior",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/workspace/platforms/communications/reality/components/customer-notification-service.md",
+      "name": "customer-notification-service",
+      "title": "Customer Notification Service — Current Behavior",
+      "summary": "Delivers templated outbound customer notifications over email and push. Supports delivery tracking, retries with idempotency keys, and enforcement of customer channel preferences.",
+      "tags": [
+        "[authority/canonical",
+        "component/customer-notification-service",
+        "kind/reality"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "862",
+      "label": "Creating a PRD",
+      "norm_label": "creating a prd",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/workspace/platforms/communications/skills/creating-prd.SKILL.md",
+      "name": "creating-prd.SKILL",
+      "title": "Creating a PRD",
+      "summary": "1. (mandatory) Scaffold from the validated discovery — never copy an old PRD: `company-os prd new --team \u003cteam\u003e --platform \u003cplatform\u003e \\ --components \u003cid,...\u003e --from-discovery \u003cdiscovery-id\u003e` This injects the governance snapshot for the affected components, including any approved team deviations. 2. ",
+      "tags": [
+        "[authority/canonical",
+        "platform/communications]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "863",
+      "label": "customer-engagement",
+      "norm_label": "customer-engagement",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/workspace/teams/customer-engagement/CLAUDE.md",
+      "name": "CLAUDE",
+      "title": "customer-engagement",
+      "summary": "_Hand-owned context. The block below is generated by `company-os graph build` — edit outside the markers only._",
+      "file_type": "md"
+    },
+    {
+      "id": "864",
+      "label": "Developer onboarding (Customer Engagement)",
+      "norm_label": "developer onboarding (customer engagement)",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/workspace/teams/customer-engagement/onboarding/developer.md",
+      "name": "developer",
+      "title": "Developer onboarding (Customer Engagement)",
+      "summary": "This team's local quirks: the PRD-structure deviation we run, our Definition of Ready/Done, and the customer-notification-service reality doc you will most often update. Read the company developer guide first for the governance model.",
+      "tags": [
+        "[kind/onboarding",
+        "role/developer",
+        "team/customer-engagement]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "865",
+      "label": "Discovery: Per-channel quiet hours",
+      "norm_label": "discovery: per-channel quiet hours",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/workspace/teams/customer-engagement/product/discovery/2026-per-channel-quiet-hours/brief.md",
+      "name": "brief",
+      "title": "Discovery: Per-channel quiet hours",
+      "summary": "412 support tickets in Q2 about notifications arriving at night. Opt-out rate for push is 3x email; exit surveys cite \"too many pings after hours\".",
+      "tags": [
+        "[kind/discovery",
+        "status/validated",
+        "team/customer-engagement]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "866",
+      "label": "Maria's personal PRD rules (applied ON TOP of the canonical skill)",
+      "norm_label": "maria's personal prd rules (applied on top of the canonical skill)",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/workspace/teams/customer-engagement/scratchpad/personal-rules/maria-prd-style.md",
+      "name": "maria-prd-style",
+      "title": "Maria's personal PRD rules (applied ON TOP of the canonical skill)",
+      "summary": "- Draft the Problem statement as a customer quote first, then generalize. - Always add a \"What we are NOT doing\" line to Out of scope. - Ask my agent to challenge every success metric with \"how could this number lie to us?\" before I fill it in.",
+      "tags": [
+        "[authority/personal",
+        "kind/personal-rule",
+        "process/prd]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "867",
+      "label": "definition-of-done",
+      "norm_label": "definition-of-done",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/workspace/teams/customer-engagement/standards/definition-of-done.md",
+      "name": "definition-of-done",
+      "title": "definition-of-done",
+      "summary": "- Implementation is complete and tests pass. - Peer review is complete. - Operational documentation is updated. - Relevant Representation of Reality documents are updated.",
+      "tags": [
+        "[team/customer-engagement]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "868",
+      "label": "definition-of-ready",
+      "norm_label": "definition-of-ready",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/examples/workspace/teams/customer-engagement/standards/definition-of-ready.md",
+      "name": "definition-of-ready",
+      "title": "definition-of-ready",
+      "summary": "- The problem and expected outcome are clear. - The affected repositories and components are identified. - Dependencies are known. - Acceptance criteria are testable. - The work is small enough to execute.",
+      "tags": [
+        "[team/customer-engagement]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "869",
+      "label": "Schema Reference (contract summary)",
+      "norm_label": "schema reference (contract summary)",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/schemas/SCHEMAS.md",
+      "name": "SCHEMAS",
+      "title": "Schema Reference (contract summary)",
+      "summary": "Machine validation is performed by `company-os validate` and the per-artifact `validate` subcommands. This file is the human-readable contract.",
+      "file_type": "md"
+    },
+    {
+      "id": "870",
+      "label": "Completing a Change",
+      "norm_label": "completing a change",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/skills/completing-a-change/SKILL.md",
+      "name": "SKILL",
+      "title": "Completing a Change",
+      "summary": "A change is NOT done when the code merges. It is done when reality is updated.",
+      "tags": [
+        "[authority/canonical",
+        "kind/skill",
+        "process/change-completion]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "871",
+      "label": "Outcome review: \u003cTitle\u003e",
+      "norm_label": "outcome review: \u003ctitle\u003e",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/templates/outcome-review.md",
+      "name": "outcome-review",
+      "title": "Outcome review: \u003cTitle\u003e",
+      "summary": "| Metric | Target | Actual | |---|---|---|",
+      "tags": [
+        "[kind/outcome]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "872",
+      "label": "Discovery: \u003cTitle\u003e",
+      "norm_label": "discovery: \u003ctitle\u003e",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/templates/discovery-brief.md",
+      "name": "discovery-brief",
+      "title": "Discovery: \u003cTitle\u003e",
+      "summary": "\u003c!-- Evidence that triggered this: tickets, metrics, stakeholder ask. Mandatory. --\u003e",
+      "tags": [
+        "[kind/discovery]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "874",
+      "label": "\u003cSkill title\u003e",
+      "norm_label": "\u003cskill title\u003e",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/templates/SKILL-template.md",
+      "name": "SKILL-template",
+      "title": "\u003cSkill title\u003e",
+      "summary": "\u003c!-- Numbered steps. Mark each step (mandatory) / (default) / (guidance). Agents apply personal rules from scratchpad/personal-rules/ ON TOP of this skill; mandatory steps always win over personal rules. --\u003e",
+      "tags": [
+        "[authority/canonical",
+        "kind/skill]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "875",
+      "label": "\u003cDecision title\u003e",
+      "norm_label": "\u003cdecision title\u003e",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/templates/adr.md",
+      "name": "adr",
+      "title": "\u003cDecision title\u003e",
+      "summary": "\u003c!-- If this decision changes a platform requirement, bump its version and set effectiveFrom + migrationDeadline in governance/requirements.yaml. --\u003e",
+      "tags": [
+        "[kind/adr]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "876",
+      "label": "Running Discovery",
+      "norm_label": "running discovery",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/skills/running-discovery/SKILL.md",
+      "name": "SKILL",
+      "title": "Running Discovery",
+      "summary": "1. (mandatory) Scaffold — never start from a blank file or an old brief: `company-os discover new \"\u003ctitle\u003e\" --team \u003cteam-id\u003e` 2. (mandatory) Fill **Problem signal** with evidence, not opinion. Quantify it. 3. (mandatory) Write the **Hypothesis** as: we believe \u003cchange\u003e for \u003cwho\u003e will achieve \u003coutcom",
+      "tags": [
+        "[authority/canonical",
+        "kind/skill",
+        "process/discovery]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "877",
+      "label": "Requesting an Exception to a Mandatory Rule",
+      "norm_label": "requesting an exception to a mandatory rule",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/skills/requesting-an-exception/SKILL.md",
+      "name": "SKILL",
+      "title": "Requesting an Exception to a Mandatory Rule",
+      "summary": "Deviations are for `default` rules. Exceptions are for `mandatory` rules, and they are loud, temporary, and owned.",
+      "tags": [
+        "[authority/canonical",
+        "kind/skill",
+        "process/exception]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "878",
+      "label": "\u003cComponent Name\u003e — Current Behavior",
+      "norm_label": "\u003ccomponent name\u003e — current behavior",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/templates/reality-component.md",
+      "name": "reality-component",
+      "title": "\u003cComponent Name\u003e — Current Behavior",
+      "summary": "\u003c!-- Present tense. What the component does TODAY. No history, no plans. --\u003e",
+      "tags": [
+        "[authority/canonical",
+        "kind/reality]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "879",
+      "label": "Templates are examples, not contracts",
+      "norm_label": "templates are examples, not contracts",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/templates/README.md",
+      "name": "README",
+      "title": "Templates are examples, not contracts",
+      "summary": "These files show *one* way to write each artifact. The shared operating-system contract is the **frontmatter core** (`docs/FRONTMATTER-CORE.md`) plus the lifecycle gates — not the section headings below the frontmatter.",
+      "file_type": "md"
+    },
+    {
+      "id": "880",
+      "label": "Creating a PRD",
+      "norm_label": "creating a prd",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/skills/creating-prd/SKILL.md",
+      "name": "SKILL",
+      "title": "Creating a PRD",
+      "summary": "1. (mandatory) Scaffold from the validated discovery — never copy an old PRD: `company-os prd new --team \u003cteam\u003e --platform \u003cplatform\u003e \\ --components \u003cid,...\u003e --from-discovery \u003cdiscovery-id\u003e` This injects the governance snapshot for the affected components, including any approved team deviations. 2. ",
+      "tags": [
+        "[authority/canonical",
+        "kind/skill",
+        "process/prd]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "881",
+      "label": "PRD: \u003cTitle\u003e",
+      "norm_label": "prd: \u003ctitle\u003e",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/templates/prd.md",
+      "name": "prd",
+      "title": "PRD: \u003cTitle\u003e",
+      "summary": "\u003c!-- Mandatory. Copied from discovery brief when --from-discovery is used. --\u003e",
+      "tags": [
+        "[kind/prd]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "882",
+      "label": "Golden Path, Flavor \u0026 Federation — EARS Specifications",
+      "norm_label": "golden path, flavor \u0026 federation — ears specifications",
+      "repo": "uncle-os",
+      "project": "docs",
+      "path": "docs/ears/golden-path-flavor-federation.md",
+      "name": "golden-path-flavor-federation",
+      "title": "Golden Path, Flavor \u0026 Federation — EARS Specifications",
+      "summary": "Arrow of intent: HLD → LLD → EARS → code/tests. To change a behaviour, update these tables first.",
+      "file_type": "md"
+    },
+    {
+      "id": "883",
+      "label": "Golden Path, Flavor \u0026 Federation — Low-Level Design",
+      "norm_label": "golden path, flavor \u0026 federation — low-level design",
+      "repo": "uncle-os",
+      "project": "docs",
+      "path": "docs/lld/golden-path-flavor-federation.md",
+      "name": "golden-path-flavor-federation",
+      "title": "Golden Path, Flavor \u0026 Federation — Low-Level Design",
+      "summary": "Sources merged: `.devlocal/research/2026-07-22-simplicity-user-journey-review.md`, `.devlocal/research/2026-07-22-custom-templates-and-skills.md`, `.devlocal/research/2026-07-22-multi-repo-workspace-federation.md`.",
+      "file_type": "md"
+    },
+    {
+      "id": "884",
+      "label": "Federation Enrichment — EARS Specifications",
+      "norm_label": "federation enrichment — ears specifications",
+      "repo": "uncle-os",
+      "project": "docs",
+      "path": "docs/ears/federation-enrichment.md",
+      "name": "federation-enrichment",
+      "title": "Federation Enrichment — EARS Specifications",
+      "summary": "Keywords: `THE SYSTEM SHALL` (always-on), `WHEN` (event), `WHILE` (during a state), `IF` (conditional/gate), `WHERE` (context-scoped). \"The system\" = the `company-os` CLI and its validate gate. Units are grouped by build phase. **Committed scope:** Units 0–7. **Deferred (demand-driven, designed not ",
+      "tags": [
+        "[kind/ears",
+        "status/locked]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "885",
+      "label": "Federation Enrichment — High-Level Design",
+      "norm_label": "federation enrichment — high-level design",
+      "repo": "uncle-os",
+      "project": "docs",
+      "path": "docs/hld/federation-enrichment.md",
+      "name": "federation-enrichment",
+      "title": "Federation Enrichment — High-Level Design",
+      "summary": "Port mechanisms proven in the public Team OS example repo (Forge) into `company-os-starter/`, each placed at the federation layer where it naturally lives (company / platform / team), implemented at the **derived + validated** altitude: generators emit structure and indexes, and `company-os validate",
+      "tags": [
+        "[kind/hld",
+        "status/locked]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "886",
+      "label": "original-team-os",
+      "norm_label": "original-team-os",
+      "repo": "uncle-os",
+      "project": "_root",
+      "path": "original-team-os.md",
+      "name": "original-team-os",
+      "title": "original-team-os",
+      "summary": "Building the Team OS: Scaling Product Management with Claude Code",
+      "file_type": "md"
+    },
+    {
+      "id": "887",
+      "label": "Federation Enrichment — Tasks",
+      "norm_label": "federation enrichment — tasks",
+      "repo": "uncle-os",
+      "project": "docs",
+      "path": "docs/tasks/federation-enrichment.md",
+      "name": "federation-enrichment",
+      "title": "Federation Enrichment — Tasks",
+      "summary": "Source of truth: `docs/ears/federation-enrichment.md` (Units 0–7 committed). Architecture constraints: `docs/lld/federation-enrichment.md`. Target: single-file CLI `company-os-starter/bin/company-os`.",
+      "tags": [
+        "[kind/tasks",
+        "status/draft]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "888",
+      "label": "Federation Enrichment — Low-Level Design",
+      "norm_label": "federation enrichment — low-level design",
+      "repo": "uncle-os",
+      "project": "docs",
+      "path": "docs/lld/federation-enrichment.md",
+      "name": "federation-enrichment",
+      "title": "Federation Enrichment — Low-Level Design",
+      "summary": "All changes are confined to `company-os-starter/`. The CLI stays a single self-contained file (`bin/company-os`) with the `die/ok/warn/fail` helpers and the `^---\\n...\\n---\\n` `frontmatter()` parser preserved. Every mutating command keeps printing the next command in the workflow.",
+      "tags": [
+        "[kind/lld",
+        "status/locked]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "889",
+      "label": "Golden Path, Flavor \u0026 Federation — High-Level Design",
+      "norm_label": "golden path, flavor \u0026 federation — high-level design",
+      "repo": "uncle-os",
+      "project": "docs",
+      "path": "docs/hld/golden-path-flavor-federation.md",
+      "name": "golden-path-flavor-federation",
+      "title": "Golden Path, Flavor \u0026 Federation — High-Level Design",
+      "summary": "\u003e Merges three research documents into one spec, framed simplicity-first: \u003e `.devlocal/research/2026-07-22-simplicity-user-journey-review.md` (umbrella), \u003e `.devlocal/research/2026-07-22-custom-templates-and-skills.md`, \u003e `.devlocal/research/2026-07-22-multi-repo-workspace-federation.md`. \u003e \u003e Relate",
+      "file_type": "md"
+    },
+    {
+      "id": "890",
+      "label": "Golden Path, Flavor \u0026 Federation — Tasks",
+      "norm_label": "golden path, flavor \u0026 federation — tasks",
+      "repo": "uncle-os",
+      "project": "docs",
+      "path": "docs/tasks/golden-path-flavor-federation.md",
+      "name": "golden-path-flavor-federation",
+      "title": "Golden Path, Flavor \u0026 Federation — Tasks",
+      "summary": "Source of truth: `docs/ears/golden-path-flavor-federation.md` (Units 1–8, 37 statements). Architecture constraints: `docs/lld/golden-path-flavor-federation.md`. Target: single-file CLI `company-os-starter/bin/company-os`.",
+      "tags": [
+        "[kind/tasks",
+        "status/draft]"
+      ],
+      "file_type": "md"
+    },
+    {
+      "id": "891",
+      "label": "Check your work against governance",
+      "norm_label": "check your work against governance",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/docs/user-guide/how-to/check-your-work-against-governance.md",
+      "name": "check-your-work-against-governance",
+      "title": "Check your work against governance",
+      "summary": "Four commands cover \"what applies to me, and am I meeting it\": `governance resolve`, `governance explain`, `check ready` / `check done`, and `today`.",
+      "file_type": "md"
+    },
+    {
+      "id": "892",
+      "label": "The Company OS user guide",
+      "norm_label": "the company os user guide",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/docs/user-guide/README.md",
+      "name": "README",
+      "title": "The Company OS user guide",
+      "summary": "Company OS is a Git-based operating system for running governance, product, and engineering work as validated Markdown and YAML — not a SaaS app, not a database, just files, a CLI that guides you through them, and a validator that keeps everyone honest. Rules come in tiers (mandatory, default, guida",
+      "file_type": "md"
+    },
+    {
+      "id": "893",
+      "label": "Observer: the knowledge-graph roadmap",
+      "norm_label": "observer: the knowledge-graph roadmap",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/docs/user-guide/explanation/observer-roadmap.md",
+      "name": "observer-roadmap",
+      "title": "Observer: the knowledge-graph roadmap",
+      "summary": "\u003e **Not yet available.** Everything on this page is a design vision, not a \u003e shipped tool. No commands below can be run today. If you came here \u003e looking for something to install, you want \u003e [tutorials/03-search-your-workspace.md](../tutorials/03-search-your-workspace.md) \u003e instead — that's real, wo",
+      "file_type": "md"
+    },
+    {
+      "id": "894",
+      "label": "How it fits together",
+      "norm_label": "how it fits together",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/docs/user-guide/explanation/how-it-fits-together.md",
+      "name": "how-it-fits-together",
+      "title": "How it fits together",
+      "summary": "Four things show up across this guide: Company OS, Team OS, Local Search, and Claude skills. It's easy to read them as four separate tools. They're not — they're layers over one shared substrate.",
+      "file_type": "md"
+    },
+    {
+      "id": "895",
+      "label": "Grow a workspace",
+      "norm_label": "grow a workspace",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/docs/user-guide/how-to/grow-a-workspace.md",
+      "name": "grow-a-workspace",
+      "title": "Grow a workspace",
+      "summary": "Moonbeam Bakery started with one platform (`ordering`) and one team (`web`). Six months later there's a loyalty program, a kitchen-ops team, and three more components. None of that requires restructuring anything you already built — `add` grows the same four peer roots `init` created.",
+      "file_type": "md"
+    },
+    {
+      "id": "896",
+      "label": "Handle a deviation or exception",
+      "norm_label": "handle a deviation or exception",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/docs/user-guide/how-to/handle-a-deviation-or-exception.md",
+      "name": "handle-a-deviation-or-exception",
+      "title": "Handle a deviation or exception",
+      "summary": "Company OS rules come in three tiers: `mandatory`, `default`, and `guidance`. You can't opt out of `mandatory` rules and you don't need to track `guidance` ones — but `default` rules are comply-or-explain, and `mandatory` rules can be excepted through an owned, expiring process. Both are explicit, b",
+      "file_type": "md"
+    },
+    {
+      "id": "897",
+      "label": "Troubleshooting",
+      "norm_label": "troubleshooting",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/docs/user-guide/reference/troubleshooting.md",
+      "name": "troubleshooting",
+      "title": "Troubleshooting",
+      "summary": "Symptom → cause → fix, for both tools. If your symptom isn't here, check the task-specific \"When things go sideways\" table on the relevant how-to page first — this page collects the cross-cutting ones.",
+      "file_type": "md"
+    },
+    {
+      "id": "898",
+      "label": "Run the validation gate",
+      "norm_label": "run the validation gate",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/docs/user-guide/how-to/run-the-validation-gate.md",
+      "name": "run-the-validation-gate",
+      "title": "Run the validation gate",
+      "summary": "`company-os validate` is the one command that checks the whole workspace at once. Run it locally before opening a PR, and wire it into CI so nothing merges that would fail it.",
+      "file_type": "md"
+    },
+    {
+      "id": "899",
+      "label": "Keep Local Search fresh",
+      "norm_label": "keep local search fresh",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/docs/user-guide/how-to/keep-search-fresh.md",
+      "name": "keep-search-fresh",
+      "title": "Keep Local Search fresh",
+      "summary": "Local Search re-checks freshness on every query — git HEAD plus staged/unstaged/untracked changes (respecting `.gitignore`) for git repos, file timestamps for non-git ones. Most of the time you don't need to do anything. This page covers the cases where you do.",
+      "file_type": "md"
+    },
+    {
+      "id": "900",
+      "label": "`company-os` CLI reference",
+      "norm_label": "`company-os` cli reference",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/docs/user-guide/reference/company-os-cli.md",
+      "name": "company-os-cli",
+      "title": "`company-os` CLI reference",
+      "summary": "Extracted directly from `bin/company-os`'s argument parser — every subcommand, flag, and default listed here is what the CLI actually accepts, not an aspiration. Examples use the Moonbeam Bakery workspace from [tutorials/01](../tutorials/01-first-day-with-company-os.md) (team `web`, platform `orderi",
+      "file_type": "md"
+    },
+    {
+      "id": "901",
+      "label": "Running a standalone team (\"Team OS\")",
+      "norm_label": "running a standalone team (\"team os\")",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/docs/user-guide/tutorials/02-running-a-standalone-team.md",
+      "name": "02-running-a-standalone-team",
+      "title": "Running a standalone team (\"Team OS\")",
+      "summary": "Before Moonbeam Bakery was five locations, an online ordering platform, and a `web` team reporting into it, it was one shop. No company layer, no platform, just a couple of people baking and shipping code. This tutorial is that shop's story — and it's also the origin story of the whole system.",
+      "file_type": "md"
+    },
+    {
+      "id": "902",
+      "label": "Take a change from discovery to done",
+      "norm_label": "take a change from discovery to done",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/docs/user-guide/how-to/take-a-change-from-discovery-to-done.md",
+      "name": "take-a-change-from-discovery-to-done",
+      "title": "Take a change from discovery to done",
+      "summary": "The full first-time walkthrough of this loop, with narration and expected output, lives in [tutorials/01-first-day-with-company-os.md](../tutorials/01-first-day-with-company-os.md). This page is the same loop as a repeatable recipe once you already know the shape.",
+      "file_type": "md"
+    },
+    {
+      "id": "903",
+      "label": "First day with Company OS",
+      "norm_label": "first day with company os",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/docs/user-guide/tutorials/01-first-day-with-company-os.md",
+      "name": "01-first-day-with-company-os",
+      "title": "First day with Company OS",
+      "summary": "You're the first person at **Moonbeam Bakery** to bring Company OS in. By the end of this tutorial you'll have a real workspace, a real change moving through discovery → PRD → done, and a green `company-os validate`. Budget about 25 minutes.",
+      "file_type": "md"
+    },
+    {
+      "id": "904",
+      "label": "Search your workspace with Local Search",
+      "norm_label": "search your workspace with local search",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/docs/user-guide/tutorials/03-search-your-workspace.md",
+      "name": "03-search-your-workspace",
+      "title": "Search your workspace with Local Search",
+      "summary": "Moonbeam's `moonbeam-os` workspace is growing — discovery briefs, PRDs, reality docs, ADRs. [Local Search](https://github.com/metuur-ai/local-search) is a fast, offline spec registry built for exactly this: a single Go binary with no runtime dependencies that indexes your project documentation acros",
+      "file_type": "md"
+    },
+    {
+      "id": "905",
+      "label": "Configuration reference",
+      "norm_label": "configuration reference",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/docs/user-guide/reference/configuration.md",
+      "name": "configuration",
+      "title": "Configuration reference",
+      "summary": "Every path and env var these tools actually read — split by tool, and by what's implemented today versus specified-but-not-wired.",
+      "file_type": "md"
+    },
+    {
+      "id": "906",
+      "label": "README",
+      "norm_label": "readme",
+      "repo": "uncle-os",
+      "project": "company-os-starter",
+      "path": "company-os-starter/vendor/README.md",
+      "name": "README",
+      "title": "README",
+      "summary": "PyYAML 6.0.2 — pure-Python subset vendored for the company-os CLI. Only the .py modules are bundled; the optional libyaml C extension is intentionally omitted so this works on any platform with Python 3.9+. Source: https://pyyaml.org/  License: vendor/PyYAML-LICENSE (MIT).",
+      "file_type": "md"
+    }
+  ],
+  "links": [
+    {
+      "source": "839",
+      "target": "863",
+      "weight": 1
+    },
+    {
+      "source": "838",
+      "target": "862",
+      "weight": 1
+    },
+    {
+      "source": "830",
+      "target": "852",
+      "weight": 1
+    },
+    {
+      "source": "833",
+      "target": "853",
+      "weight": 1
+    },
+    {
+      "source": "835",
+      "target": "855",
+      "weight": 1
+    },
+    {
+      "source": "836",
+      "target": "856",
+      "weight": 1
+    },
+    {
+      "source": "843",
+      "target": "868",
+      "weight": 1
+    },
+    {
+      "source": "831",
+      "target": "851",
+      "weight": 1
+    },
+    {
+      "source": "840",
+      "target": "864",
+      "weight": 1
+    },
+    {
+      "source": "841",
+      "target": "865",
+      "weight": 1
+    },
+    {
+      "source": "842",
+      "target": "867",
+      "weight": 1
+    },
+    {
+      "source": "834",
+      "target": "854",
+      "weight": 1
+    },
+    {
+      "source": "829",
+      "target": "850",
+      "weight": 1
+    },
+    {
+      "source": "762",
+      "target": "764",
+      "weight": 1
+    },
+    {
+      "source": "837",
+      "target": "861",
+      "weight": 1
+    },
+    {
+      "source": "773",
+      "target": "791",
+      "weight": 0.9995
+    },
+    {
+      "source": "818",
+      "target": "819",
+      "weight": 0.9974
+    },
+    {
+      "source": "838",
+      "target": "880",
+      "weight": 0.9974
+    },
+    {
+      "source": "862",
+      "target": "880",
+      "weight": 0.9974
+    },
+    {
+      "source": "819",
+      "target": "835",
+      "weight": 0.9534
+    },
+    {
+      "source": "819",
+      "target": "855",
+      "weight": 0.9534
+    },
+    {
+      "source": "818",
+      "target": "835",
+      "weight": 0.9517
+    },
+    {
+      "source": "818",
+      "target": "855",
+      "weight": 0.9517
+    },
+    {
+      "source": "844",
+      "target": "845",
+      "weight": 0.9494
+    },
+    {
+      "source": "832",
+      "target": "857",
+      "weight": 0.9397
+    },
+    {
+      "source": "819",
+      "target": "821",
+      "weight": 0.9291
+    },
+    {
+      "source": "818",
+      "target": "821",
+      "weight": 0.929
+    },
+    {
+      "source": "832",
+      "target": "835",
+      "weight": 0.9218
+    },
+    {
+      "source": "832",
+      "target": "855",
+      "weight": 0.9218
+    },
+    {
+      "source": "829",
+      "target": "835",
+      "weight": 0.897
+    },
+    {
+      "source": "829",
+      "target": "855",
+      "weight": 0.897
+    },
+    {
+      "source": "835",
+      "target": "850",
+      "weight": 0.897
+    },
+    {
+      "source": "850",
+      "target": "855",
+      "weight": 0.897
+    },
+    {
+      "source": "819",
+      "target": "832",
+      "weight": 0.8964
+    },
+    {
+      "source": "818",
+      "target": "832",
+      "weight": 0.8957
+    },
+    {
+      "source": "809",
+      "target": "880",
+      "weight": 0.8932
+    },
+    {
+      "source": "809",
+      "target": "838",
+      "weight": 0.8921
+    },
+    {
+      "source": "809",
+      "target": "862",
+      "weight": 0.8921
+    },
+    {
+      "source": "821",
+      "target": "832",
+      "weight": 0.8873
+    },
+    {
+      "source": "829",
+      "target": "832",
+      "weight": 0.8864
+    },
+    {
+      "source": "832",
+      "target": "850",
+      "weight": 0.8864
+    },
+    {
+      "source": "882",
+      "target": "884",
+      "weight": 0.8859
+    },
+    {
+      "source": "883",
+      "target": "889",
+      "weight": 0.8838
+    },
+    {
+      "source": "821",
+      "target": "835",
+      "weight": 0.879
+    },
+    {
+      "source": "821",
+      "target": "855",
+      "weight": 0.879
+    },
+    {
+      "source": "759",
+      "target": "790",
+      "weight": 0.8781
+    },
+    {
+      "source": "887",
+      "target": "890",
+      "weight": 0.8719
+    },
+    {
+      "source": "818",
+      "target": "829",
+      "weight": 0.8696
+    },
+    {
+      "source": "818",
+      "target": "850",
+      "weight": 0.8696
+    },
+    {
+      "source": "885",
+      "target": "888",
+      "weight": 0.8683
+    },
+    {
+      "source": "819",
+      "target": "829",
+      "weight": 0.8659
+    },
+    {
+      "source": "819",
+      "target": "850",
+      "weight": 0.8659
+    },
+    {
+      "source": "758",
+      "target": "766",
+      "weight": 0.8657
+    },
+    {
+      "source": "762",
+      "target": "766",
+      "weight": 0.8648
+    },
+    {
+      "source": "764",
+      "target": "766",
+      "weight": 0.8648
+    },
+    {
+      "source": "766",
+      "target": "789",
+      "weight": 0.8575
+    },
+    {
+      "source": "757",
+      "target": "766",
+      "weight": 0.8574
+    },
+    {
+      "source": "819",
+      "target": "824",
+      "weight": 0.855
+    },
+    {
+      "source": "762",
+      "target": "789",
+      "weight": 0.8538
+    },
+    {
+      "source": "764",
+      "target": "789",
+      "weight": 0.8538
+    },
+    {
+      "source": "757",
+      "target": "761",
+      "weight": 0.8531
+    },
+    {
+      "source": "818",
+      "target": "824",
+      "weight": 0.8498
+    },
+    {
+      "source": "899",
+      "target": "904",
+      "weight": 0.848
+    },
+    {
+      "source": "801",
+      "target": "860",
+      "weight": 0.8464
+    },
+    {
+      "source": "824",
+      "target": "839",
+      "weight": 0.8461
+    },
+    {
+      "source": "824",
+      "target": "863",
+      "weight": 0.8461
+    },
+    {
+      "source": "821",
+      "target": "857",
+      "weight": 0.8427
+    },
+    {
+      "source": "761",
+      "target": "766",
+      "weight": 0.84
+    },
+    {
+      "source": "821",
+      "target": "824",
+      "weight": 0.8384
+    },
+    {
+      "source": "766",
+      "target": "791",
+      "weight": 0.8379
+    },
+    {
+      "source": "766",
+      "target": "773",
+      "weight": 0.8377
+    },
+    {
+      "source": "773",
+      "target": "789",
+      "weight": 0.831
+    },
+    {
+      "source": "811",
+      "target": "824",
+      "weight": 0.8309
+    },
+    {
+      "source": "789",
+      "target": "791",
+      "weight": 0.8305
+    },
+    {
+      "source": "884",
+      "target": "887",
+      "weight": 0.83
+    },
+    {
+      "source": "835",
+      "target": "857",
+      "weight": 0.829
+    },
+    {
+      "source": "855",
+      "target": "857",
+      "weight": 0.829
+    },
+    {
+      "source": "761",
+      "target": "789",
+      "weight": 0.8267
+    },
+    {
+      "source": "757",
+      "target": "762",
+      "weight": 0.8264
+    },
+    {
+      "source": "757",
+      "target": "764",
+      "weight": 0.8264
+    },
+    {
+      "source": "829",
+      "target": "857",
+      "weight": 0.8248
+    },
+    {
+      "source": "850",
+      "target": "857",
+      "weight": 0.8248
+    },
+    {
+      "source": "770",
+      "target": "791",
+      "weight": 0.824
+    },
+    {
+      "source": "770",
+      "target": "773",
+      "weight": 0.8224
+    },
+    {
+      "source": "757",
+      "target": "789",
+      "weight": 0.8216
+    },
+    {
+      "source": "761",
+      "target": "796",
+      "weight": 0.8206
+    },
+    {
+      "source": "790",
+      "target": "883",
+      "weight": 0.8195
+    },
+    {
+      "source": "885",
+      "target": "887",
+      "weight": 0.8195
+    },
+    {
+      "source": "821",
+      "target": "829",
+      "weight": 0.8164
+    },
+    {
+      "source": "887",
+      "target": "888",
+      "weight": 0.8164
+    },
+    {
+      "source": "902",
+      "target": "903",
+      "weight": 0.8153
+    },
+    {
+      "source": "900",
+      "target": "903",
+      "weight": 0.8122
+    },
+    {
+      "source": "770",
+      "target": "903",
+      "weight": 0.8115
+    },
+    {
+      "source": "761",
+      "target": "791",
+      "weight": 0.8098
+    },
+    {
+      "source": "773",
+      "target": "790",
+      "weight": 0.8095
+    },
+    {
+      "source": "761",
+      "target": "773",
+      "weight": 0.8085
+    },
+    {
+      "source": "790",
+      "target": "791",
+      "weight": 0.8083
+    },
+    {
+      "source": "755",
+      "target": "883",
+      "weight": 0.8049
+    },
+    {
+      "source": "761",
+      "target": "762",
+      "weight": 0.8031
+    },
+    {
+      "source": "761",
+      "target": "764",
+      "weight": 0.8031
+    },
+    {
+      "source": "758",
+      "target": "760",
+      "weight": 0.8021
+    },
+    {
+      "source": "759",
+      "target": "883",
+      "weight": 0.802
+    },
+    {
+      "source": "901",
+      "target": "903",
+      "weight": 0.7985
+    },
+    {
+      "source": "758",
+      "target": "770",
+      "weight": 0.7965
+    },
+    {
+      "source": "884",
+      "target": "885",
+      "weight": 0.7953
+    },
+    {
+      "source": "762",
+      "target": "903",
+      "weight": 0.7952
+    },
+    {
+      "source": "764",
+      "target": "903",
+      "weight": 0.7952
+    },
+    {
+      "source": "757",
+      "target": "791",
+      "weight": 0.7949
+    },
+    {
+      "source": "754",
+      "target": "758",
+      "weight": 0.794
+    },
+    {
+      "source": "791",
+      "target": "883",
+      "weight": 0.7929
+    },
+    {
+      "source": "757",
+      "target": "773",
+      "weight": 0.7928
+    },
+    {
+      "source": "758",
+      "target": "883",
+      "weight": 0.7925
+    },
+    {
+      "source": "773",
+      "target": "883",
+      "weight": 0.7917
+    },
+    {
+      "source": "757",
+      "target": "758",
+      "weight": 0.7901
+    },
+    {
+      "source": "763",
+      "target": "893",
+      "weight": 0.7887
+    },
+    {
+      "source": "790",
+      "target": "827",
+      "weight": 0.7884
+    },
+    {
+      "source": "774",
+      "target": "886",
+      "weight": 0.7883
+    },
+    {
+      "source": "884",
+      "target": "888",
+      "weight": 0.788
+    },
+    {
+      "source": "762",
+      "target": "765",
+      "weight": 0.7876
+    },
+    {
+      "source": "764",
+      "target": "765",
+      "weight": 0.7876
+    },
+    {
+      "source": "754",
+      "target": "890",
+      "weight": 0.7876
+    },
+    {
+      "source": "882",
+      "target": "890",
+      "weight": 0.786
+    },
+    {
+      "source": "816",
+      "target": "847",
+      "weight": 0.7845
+    },
+    {
+      "source": "884",
+      "target": "890",
+      "weight": 0.7812
+    },
+    {
+      "source": "894",
+      "target": "905",
+      "weight": 0.7795
+    },
+    {
+      "source": "758",
+      "target": "789",
+      "weight": 0.777
+    },
+    {
+      "source": "892",
+      "target": "894",
+      "weight": 0.7757
+    },
+    {
+      "source": "754",
+      "target": "760",
+      "weight": 0.7748
+    },
+    {
+      "source": "754",
+      "target": "774",
+      "weight": 0.7741
+    },
+    {
+      "source": "893",
+      "target": "904",
+      "weight": 0.7739
+    },
+    {
+      "source": "883",
+      "target": "890",
+      "weight": 0.7739
+    },
+    {
+      "source": "811",
+      "target": "839",
+      "weight": 0.7725
+    },
+    {
+      "source": "811",
+      "target": "863",
+      "weight": 0.7725
+    },
+    {
+      "source": "756",
+      "target": "758",
+      "weight": 0.7707
+    },
+    {
+      "source": "894",
+      "target": "904",
+      "weight": 0.7696
+    },
+    {
+      "source": "770",
+      "target": "790",
+      "weight": 0.7693
+    },
+    {
+      "source": "754",
+      "target": "888",
+      "weight": 0.7686
+    },
+    {
+      "source": "769",
+      "target": "885",
+      "weight": 0.7627
+    },
+    {
+      "source": "755",
+      "target": "762",
+      "weight": 0.7613
+    },
+    {
+      "source": "755",
+      "target": "764",
+      "weight": 0.7613
+    },
+    {
+      "source": "754",
+      "target": "770",
+      "weight": 0.7607
+    },
+    {
+      "source": "892",
+      "target": "901",
+      "weight": 0.7597
+    },
+    {
+      "source": "770",
+      "target": "902",
+      "weight": 0.7597
+    },
+    {
+      "source": "770",
+      "target": "900",
+      "weight": 0.7593
+    },
+    {
+      "source": "839",
+      "target": "857",
+      "weight": 0.7585
+    },
+    {
+      "source": "857",
+      "target": "863",
+      "weight": 0.7585
+    },
+    {
+      "source": "796",
+      "target": "900",
+      "weight": 0.7584
+    },
+    {
+      "source": "754",
+      "target": "882",
+      "weight": 0.758
+    },
+    {
+      "source": "756",
+      "target": "760",
+      "weight": 0.7566
+    },
+    {
+      "source": "790",
+      "target": "889",
+      "weight": 0.7554
+    },
+    {
+      "source": "774",
+      "target": "884",
+      "weight": 0.755
+    },
+    {
+      "source": "754",
+      "target": "884",
+      "weight": 0.7546
+    },
+    {
+      "source": "894",
+      "target": "901",
+      "weight": 0.7536
+    },
+    {
+      "source": "839",
+      "target": "850",
+      "weight": 0.7531
+    },
+    {
+      "source": "892",
+      "target": "903",
+      "weight": 0.7479
+    },
+    {
+      "source": "763",
+      "target": "774",
+      "weight": 0.7472
+    },
+    {
+      "source": "888",
+      "target": "890",
+      "weight": 0.7468
+    },
+    {
+      "source": "760",
+      "target": "790",
+      "weight": 0.7455
+    },
+    {
+      "source": "895",
+      "target": "901",
+      "weight": 0.7453
+    },
+    {
+      "source": "897",
+      "target": "898",
+      "weight": 0.7452
+    },
+    {
+      "source": "885",
+      "target": "901",
+      "weight": 0.7447
+    },
+    {
+      "source": "760",
+      "target": "888",
+      "weight": 0.7439
+    },
+    {
+      "source": "814",
+      "target": "825",
+      "weight": 0.742
+    },
+    {
+      "source": "806",
+      "target": "812",
+      "weight": 0.7401
+    },
+    {
+      "source": "760",
+      "target": "769",
+      "weight": 0.7376
+    },
+    {
+      "source": "760",
+      "target": "885",
+      "weight": 0.7376
+    },
+    {
+      "source": "755",
+      "target": "889",
+      "weight": 0.7375
+    },
+    {
+      "source": "769",
+      "target": "888",
+      "weight": 0.7375
+    },
+    {
+      "source": "900",
+      "target": "901",
+      "weight": 0.7361
+    },
+    {
+      "source": "885",
+      "target": "898",
+      "weight": 0.7359
+    },
+    {
+      "source": "885",
+      "target": "890",
+      "weight": 0.7342
+    },
+    {
+      "source": "884",
+      "target": "886",
+      "weight": 0.7338
+    },
+    {
+      "source": "893",
+      "target": "894",
+      "weight": 0.7336
+    },
+    {
+      "source": "895",
+      "target": "903",
+      "weight": 0.7336
+    },
+    {
+      "source": "877",
+      "target": "896",
+      "weight": 0.7283
+    },
+    {
+      "source": "901",
+      "target": "902",
+      "weight": 0.7272
+    },
+    {
+      "source": "763",
+      "target": "904",
+      "weight": 0.7263
+    },
+    {
+      "source": "846",
+      "target": "901",
+      "weight": 0.7259
+    },
+    {
+      "source": "760",
+      "target": "774",
+      "weight": 0.7238
+    },
+    {
+      "source": "849",
+      "target": "900",
+      "weight": 0.7154
+    },
+    {
+      "source": "800",
+      "target": "805",
+      "weight": 0.7152
+    },
+    {
+      "source": "755",
+      "target": "756",
+      "weight": 0.7146
+    },
+    {
+      "source": "774",
+      "target": "888",
+      "weight": 0.7144
+    },
+    {
+      "source": "769",
+      "target": "774",
+      "weight": 0.7122
+    },
+    {
+      "source": "900",
+      "target": "902",
+      "weight": 0.712
+    },
+    {
+      "source": "822",
+      "target": "826",
+      "weight": 0.7116
+    },
+    {
+      "source": "889",
+      "target": "890",
+      "weight": 0.7101
+    },
+    {
+      "source": "759",
+      "target": "889",
+      "weight": 0.7084
+    },
+    {
+      "source": "816",
+      "target": "824",
+      "weight": 0.7084
+    },
+    {
+      "source": "880",
+      "target": "902",
+      "weight": 0.7081
+    },
+    {
+      "source": "755",
+      "target": "765",
+      "weight": 0.7079
+    },
+    {
+      "source": "838",
+      "target": "902",
+      "weight": 0.7077
+    },
+    {
+      "source": "862",
+      "target": "902",
+      "weight": 0.7077
+    },
+    {
+      "source": "809",
+      "target": "876",
+      "weight": 0.7067
+    },
+    {
+      "source": "774",
+      "target": "882",
+      "weight": 0.7059
+    },
+    {
+      "source": "900",
+      "target": "905",
+      "weight": 0.7058
+    },
+    {
+      "source": "824",
+      "target": "900",
+      "weight": 0.7047
+    },
+    {
+      "source": "763",
+      "target": "886",
+      "weight": 0.7045
+    },
+    {
+      "source": "838",
+      "target": "876",
+      "weight": 0.7024
+    },
+    {
+      "source": "862",
+      "target": "876",
+      "weight": 0.7024
+    },
+    {
+      "source": "882",
+      "target": "887",
+      "weight": 0.7022
+    },
+    {
+      "source": "876",
+      "target": "880",
+      "weight": 0.7008
+    },
+    {
+      "source": "839",
+      "target": "847",
+      "weight": 0.7001
+    },
+    {
+      "source": "847",
+      "target": "863",
+      "weight": 0.7001
+    },
+    {
+      "source": "759",
+      "target": "827",
+      "weight": 0.6998
+    },
+    {
+      "source": "886",
+      "target": "893",
+      "weight": 0.6987
+    },
+    {
+      "source": "756",
+      "target": "894",
+      "weight": 0.6961
+    },
+    {
+      "source": "892",
+      "target": "897",
+      "weight": 0.6959
+    },
+    {
+      "source": "763",
+      "target": "899",
+      "weight": 0.6953
+    },
+    {
+      "source": "841",
+      "target": "859",
+      "weight": 0.6945
+    },
+    {
+      "source": "859",
+      "target": "865",
+      "weight": 0.6945
+    },
+    {
+      "source": "763",
+      "target": "897",
+      "weight": 0.6944
+    },
+    {
+      "source": "756",
+      "target": "765",
+      "weight": 0.6929
+    },
+    {
+      "source": "817",
+      "target": "889",
+      "weight": 0.6911
+    },
+    {
+      "source": "782",
+      "target": "785",
+      "weight": 0.6876
+    },
+    {
+      "source": "809",
+      "target": "902",
+      "weight": 0.6863
+    },
+    {
+      "source": "892",
+      "target": "893",
+      "weight": 0.686
+    },
+    {
+      "source": "756",
+      "target": "796",
+      "weight": 0.6854
+    },
+    {
+      "source": "893",
+      "target": "897",
+      "weight": 0.6833
+    },
+    {
+      "source": "892",
+      "target": "895",
+      "weight": 0.6832
+    },
+    {
+      "source": "759",
+      "target": "897",
+      "weight": 0.6825
+    },
+    {
+      "source": "894",
+      "target": "897",
+      "weight": 0.6787
+    },
+    {
+      "source": "811",
+      "target": "816",
+      "weight": 0.6786
+    },
+    {
+      "source": "799",
+      "target": "836",
+      "weight": 0.6778
+    },
+    {
+      "source": "799",
+      "target": "856",
+      "weight": 0.6778
+    },
+    {
+      "source": "816",
+      "target": "839",
+      "weight": 0.6766
+    },
+    {
+      "source": "816",
+      "target": "863",
+      "weight": 0.6766
+    },
+    {
+      "source": "893",
+      "target": "899",
+      "weight": 0.6762
+    },
+    {
+      "source": "825",
+      "target": "842",
+      "weight": 0.6732
+    },
+    {
+      "source": "825",
+      "target": "867",
+      "weight": 0.6732
+    },
+    {
+      "source": "759",
+      "target": "882",
+      "weight": 0.6726
+    },
+    {
+      "source": "886",
+      "target": "897",
+      "weight": 0.6725
+    },
+    {
+      "source": "756",
+      "target": "898",
+      "weight": 0.6697
+    },
+    {
+      "source": "889",
+      "target": "897",
+      "weight": 0.6688
+    },
+    {
+      "source": "793",
+      "target": "797",
+      "weight": 0.6687
+    },
+    {
+      "source": "756",
+      "target": "905",
+      "weight": 0.6683
+    },
+    {
+      "source": "763",
+      "target": "894",
+      "weight": 0.6667
+    },
+    {
+      "source": "887",
+      "target": "898",
+      "weight": 0.666
+    },
+    {
+      "source": "782",
+      "target": "787",
+      "weight": 0.6639
+    },
+    {
+      "source": "827",
+      "target": "889",
+      "weight": 0.6628
+    },
+    {
+      "source": "811",
+      "target": "847",
+      "weight": 0.6619
+    },
+    {
+      "source": "892",
+      "target": "904",
+      "weight": 0.6606
+    },
+    {
+      "source": "795",
+      "target": "797",
+      "weight": 0.6606
+    },
+    {
+      "source": "882",
+      "target": "886",
+      "weight": 0.6593
+    },
+    {
+      "source": "796",
+      "target": "849",
+      "weight": 0.6578
+    },
+    {
+      "source": "769",
+      "target": "887",
+      "weight": 0.6569
+    },
+    {
+      "source": "769",
+      "target": "879",
+      "weight": 0.656
+    },
+    {
+      "source": "904",
+      "target": "905",
+      "weight": 0.6553
+    },
+    {
+      "source": "849",
+      "target": "898",
+      "weight": 0.6547
+    },
+    {
+      "source": "755",
+      "target": "796",
+      "weight": 0.6533
+    },
+    {
+      "source": "796",
+      "target": "905",
+      "weight": 0.6525
+    },
+    {
+      "source": "765",
+      "target": "796",
+      "weight": 0.6525
+    },
+    {
+      "source": "765",
+      "target": "849",
+      "weight": 0.6514
+    },
+    {
+      "source": "817",
+      "target": "895",
+      "weight": 0.6513
+    },
+    {
+      "source": "796",
+      "target": "895",
+      "weight": 0.6491
+    },
+    {
+      "source": "870",
+      "target": "880",
+      "weight": 0.6488
+    },
+    {
+      "source": "892",
+      "target": "905",
+      "weight": 0.6475
+    },
+    {
+      "source": "870",
+      "target": "886",
+      "weight": 0.6472
+    },
+    {
+      "source": "785",
+      "target": "817",
+      "weight": 0.6445
+    },
+    {
+      "source": "803",
+      "target": "820",
+      "weight": 0.6432
+    },
+    {
+      "source": "838",
+      "target": "870",
+      "weight": 0.642
+    },
+    {
+      "source": "862",
+      "target": "870",
+      "weight": 0.642
+    },
+    {
+      "source": "886",
+      "target": "887",
+      "weight": 0.6411
+    },
+    {
+      "source": "858",
+      "target": "860",
+      "weight": 0.641
+    },
+    {
+      "source": "891",
+      "target": "895",
+      "weight": 0.6406
+    },
+    {
+      "source": "785",
+      "target": "787",
+      "weight": 0.6404
+    },
+    {
+      "source": "759",
+      "target": "817",
+      "weight": 0.6403
+    },
+    {
+      "source": "765",
+      "target": "896",
+      "weight": 0.6398
+    },
+    {
+      "source": "755",
+      "target": "849",
+      "weight": 0.6392
+    },
+    {
+      "source": "793",
+      "target": "795",
+      "weight": 0.6389
+    },
+    {
+      "source": "805",
+      "target": "807",
+      "weight": 0.6373
+    },
+    {
+      "source": "896",
+      "target": "898",
+      "weight": 0.637
+    },
+    {
+      "source": "759",
+      "target": "763",
+      "weight": 0.6361
+    },
+    {
+      "source": "769",
+      "target": "870",
+      "weight": 0.6356
+    },
+    {
+      "source": "801",
+      "target": "804",
+      "weight": 0.6354
+    },
+    {
+      "source": "849",
+      "target": "905",
+      "weight": 0.6338
+    },
+    {
+      "source": "891",
+      "target": "896",
+      "weight": 0.631
+    },
+    {
+      "source": "809",
+      "target": "870",
+      "weight": 0.6296
+    },
+    {
+      "source": "803",
+      "target": "805",
+      "weight": 0.6288
+    },
+    {
+      "source": "765",
+      "target": "769",
+      "weight": 0.6239
+    },
+    {
+      "source": "893",
+      "target": "905",
+      "weight": 0.6237
+    },
+    {
+      "source": "838",
+      "target": "849",
+      "weight": 0.6203
+    },
+    {
+      "source": "849",
+      "target": "862",
+      "weight": 0.6203
+    },
+    {
+      "source": "782",
+      "target": "817",
+      "weight": 0.6187
+    },
+    {
+      "source": "870",
+      "target": "882",
+      "weight": 0.6176
+    },
+    {
+      "source": "792",
+      "target": "803",
+      "weight": 0.6161
+    },
+    {
+      "source": "840",
+      "target": "843",
+      "weight": 0.6091
+    },
+    {
+      "source": "840",
+      "target": "868",
+      "weight": 0.6091
+    },
+    {
+      "source": "843",
+      "target": "864",
+      "weight": 0.6091
+    },
+    {
+      "source": "864",
+      "target": "868",
+      "weight": 0.6091
+    },
+    {
+      "source": "792",
+      "target": "805",
+      "weight": 0.6068
+    },
+    {
+      "source": "800",
+      "target": "807",
+      "weight": 0.6029
+    },
+    {
+      "source": "782",
+      "target": "895",
+      "weight": 0.5982
+    },
+    {
+      "source": "815",
+      "target": "843",
+      "weight": 0.5971
+    },
+    {
+      "source": "815",
+      "target": "868",
+      "weight": 0.5971
+    },
+    {
+      "source": "794",
+      "target": "795",
+      "weight": 0.5938
+    },
+    {
+      "source": "817",
+      "target": "827",
+      "weight": 0.5937
+    },
+    {
+      "source": "836",
+      "target": "840",
+      "weight": 0.5903
+    },
+    {
+      "source": "836",
+      "target": "864",
+      "weight": 0.5903
+    },
+    {
+      "source": "840",
+      "target": "856",
+      "weight": 0.5903
+    },
+    {
+      "source": "856",
+      "target": "864",
+      "weight": 0.5903
+    },
+    {
+      "source": "820",
+      "target": "822",
+      "weight": 0.5902
+    },
+    {
+      "source": "836",
+      "target": "848",
+      "weight": 0.5885
+    },
+    {
+      "source": "848",
+      "target": "856",
+      "weight": 0.5885
+    },
+    {
+      "source": "792",
+      "target": "800",
+      "weight": 0.5856
+    },
+    {
+      "source": "817",
+      "target": "846",
+      "weight": 0.5806
+    },
+    {
+      "source": "809",
+      "target": "881",
+      "weight": 0.5797
+    },
+    {
+      "source": "895",
+      "target": "896",
+      "weight": 0.5794
+    },
+    {
+      "source": "828",
+      "target": "843",
+      "weight": 0.5793
+    },
+    {
+      "source": "828",
+      "target": "868",
+      "weight": 0.5793
+    },
+    {
+      "source": "838",
+      "target": "877",
+      "weight": 0.5776
+    },
+    {
+      "source": "862",
+      "target": "877",
+      "weight": 0.5776
+    },
+    {
+      "source": "872",
+      "target": "876",
+      "weight": 0.5731
+    },
+    {
+      "source": "817",
+      "target": "898",
+      "weight": 0.5708
+    },
+    {
+      "source": "877",
+      "target": "880",
+      "weight": 0.5688
+    },
+    {
+      "source": "800",
+      "target": "803",
+      "weight": 0.5673
+    },
+    {
+      "source": "870",
+      "target": "879",
+      "weight": 0.5667
+    },
+    {
+      "source": "827",
+      "target": "898",
+      "weight": 0.5656
+    },
+    {
+      "source": "804",
+      "target": "858",
+      "weight": 0.5614
+    },
+    {
+      "source": "872",
+      "target": "881",
+      "weight": 0.5601
+    },
+    {
+      "source": "866",
+      "target": "874",
+      "weight": 0.5571
+    },
+    {
+      "source": "846",
+      "target": "848",
+      "weight": 0.5508
+    },
+    {
+      "source": "847",
+      "target": "848",
+      "weight": 0.5491
+    },
+    {
+      "source": "785",
+      "target": "827",
+      "weight": 0.5432
+    },
+    {
+      "source": "837",
+      "target": "859",
+      "weight": 0.5414
+    },
+    {
+      "source": "859",
+      "target": "861",
+      "weight": 0.5414
+    },
+    {
+      "source": "833",
+      "target": "834",
+      "weight": 0.5402
+    },
+    {
+      "source": "833",
+      "target": "854",
+      "weight": 0.5402
+    },
+    {
+      "source": "834",
+      "target": "853",
+      "weight": 0.5402
+    },
+    {
+      "source": "853",
+      "target": "854",
+      "weight": 0.5402
+    },
+    {
+      "source": "879",
+      "target": "880",
+      "weight": 0.5346
+    },
+    {
+      "source": "876",
+      "target": "877",
+      "weight": 0.5293
+    },
+    {
+      "source": "825",
+      "target": "828",
+      "weight": 0.5288
+    },
+    {
+      "source": "785",
+      "target": "896",
+      "weight": 0.5272
+    },
+    {
+      "source": "869",
+      "target": "896",
+      "weight": 0.5261
+    },
+    {
+      "source": "785",
+      "target": "805",
+      "weight": 0.5258
+    },
+    {
+      "source": "810",
+      "target": "827",
+      "weight": 0.5258
+    },
+    {
+      "source": "800",
+      "target": "822",
+      "weight": 0.5233
+    },
+    {
+      "source": "782",
+      "target": "810",
+      "weight": 0.5212
+    },
+    {
+      "source": "785",
+      "target": "877",
+      "weight": 0.5192
+    },
+    {
+      "source": "840",
+      "target": "848",
+      "weight": 0.5169
+    },
+    {
+      "source": "848",
+      "target": "864",
+      "weight": 0.5169
+    },
+    {
+      "source": "858",
+      "target": "871",
+      "weight": 0.5164
+    },
+    {
+      "source": "792",
+      "target": "807",
+      "weight": 0.5118
+    },
+    {
+      "source": "831",
+      "target": "834",
+      "weight": 0.5107
+    },
+    {
+      "source": "831",
+      "target": "854",
+      "weight": 0.5107
+    },
+    {
+      "source": "834",
+      "target": "851",
+      "weight": 0.5107
+    },
+    {
+      "source": "851",
+      "target": "854",
+      "weight": 0.5107
+    },
+    {
+      "source": "814",
+      "target": "842",
+      "weight": 0.5087
+    },
+    {
+      "source": "814",
+      "target": "867",
+      "weight": 0.5087
+    },
+    {
+      "source": "803",
+      "target": "860",
+      "weight": 0.5087
+    },
+    {
+      "source": "803",
+      "target": "807",
+      "weight": 0.5085
+    },
+    {
+      "source": "809",
+      "target": "877",
+      "weight": 0.5078
+    },
+    {
+      "source": "804",
+      "target": "871",
+      "weight": 0.507
+    },
+    {
+      "source": "804",
+      "target": "806",
+      "weight": 0.503
+    },
+    {
+      "source": "827",
+      "target": "896",
+      "weight": 0.4981
+    },
+    {
+      "source": "801",
+      "target": "803",
+      "weight": 0.4976
+    },
+    {
+      "source": "793",
+      "target": "833",
+      "weight": 0.497
+    },
+    {
+      "source": "793",
+      "target": "853",
+      "weight": 0.497
+    },
+    {
+      "source": "797",
+      "target": "834",
+      "weight": 0.4968
+    },
+    {
+      "source": "797",
+      "target": "854",
+      "weight": 0.4968
+    },
+    {
+      "source": "793",
+      "target": "802",
+      "weight": 0.4954
+    },
+    {
+      "source": "820",
+      "target": "860",
+      "weight": 0.4946
+    },
+    {
+      "source": "836",
+      "target": "879",
+      "weight": 0.4921
+    },
+    {
+      "source": "856",
+      "target": "879",
+      "weight": 0.4921
+    },
+    {
+      "source": "794",
+      "target": "805",
+      "weight": 0.4919
+    },
+    {
+      "source": "785",
+      "target": "846",
+      "weight": 0.4911
+    },
+    {
+      "source": "795",
+      "target": "834",
+      "weight": 0.4909
+    },
+    {
+      "source": "795",
+      "target": "854",
+      "weight": 0.4909
+    },
+    {
+      "source": "822",
+      "target": "823",
+      "weight": 0.4893
+    },
+    {
+      "source": "782",
+      "target": "792",
+      "weight": 0.4891
+    },
+    {
+      "source": "782",
+      "target": "846",
+      "weight": 0.4876
+    },
+    {
+      "source": "799",
+      "target": "877",
+      "weight": 0.4855
+    },
+    {
+      "source": "801",
+      "target": "820",
+      "weight": 0.4839
+    },
+    {
+      "source": "858",
+      "target": "859",
+      "weight": 0.4794
+    },
+    {
+      "source": "794",
+      "target": "797",
+      "weight": 0.4791
+    },
+    {
+      "source": "842",
+      "target": "843",
+      "weight": 0.4789
+    },
+    {
+      "source": "842",
+      "target": "868",
+      "weight": 0.4789
+    },
+    {
+      "source": "843",
+      "target": "867",
+      "weight": 0.4789
+    },
+    {
+      "source": "867",
+      "target": "868",
+      "weight": 0.4789
+    },
+    {
+      "source": "811",
+      "target": "815",
+      "weight": 0.4786
+    },
+    {
+      "source": "869",
+      "target": "891",
+      "weight": 0.4771
+    },
+    {
+      "source": "813",
+      "target": "866",
+      "weight": 0.4682
+    },
+    {
+      "source": "806",
+      "target": "822",
+      "weight": 0.4672
+    },
+    {
+      "source": "801",
+      "target": "806",
+      "weight": 0.4669
+    },
+    {
+      "source": "787",
+      "target": "792",
+      "weight": 0.4645
+    },
+    {
+      "source": "839",
+      "target": "840",
+      "weight": 0.4639
+    },
+    {
+      "source": "840",
+      "target": "863",
+      "weight": 0.4639
+    },
+    {
+      "source": "863",
+      "target": "864",
+      "weight": 0.4639
+    },
+    {
+      "source": "825",
+      "target": "843",
+      "weight": 0.4627
+    },
+    {
+      "source": "825",
+      "target": "868",
+      "weight": 0.4627
+    },
+    {
+      "source": "805",
+      "target": "822",
+      "weight": 0.462
+    },
+    {
+      "source": "811",
+      "target": "891",
+      "weight": 0.4583
+    },
+    {
+      "source": "807",
+      "target": "822",
+      "weight": 0.458
+    },
+    {
+      "source": "828",
+      "target": "842",
+      "weight": 0.4566
+    },
+    {
+      "source": "828",
+      "target": "867",
+      "weight": 0.4566
+    },
+    {
+      "source": "799",
+      "target": "848",
+      "weight": 0.4551
+    },
+    {
+      "source": "805",
+      "target": "808",
+      "weight": 0.4547
+    },
+    {
+      "source": "876",
+      "target": "881",
+      "weight": 0.4541
+    },
+    {
+      "source": "846",
+      "target": "847",
+      "weight": 0.4533
+    },
+    {
+      "source": "792",
+      "target": "822",
+      "weight": 0.4504
+    },
+    {
+      "source": "814",
+      "target": "828",
+      "weight": 0.445
+    },
+    {
+      "source": "798",
+      "target": "800",
+      "weight": 0.4426
+    },
+    {
+      "source": "811",
+      "target": "846",
+      "weight": 0.4425
+    },
+    {
+      "source": "782",
+      "target": "800",
+      "weight": 0.4388
+    },
+    {
+      "source": "828",
+      "target": "891",
+      "weight": 0.4385
+    },
+    {
+      "source": "815",
+      "target": "842",
+      "weight": 0.4354
+    },
+    {
+      "source": "815",
+      "target": "867",
+      "weight": 0.4354
+    },
+    {
+      "source": "801",
+      "target": "858",
+      "weight": 0.4324
+    },
+    {
+      "source": "802",
+      "target": "808",
+      "weight": 0.4315
+    },
+    {
+      "source": "797",
+      "target": "802",
+      "weight": 0.4313
+    },
+    {
+      "source": "859",
+      "target": "860",
+      "weight": 0.4301
+    },
+    {
+      "source": "815",
+      "target": "828",
+      "weight": 0.4291
+    },
+    {
+      "source": "825",
+      "target": "864",
+      "weight": 0.4279
+    },
+    {
+      "source": "787",
+      "target": "879",
+      "weight": 0.4268
+    },
+    {
+      "source": "848",
+      "target": "879",
+      "weight": 0.4245
+    },
+    {
+      "source": "846",
+      "target": "876",
+      "weight": 0.4241
+    },
+    {
+      "source": "792",
+      "target": "820",
+      "weight": 0.4238
+    },
+    {
+      "source": "793",
+      "target": "794",
+      "weight": 0.4171
+    },
+    {
+      "source": "799",
+      "target": "879",
+      "weight": 0.4144
+    },
+    {
+      "source": "795",
+      "target": "808",
+      "weight": 0.4136
+    },
+    {
+      "source": "804",
+      "target": "860",
+      "weight": 0.4134
+    },
+    {
+      "source": "830",
+      "target": "891",
+      "weight": 0.4123
+    },
+    {
+      "source": "852",
+      "target": "891",
+      "weight": 0.4123
+    },
+    {
+      "source": "836",
+      "target": "847",
+      "weight": 0.412
+    },
+    {
+      "source": "847",
+      "target": "856",
+      "weight": 0.412
+    },
+    {
+      "source": "812",
+      "target": "826",
+      "weight": 0.4114
+    },
+    {
+      "source": "836",
+      "target": "869",
+      "weight": 0.4105
+    },
+    {
+      "source": "856",
+      "target": "869",
+      "weight": 0.4105
+    },
+    {
+      "source": "794",
+      "target": "808",
+      "weight": 0.4097
+    },
+    {
+      "source": "842",
+      "target": "881",
+      "weight": 0.4089
+    },
+    {
+      "source": "867",
+      "target": "881",
+      "weight": 0.4089
+    },
+    {
+      "source": "813",
+      "target": "874",
+      "weight": 0.4083
+    },
+    {
+      "source": "812",
+      "target": "815",
+      "weight": 0.4053
+    },
+    {
+      "source": "866",
+      "target": "904",
+      "weight": 0.4037
+    },
+    {
+      "source": "806",
+      "target": "815",
+      "weight": 0.4027
+    },
+    {
+      "source": "810",
+      "target": "816",
+      "weight": 0.3997
+    },
+    {
+      "source": "891",
+      "target": "904",
+      "weight": 0.3992
+    },
+    {
+      "source": "798",
+      "target": "807",
+      "weight": 0.3948
+    },
+    {
+      "source": "787",
+      "target": "810",
+      "weight": 0.3867
+    },
+    {
+      "source": "799",
+      "target": "869",
+      "weight": 0.3857
+    },
+    {
+      "source": "831",
+      "target": "833",
+      "weight": 0.3806
+    },
+    {
+      "source": "831",
+      "target": "853",
+      "weight": 0.3806
+    },
+    {
+      "source": "833",
+      "target": "851",
+      "weight": 0.3806
+    },
+    {
+      "source": "851",
+      "target": "853",
+      "weight": 0.3806
+    },
+    {
+      "source": "787",
+      "target": "800",
+      "weight": 0.3753
+    },
+    {
+      "source": "787",
+      "target": "899",
+      "weight": 0.3747
+    },
+    {
+      "source": "803",
+      "target": "808",
+      "weight": 0.3736
+    },
+    {
+      "source": "802",
+      "target": "806",
+      "weight": 0.372
+    },
+    {
+      "source": "871",
+      "target": "881",
+      "weight": 0.3703
+    },
+    {
+      "source": "837",
+      "target": "860",
+      "weight": 0.3611
+    },
+    {
+      "source": "860",
+      "target": "861",
+      "weight": 0.3611
+    },
+    {
+      "source": "798",
+      "target": "808",
+      "weight": 0.3585
+    },
+    {
+      "source": "859",
+      "target": "881",
+      "weight": 0.356
+    },
+    {
+      "source": "823",
+      "target": "878",
+      "weight": 0.356
+    },
+    {
+      "source": "841",
+      "target": "872",
+      "weight": 0.3533
+    },
+    {
+      "source": "865",
+      "target": "872",
+      "weight": 0.3533
+    },
+    {
+      "source": "806",
+      "target": "826",
+      "weight": 0.353
+    },
+    {
+      "source": "820",
+      "target": "881",
+      "weight": 0.3527
+    },
+    {
+      "source": "823",
+      "target": "826",
+      "weight": 0.3513
+    },
+    {
+      "source": "799",
+      "target": "866",
+      "weight": 0.3508
+    },
+    {
+      "source": "859",
+      "target": "866",
+      "weight": 0.3498
+    },
+    {
+      "source": "872",
+      "target": "875",
+      "weight": 0.3486
+    },
+    {
+      "source": "825",
+      "target": "826",
+      "weight": 0.3465
+    },
+    {
+      "source": "807",
+      "target": "820",
+      "weight": 0.3449
+    },
+    {
+      "source": "804",
+      "target": "812",
+      "weight": 0.3447
+    },
+    {
+      "source": "837",
+      "target": "841",
+      "weight": 0.3413
+    },
+    {
+      "source": "837",
+      "target": "865",
+      "weight": 0.3413
+    },
+    {
+      "source": "841",
+      "target": "861",
+      "weight": 0.3413
+    },
+    {
+      "source": "861",
+      "target": "865",
+      "weight": 0.3413
+    },
+    {
+      "source": "797",
+      "target": "833",
+      "weight": 0.3404
+    },
+    {
+      "source": "797",
+      "target": "853",
+      "weight": 0.3404
+    },
+    {
+      "source": "799",
+      "target": "813",
+      "weight": 0.3379
+    },
+    {
+      "source": "806",
+      "target": "820",
+      "weight": 0.3356
+    },
+    {
+      "source": "794",
+      "target": "831",
+      "weight": 0.3341
+    },
+    {
+      "source": "794",
+      "target": "851",
+      "weight": 0.3341
+    },
+    {
+      "source": "795",
+      "target": "802",
+      "weight": 0.33
+    },
+    {
+      "source": "826",
+      "target": "830",
+      "weight": 0.3275
+    },
+    {
+      "source": "826",
+      "target": "852",
+      "weight": 0.3275
+    },
+    {
+      "source": "808",
+      "target": "823",
+      "weight": 0.327
+    },
+    {
+      "source": "807",
+      "target": "826",
+      "weight": 0.3252
+    },
+    {
+      "source": "798",
+      "target": "837",
+      "weight": 0.3248
+    },
+    {
+      "source": "798",
+      "target": "861",
+      "weight": 0.3248
+    },
+    {
+      "source": "830",
+      "target": "866",
+      "weight": 0.3224
+    },
+    {
+      "source": "852",
+      "target": "866",
+      "weight": 0.3224
+    },
+    {
+      "source": "793",
+      "target": "808",
+      "weight": 0.3214
+    },
+    {
+      "source": "823",
+      "target": "830",
+      "weight": 0.321
+    },
+    {
+      "source": "823",
+      "target": "852",
+      "weight": 0.321
+    },
+    {
+      "source": "837",
+      "target": "858",
+      "weight": 0.319
+    },
+    {
+      "source": "858",
+      "target": "861",
+      "weight": 0.319
+    },
+    {
+      "source": "793",
+      "target": "834",
+      "weight": 0.3156
+    },
+    {
+      "source": "798",
+      "target": "801",
+      "weight": 0.3154
+    },
+    {
+      "source": "795",
+      "target": "833",
+      "weight": 0.3118
+    },
+    {
+      "source": "837",
+      "target": "853",
+      "weight": 0.3117
+    },
+    {
+      "source": "871",
+      "target": "872",
+      "weight": 0.3103
+    },
+    {
+      "source": "812",
+      "target": "872",
+      "weight": 0.31
+    },
+    {
+      "source": "801",
+      "target": "823",
+      "weight": 0.3069
+    },
+    {
+      "source": "831",
+      "target": "866",
+      "weight": 0.3038
+    }
+  ]
+}

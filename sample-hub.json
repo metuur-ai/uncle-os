@@ -1,0 +1,299 @@
+[
+  {
+    "id": "platforms/communications/platform.yaml",
+    "name": "Communications Platform",
+    "title": "Communications Platform",
+    "type": "Platform",
+    "repo": "communications",
+    "project": null,
+    "tags": [
+      "kind/platform",
+      "platform/communications"
+    ]
+  },
+  {
+    "id": "platforms/communications/archive/prds/2026-per-channel-quiet-hours/prd.md",
+    "name": "PRD: Per-channel quiet hours",
+    "title": "PRD: Per-channel quiet hours",
+    "type": "prd",
+    "repo": "communications",
+    "project": null,
+    "tags": [
+      "component/customer-notification-service",
+      "discovery/2026-per-channel-quiet-hours",
+      "kind/prd",
+      "platform/communications",
+      "status/completed",
+      "team/customer-engagement"
+    ]
+  },
+  {
+    "id": "platforms/communications/archive/prds/2026-per-channel-quiet-hours/outcome.md",
+    "name": "Outcome review: Per-channel quiet hours",
+    "title": "Outcome review: Per-channel quiet hours",
+    "type": "outcome-review",
+    "repo": "communications",
+    "project": null,
+    "tags": [
+      "kind/outcome",
+      "platform/communications",
+      "prd/2026-per-channel-quiet-hours",
+      "status/pending"
+    ]
+  },
+  {
+    "id": "platforms/communications/components/customer-notification-service.yaml",
+    "name": "Customer Notification Service",
+    "title": "Customer Notification Service",
+    "type": "service",
+    "repo": "communications",
+    "project": "customer-engagement",
+    "tags": [
+      "capability/message-delivery",
+      "component/customer-notification-service",
+      "kind/component",
+      "platform/communications",
+      "team/customer-engagement"
+    ]
+  },
+  {
+    "id": "platforms/communications/governance/requirements.yaml",
+    "name": "requirements.yaml",
+    "title": null,
+    "type": "PlatformRequirements",
+    "repo": "communications",
+    "project": null,
+    "tags": [
+      "kind/requirements",
+      "platform/communications"
+    ]
+  },
+  {
+    "id": "platforms/communications/skills/creating-prd.SKILL.md",
+    "name": "Creating a PRD",
+    "title": "Creating a PRD",
+    "type": "skill",
+    "repo": "communications",
+    "project": null,
+    "tags": [
+      "authority/canonical",
+      "platform/communications"
+    ]
+  },
+  {
+    "id": "platforms/communications/reality/components/customer-notification-service.md",
+    "name": "Customer Notification Service \u2014 Current Behavior",
+    "title": "Customer Notification Service \u2014 Current Behavior",
+    "type": "component-reality",
+    "repo": "communications",
+    "project": null,
+    "tags": [
+      "authority/canonical",
+      "component/customer-notification-service",
+      "kind/reality",
+      "platform/communications"
+    ]
+  },
+  {
+    "id": "company-ontology/contexts/communications.md",
+    "name": "Bounded Context: Communications",
+    "title": "Bounded Context: Communications",
+    "type": "bounded-context",
+    "repo": null,
+    "project": null,
+    "tags": [
+      "ontology/context"
+    ]
+  },
+  {
+    "id": "company-ontology/context-maps/crm-to-communications.md",
+    "name": "Context Map: CRM -> Communications",
+    "title": "Context Map: CRM -> Communications",
+    "type": "context-map",
+    "repo": null,
+    "project": null,
+    "tags": [
+      "ontology/context-map"
+    ]
+  },
+  {
+    "id": "company-ontology/ids/registry.yaml",
+    "name": "registry.yaml",
+    "title": null,
+    "type": "IdRegistry",
+    "repo": null,
+    "project": null,
+    "tags": [
+      "ontology/registry"
+    ]
+  },
+  {
+    "id": "company-ontology/concepts/component.md",
+    "name": "Component",
+    "title": "Component",
+    "type": "concept",
+    "repo": null,
+    "project": null,
+    "tags": [
+      "ontology/concept"
+    ]
+  },
+  {
+    "id": "company-ontology/concepts/capability--message-delivery.md",
+    "name": "Message Delivery (capability)",
+    "title": "Message Delivery (capability)",
+    "type": "concept",
+    "repo": null,
+    "project": null,
+    "tags": [
+      "context/communications",
+      "ontology/capability",
+      "ontology/concept"
+    ]
+  },
+  {
+    "id": "company-ontology/taxonomies/requirement-types.yaml",
+    "name": "requirement-types.yaml",
+    "title": null,
+    "type": "Taxonomy",
+    "repo": null,
+    "project": null,
+    "tags": [
+      "ontology/taxonomy"
+    ]
+  },
+  {
+    "id": "teams/customer-engagement/team.yaml",
+    "name": "Customer Engagement",
+    "title": "Customer Engagement",
+    "type": "Team",
+    "repo": null,
+    "project": "customer-engagement",
+    "tags": [
+      "kind/team",
+      "team/customer-engagement"
+    ]
+  },
+  {
+    "id": "teams/customer-engagement/scratchpad/personal-rules/maria-prd-style.md",
+    "name": "Maria's personal PRD rules (applied ON TOP of the canonical skill)",
+    "title": "Maria's personal PRD rules (applied ON TOP of the canonical skill)",
+    "type": "personal-rule",
+    "repo": null,
+    "project": "customer-engagement",
+    "tags": [
+      "authority/personal",
+      "kind/personal-rule",
+      "process/prd"
+    ]
+  },
+  {
+    "id": "teams/customer-engagement/product/discovery/2026-per-channel-quiet-hours/brief.md",
+    "name": "Discovery: Per-channel quiet hours",
+    "title": "Discovery: Per-channel quiet hours",
+    "type": "discovery-brief",
+    "repo": null,
+    "project": "customer-engagement",
+    "tags": [
+      "kind/discovery",
+      "status/validated",
+      "team/customer-engagement"
+    ]
+  },
+  {
+    "id": "teams/customer-engagement/ownership/components.yaml",
+    "name": "components.yaml",
+    "title": null,
+    "type": "config",
+    "repo": null,
+    "project": "customer-engagement",
+    "tags": [
+      "kind/ownership",
+      "team/customer-engagement"
+    ]
+  },
+  {
+    "id": "teams/customer-engagement/governance/deviations.yaml",
+    "name": "deviations.yaml",
+    "title": null,
+    "type": "config",
+    "repo": null,
+    "project": "customer-engagement",
+    "tags": [
+      "kind/deviations",
+      "team/customer-engagement"
+    ]
+  },
+  {
+    "id": "teams/customer-engagement/governance/exceptions.yaml",
+    "name": "exceptions.yaml",
+    "title": null,
+    "type": "config",
+    "repo": null,
+    "project": "customer-engagement",
+    "tags": [
+      "kind/exceptions",
+      "team/customer-engagement"
+    ]
+  },
+  {
+    "id": "teams/customer-engagement/onboarding/developer.md",
+    "name": "Developer onboarding (Customer Engagement)",
+    "title": "Developer onboarding (Customer Engagement)",
+    "type": "onboarding-guide",
+    "repo": null,
+    "project": "customer-engagement",
+    "tags": [
+      "kind/onboarding",
+      "role/developer",
+      "team/customer-engagement"
+    ]
+  },
+  {
+    "id": "teams/customer-engagement/standards/definition-of-ready.md",
+    "name": "definition-of-ready.md",
+    "title": null,
+    "type": "team-standard",
+    "repo": null,
+    "project": "customer-engagement",
+    "tags": [
+      "team/customer-engagement"
+    ]
+  },
+  {
+    "id": "teams/customer-engagement/standards/definition-of-done.md",
+    "name": "definition-of-done.md",
+    "title": null,
+    "type": "team-standard",
+    "repo": null,
+    "project": "customer-engagement",
+    "tags": [
+      "team/customer-engagement"
+    ]
+  },
+  {
+    "id": "company-os/onboarding/developer.md",
+    "name": "Developer onboarding (company)",
+    "title": "Developer onboarding (company)",
+    "type": "onboarding-guide",
+    "repo": null,
+    "project": null,
+    "tags": [
+      "kind/onboarding",
+      "role/developer"
+    ]
+  },
+  {
+    "id": "company-os/standards/company-baseline.yaml",
+    "name": "company-baseline.yaml",
+    "title": null,
+    "type": "CompanyBaseline",
+    "repo": null,
+    "project": null,
+    "tags": [
+      "kind/baseline",
+      "scope/company",
+      "tier/mixed"
+    ]
+  }
+]
