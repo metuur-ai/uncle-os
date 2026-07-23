@@ -1,0 +1,19 @@
+schemaVersion: '1.0'
+kind: PlatformRequirements
+platform: {id: product}
+requirements:
+- id: release-safety
+  title: Release Safety
+  level: mandatory
+  version: '1.0'
+  appliesTo:
+    componentTypes: [service]
+    relationships: [belongs-to]
+  requirement: 'Releases must be revertible and user-facing changes are announced
+    before rollout. (Outcome, not implementation.)
+
+    '
+  verification:
+    evidence: [release-checklist]
+    checklist: [Rollback path documented, Announcement sent]
+tags: [kind/requirements, platform/product]

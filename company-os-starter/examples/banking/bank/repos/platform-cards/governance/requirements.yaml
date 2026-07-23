@@ -1,0 +1,16 @@
+schemaVersion: '1.0'
+kind: PlatformRequirements
+platform: {id: cards}
+requirements:
+- id: pan-handling
+  title: PAN Handling
+  level: mandatory
+  version: '2.0'
+  appliesTo:
+    componentTypes: [service]
+    relationships: [belongs-to, consumes]
+  requirement: 'Card numbers are never stored or logged in clear text; consumers
+    receive tokens only.
+
+    '
+tags: [kind/requirements, platform/cards]

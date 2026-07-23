@@ -1,0 +1,10 @@
+schemaVersion: '1.0'
+kind: Team
+metadata: {id: payments-rails, name: Payments Rails}
+agentSkills: {canonicalPath: skills/, personalPath: scratchpad/personal-rules/, precedence: canonical-mandatory
+    > personal > canonical-default > canonical-guidance, onConflict: prefer-canonical-and-inform-user}
+roster:
+  - {name: Sofia Marino, role: team-lead}
+  - {name: Priya Shah, role: developer}   # P7: same person as on fraud-detection
+  - {name: Jonas Weber, role: developer}
+tags: [kind/team, team/payments-rails]

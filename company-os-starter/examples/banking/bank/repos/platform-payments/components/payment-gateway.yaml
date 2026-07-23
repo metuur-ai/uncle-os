@@ -1,0 +1,10 @@
+schemaVersion: '1.0'
+kind: Component
+metadata: {id: payment-gateway, name: Payment Gateway, type: service, status: active}
+ownership: {accountableTeam: 'team://payments-rails', repository: 'repo://payment-gateway'}
+platformRelationships:
+- platform: platform://payments
+  relationship: belongs-to
+  capabilities: ['capability://payments/instant-transfer']
+tags: [capability/instant-transfer, component/payment-gateway, kind/component, platform/payments,
+  team/payments-rails]

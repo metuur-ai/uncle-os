@@ -1,0 +1,9 @@
+schemaVersion: '1.0'
+kind: Team
+metadata: {id: core, name: Core Team}
+agentSkills: {canonicalPath: skills/, personalPath: scratchpad/personal-rules/, precedence: canonical-mandatory
+    > personal > canonical-default > canonical-guidance, onConflict: prefer-canonical-and-inform-user}
+roster:
+  - {name: Ana Ruiz, role: team-lead}       # also acts as product-owner (P8: multiple hats)
+  - {name: Ben Osei, role: developer}
+tags: [kind/team, team/core]

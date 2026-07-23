@@ -1,0 +1,29 @@
+schemaVersion: '1.0'
+kind: PlatformRequirements
+platform: {id: payments}
+requirements:
+- id: settlement-finality
+  title: Settlement Finality
+  level: mandatory
+  version: '1.0'
+  effectiveFrom: 2026-05-01
+  appliesTo:
+    componentTypes: [service, worker]
+    relationships: [belongs-to, consumes]
+  requirement: 'Components touching Payment Orders must guarantee a Payment Order
+    is settled exactly once and its status is observable end to end. (Outcome, not
+    implementation.)
+
+    '
+  verification:
+    evidence: [architecture-document, integration-tests]
+    checklist: [Idempotent settlement path documented, Duplicate-order test exists,
+      Status is queryable]
+- id: prd-structure
+  title: Platform PRD Structure
+  level: default
+  version: '1.0'
+  appliesTo:
+    relationships: [belongs-to, supports]
+  requirement: PRDs for this platform use the standard platform PRD template.
+tags: [kind/requirements, platform/payments]

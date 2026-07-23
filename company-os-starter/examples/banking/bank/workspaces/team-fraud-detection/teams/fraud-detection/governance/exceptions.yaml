@@ -1,0 +1,13 @@
+schemaVersion: '1.0'
+team: fraud-detection
+exceptions:
+# P6: mandatory-tier rule -> only escape is an expiring, approved exception.
+# validate [2/7] fails the workspace the day `expires` passes.
+- rule: platform-standard://payments/settlement-finality
+  component: transaction-screening
+  reason: Legacy scoring engine cannot yet evidence the duplicate-order clause (R2).
+  compensatingControls: [Daily reconciliation report against settlement ledger, Manual
+      review of duplicate alerts]
+  approvedBy: 'platform://payments'
+  expires: '2026-12-31'
+tags: [kind/exceptions, team/fraud-detection]

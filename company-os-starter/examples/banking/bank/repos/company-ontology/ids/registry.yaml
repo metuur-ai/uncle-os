@@ -1,0 +1,24 @@
+schemaVersion: '1.0'
+kind: IdRegistry
+ids:
+- {id: 'platform://payments', definedIn: platforms/payments/platform.yaml}
+- {id: 'platform://cards', definedIn: platforms/cards/platform.yaml}
+- {id: 'platform://fraud', definedIn: platforms/fraud/platform.yaml}
+- {id: 'platform://lending', definedIn: platforms/lending/platform.yaml}
+- {id: 'platform://customer-service', definedIn: platforms/customer-service/platform.yaml}
+- {id: 'platform://identity', definedIn: platforms/identity/platform.yaml}
+- {id: 'team://payments-rails', definedIn: teams/payments-rails/team.yaml}
+- {id: 'team://cards-issuing', definedIn: teams/cards-issuing/team.yaml}
+- {id: 'team://fraud-detection', definedIn: teams/fraud-detection/team.yaml}
+- {id: 'component://payment-gateway', definedIn: platforms/payments/components/payment-gateway.yaml}
+- {id: 'component://settlement-engine', definedIn: platforms/payments/components/settlement-engine.yaml}
+- {id: 'component://card-issuing', definedIn: platforms/cards/components/card-issuing.yaml}
+- {id: 'component://transaction-screening', definedIn: platforms/fraud/components/transaction-screening.yaml}
+- {id: 'component://auth-service', definedIn: platforms/identity/components/auth-service.yaml}
+- {id: 'component://case-desk', definedIn: platforms/customer-service/components/case-desk.yaml}
+- {id: 'capability://payments/instant-transfer', definedIn: company-ontology/concepts/capability--instant-transfer.md}
+- {id: 'context://payments', definedIn: company-ontology/contexts/payments.md}
+- {id: 'context://fraud', definedIn: company-ontology/contexts/fraud.md}
+- {id: 'req://payments/settlement-finality', definedIn: platforms/payments/governance/requirements.yaml}
+- {id: 'req://identity/token-verification', definedIn: platforms/identity/governance/requirements.yaml}
+tags: [ontology/registry]

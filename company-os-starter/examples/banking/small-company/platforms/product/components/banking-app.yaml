@@ -1,0 +1,9 @@
+schemaVersion: '1.0'
+kind: Component
+metadata: {id: banking-app, name: Banking App, type: service, status: active}
+ownership: {accountableTeam: 'team://core', repository: 'repo://banking-app'}
+platformRelationships:
+- platform: platform://product
+  relationship: belongs-to
+  capabilities: []
+tags: [component/banking-app, kind/component, platform/product, team/core]

@@ -1,0 +1,10 @@
+schemaVersion: '1.0'
+kind: Component
+metadata: {id: settlement-engine, name: Settlement Engine, type: worker, status: active}
+# P3: same platform catalog, different accountable team and code repo.
+ownership: {accountableTeam: 'team://payments-rails', repository: 'repo://settlement-engine'}
+platformRelationships:
+- platform: platform://payments
+  relationship: belongs-to
+  capabilities: []
+tags: [component/settlement-engine, kind/component, platform/payments, team/payments-rails]

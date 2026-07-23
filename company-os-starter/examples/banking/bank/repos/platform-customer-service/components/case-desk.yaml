@@ -1,0 +1,9 @@
+schemaVersion: '1.0'
+kind: Component
+metadata: {id: case-desk, name: Case Desk, type: service, status: active}
+ownership: {accountableTeam: 'team://cs-servicing', repository: 'repo://case-desk'}
+platformRelationships:
+- platform: platform://customer-service
+  relationship: belongs-to
+  capabilities: []
+tags: [component/case-desk, kind/component, platform/customer-service, team/cs-servicing]

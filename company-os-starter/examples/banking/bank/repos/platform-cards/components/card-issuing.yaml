@@ -1,0 +1,11 @@
+schemaVersion: '1.0'
+kind: Component
+metadata: {id: card-issuing, name: Card Issuing, type: service, status: active}
+# P2: single source of truth — accountable team lives HERE; other teams may only
+# claim contributing/consuming. validate [1/7] reconciles against team registries.
+ownership: {accountableTeam: 'team://cards-issuing', repository: 'repo://card-issuing'}
+platformRelationships:
+- platform: platform://cards
+  relationship: belongs-to
+  capabilities: []
+tags: [component/card-issuing, kind/component, platform/cards, team/cards-issuing]

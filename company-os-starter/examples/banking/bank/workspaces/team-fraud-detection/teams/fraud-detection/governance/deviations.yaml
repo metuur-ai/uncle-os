@@ -1,0 +1,12 @@
+schemaVersion: '1.0'
+team: fraud-detection
+deviations:
+# P6: default-tier rule -> comply-or-explain deviation. A deviation against a
+# mandatory rule (e.g. payments/settlement-finality) would be REJECTED by
+# resolve_team_governance.
+- {rule: 'company-standard://estimation/story-points', tier: default, status: approved,
+  rationale: 'Investigation work is sized in t-shirt sizes; cycle time is reported
+    instead of points.
+
+    ', approvedBy: 'company://engineering-standards', reviewDate: 2027-03-01}
+tags: [kind/deviations, team/fraud-detection]

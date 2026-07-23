@@ -1,0 +1,16 @@
+schemaVersion: '1.0'
+kind: PlatformRequirements
+platform: {id: fraud}
+requirements:
+- id: alert-latency
+  title: Alert Latency
+  level: mandatory
+  version: '1.2'
+  appliesTo:
+    componentTypes: [service]
+    relationships: [belongs-to]
+  requirement: 'Screening decisions on a Transaction are produced within the SLA
+    and every Alert is traceable to its triggering Transaction.
+
+    '
+tags: [kind/requirements, platform/fraud]

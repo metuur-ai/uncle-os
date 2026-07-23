@@ -1,0 +1,12 @@
+schemaVersion: '1.0'
+kind: CompanyBaseline
+controls:
+- {id: security-service-baseline, version: '1.0', level: mandatory, requirement: 'Services
+    must authenticate all inbound calls and encrypt data in transit.
+
+    '}
+- {id: change-log, version: '1.0', level: default, requirement: 'Every completed change
+    appends a line to the platform log.
+
+    '}
+tags: [kind/baseline, scope/company, tier/mixed]

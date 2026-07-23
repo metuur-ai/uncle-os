@@ -1,0 +1,11 @@
+schemaVersion: '1.0'
+kind: Component
+# P4: a shared capability gets its own home platform — never co-owned by two
+# platforms. Everyone else consumes it and inherits only consumer-facing clauses.
+metadata: {id: auth-service, name: Auth Service, type: service, status: active}
+ownership: {accountableTeam: 'team://platform-identity', repository: 'repo://auth-service'}
+platformRelationships:
+- platform: platform://identity
+  relationship: belongs-to
+  capabilities: []
+tags: [component/auth-service, kind/component, platform/identity, team/platform-identity]

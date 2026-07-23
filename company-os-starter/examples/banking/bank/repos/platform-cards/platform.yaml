@@ -1,0 +1,5 @@
+schemaVersion: '1.0'
+kind: Platform
+metadata: {id: cards, name: Cards Platform}
+conformance: {companyOsVersion: '2026.2', profile: standard}
+tags: [kind/platform, platform/cards]

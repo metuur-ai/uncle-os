@@ -1,0 +1,8 @@
+schemaVersion: '1.0'
+kind: IdRegistry
+ids:
+- {id: 'platform://product', definedIn: platforms/product/platform.yaml}
+- {id: 'team://core', definedIn: teams/core/team.yaml}
+- {id: 'component://banking-app', definedIn: platforms/product/components/banking-app.yaml}
+- {id: 'req://product/release-safety', definedIn: platforms/product/governance/requirements.yaml}
+tags: [ontology/registry]

@@ -1,0 +1,16 @@
+schemaVersion: '1.0'
+kind: PlatformRequirements
+platform: {id: identity}
+requirements:
+- id: token-verification
+  title: Token Verification
+  level: mandatory
+  version: '1.0'
+  appliesTo:
+    componentTypes: [service, worker]
+    relationships: [consumes]
+  requirement: 'Consumers verify tokens on every call and never mint their own credentials.
+    (Consumer-facing clause — the only one consuming teams inherit.)
+
+    '
+tags: [kind/requirements, platform/identity]

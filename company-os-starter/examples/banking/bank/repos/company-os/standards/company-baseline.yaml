@@ -1,0 +1,22 @@
+schemaVersion: '1.0'
+kind: CompanyBaseline
+controls:
+- {id: data-residency, version: '1.0', level: mandatory, requirement: 'EU customer
+    data is stored and processed only in EU regions; residency evidence is produced
+    for the annual audit. (Outcome, not implementation.)
+
+    '}
+- {id: security-service-baseline, version: '3.0', level: mandatory, requirement: 'Services
+    must authenticate all inbound calls, encrypt data in transit, and pass the annual
+    security review.
+
+    '}
+- {id: estimation-story-points, version: '1.1', level: default, requirement: 'Teams
+    estimate delivery work in story points.
+
+    '}
+- {id: adr-format, version: '1.0', level: guidance, requirement: 'Architecture decisions
+    are recorded as lightweight ADRs.
+
+    '}
+tags: [kind/baseline, scope/company, tier/mixed]

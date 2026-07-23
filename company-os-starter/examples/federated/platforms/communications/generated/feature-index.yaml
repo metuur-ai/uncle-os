@@ -1,0 +1,11 @@
+components:
+  customer-notification-service:
+    externalPointers:
+    - label: Delivery runbook
+      system: confluence
+      url: https://example.invalid/cns-runbook
+    - label: Service repository
+      system: github
+      url: https://example.invalid/cns-repo
+    reality: reality/components/customer-notification-service.md
+platform: communications

@@ -1,0 +1,5 @@
+schemaVersion: '1.0'
+kind: Platform
+metadata: {id: product, name: Product Platform}
+conformance: {companyOsVersion: '2026.2', profile: minimal}
+tags: [kind/platform, platform/product]

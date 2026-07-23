@@ -1,0 +1,10 @@
+schemaVersion: '1.0'
+kind: Team
+metadata: {id: fraud-detection, name: Fraud Detection}
+agentSkills: {canonicalPath: skills/, personalPath: scratchpad/personal-rules/, precedence: canonical-mandatory
+    > personal > canonical-default > canonical-guidance, onConflict: prefer-canonical-and-inform-user}
+roster:
+  - {name: Omar Haddad, role: team-lead}
+  - {name: Priya Shah, role: developer}   # P7: also on payments-rails roster
+  - {name: Ines Beck, role: product-owner}
+tags: [kind/team, team/fraud-detection]

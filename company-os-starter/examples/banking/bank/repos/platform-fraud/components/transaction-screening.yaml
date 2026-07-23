@@ -1,0 +1,10 @@
+schemaVersion: '1.0'
+kind: Component
+metadata: {id: transaction-screening, name: Transaction Screening, type: service,
+  status: active}
+ownership: {accountableTeam: 'team://fraud-detection', repository: 'repo://transaction-screening'}
+platformRelationships:
+- platform: platform://fraud
+  relationship: belongs-to
+  capabilities: []
+tags: [component/transaction-screening, kind/component, platform/fraud, team/fraud-detection]

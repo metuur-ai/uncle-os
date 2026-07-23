@@ -1,0 +1,8 @@
+components:
+  banking-app:
+    activePrds:
+    - 2026-instant-statements
+    discovery:
+    - 2026-instant-statements
+    reality: reality/components/banking-app.md
+platform: product

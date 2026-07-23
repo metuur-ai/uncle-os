@@ -1,0 +1,9 @@
+schemaVersion: '1.0'
+team: {id: payments-rails, name: Payments Rails}
+components:
+# P3: one team accountable for two components living in two code repos,
+# cataloged by one platform repo.
+- {id: payment-gateway, relationship: accountable, repository: 'repo://payment-gateway'}
+- {id: settlement-engine, relationship: accountable, repository: 'repo://settlement-engine'}
+- {id: auth-service, relationship: consuming}
+tags: [kind/ownership, team/payments-rails]

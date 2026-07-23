@@ -1,0 +1,11 @@
+schemaVersion: '1.0'
+team: {id: fraud-detection, name: Fraud Detection}
+components:
+- {id: transaction-screening, relationship: accountable, repository: 'repo://transaction-screening'}
+# P2: consuming another platform's component — only consumer-facing clauses
+# (appliesTo.relationships: [consumes]) reach effective-governance.yaml.
+- {id: card-issuing, relationship: consuming}
+- {id: payment-gateway, relationship: consuming}
+# P4: everyone consumes the shared identity platform.
+- {id: auth-service, relationship: consuming}
+tags: [kind/ownership, team/fraud-detection]
