@@ -48,6 +48,12 @@ Jump to a how-to:
 - **[explanation/how-it-fits-together.md](explanation/how-it-fits-together.md)** — how Company OS, Team OS, Local Search, and Claude skills cooperate.
 - **[explanation/observer-roadmap.md](explanation/observer-roadmap.md)** — where the knowledge-graph vision (codename Observer) is headed. **Not shipped yet** — read this as roadmap, not a manual.
 
+## I have a quick question
+
+**[reference/faq.md](reference/faq.md)** — short answers to common questions
+about concepts, governance tiers, the daily workflow, validation, and search,
+each pointing to the page that goes deeper.
+
 ## I need the exact facts
 
 - **[reference/company-os-cli.md](reference/company-os-cli.md)** — every `company-os` subcommand, its flags, and defaults.
