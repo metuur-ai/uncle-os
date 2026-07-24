@@ -11,7 +11,7 @@ import tempfile
 from importlib.machinery import SourceFileLoader
 from pathlib import Path
 
-CLI = Path(__file__).resolve().parent.parent / "bin" / "company-os"
+CLI = Path(__file__).resolve().parent.parent / "company-os-starter" / "bin" / "company-os"
 co = SourceFileLoader("co", str(CLI)).load_module()
 HERE = Path(__file__).resolve().parent
 

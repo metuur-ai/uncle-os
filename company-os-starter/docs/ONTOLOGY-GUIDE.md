@@ -6,7 +6,7 @@ tags: [doc/company-os-starter, kind/guide, ontology/guide]
 # Ontology Guide: Defining Meaning, Correlating with Tags, Tracing with EARS `@spec`
 
 **Companion to:** the Federated OS proposal and the `company-os-starter` kit.
-A worked example lives in `examples/workspace/company-ontology/`.
+A worked example lives in `../examples/workspace/company-ontology/`.
 
 Three questions, three mechanisms, one graph:
 
@@ -356,7 +356,7 @@ original words); only `authority: canonical` docs are held to it.
 
 # Quick-Start Checklist
 
-1. Create `company-ontology/` (example scaffold: `examples/workspace/company-ontology/`).
+1. Create `company-ontology/` (example scaffold: `../examples/workspace/company-ontology/`).
 2. Steps 1–3: harvest nouns, split shared vs contextual, register IDs.
 3. Write hub notes for your top ~10 shared concepts and your first bounded
    context with its ubiquitous language + forbidden terms.

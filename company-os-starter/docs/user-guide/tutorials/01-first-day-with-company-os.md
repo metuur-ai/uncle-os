@@ -32,7 +32,7 @@ Expected tail of the output:
 
 Done. Try:
   company-os --help
-  cd /Users/you/.local/share/company-os/examples/workspace && company-os validate
+  company-os init my-workspace && cd my-workspace && company-os validate
 ```
 
 If `~/.local/bin` isn't already on your `PATH`, the installer tells you the

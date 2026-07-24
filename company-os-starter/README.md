@@ -22,7 +22,7 @@ schemas/SCHEMAS.md    Human-readable artifact contracts
 docs/FRONTMATTER-CORE.md  The minimal frontmatter core — the shared interop
                       contract for teams, tools, and Obsidian
 docs/TUTORIAL.md      End-to-end walkthrough with real command outputs
-examples/workspace/   Populated company + platform + team, including a
+../examples/workspace/  Populated company + platform + team (in the repo root, not shipped), including a
                       completed PRD, deviations, an exception, and a
                       personal-rules example in scratchpad/
 ```
@@ -32,7 +32,7 @@ examples/workspace/   Populated company + platform + team, including a
 ```bash
 pip install pyyaml
 export PATH="$PWD/bin:$PATH"
-cd examples/workspace
+cd ../examples/workspace
 company-os governance resolve --team customer-engagement
 company-os today --role product-owner
 company-os validate

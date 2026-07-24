@@ -40,7 +40,7 @@ The starter kit ships a complete, working standalone team at
 Open it up:
 
 ```bash
-$ cd company-os-starter/examples/standalone-team
+$ cd examples/standalone-team
 $ export PATH="$PWD/../../bin:$PATH"
 $ company-os validate
 ```

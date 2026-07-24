@@ -73,11 +73,8 @@ for item in bin templates skills schemas docs vendor README.md; do
     cp -R "$SRC_DIR/$item" "$SHARE_DIR/$item"
   fi
 done
-# The worked example workspace is optional but is the tutorial's acceptance path.
-if [ -d "$SRC_DIR/examples" ]; then
-  rm -rf "$SHARE_DIR/examples"
-  cp -R "$SRC_DIR/examples" "$SHARE_DIR/examples"
-fi
+# The worked example workspaces live in the source repo (examples/), not the
+# shipped kit — the installed CLI scaffolds a fresh workspace via `company-os init`.
 chmod +x "$SHARE_DIR/bin/company-os"
 ok "Copied kit to $SHARE_DIR"
 
@@ -117,4 +114,4 @@ esac
 
 printf '\nDone. Try:\n'
 say "company-os --help"
-say "cd $SHARE_DIR/examples/workspace && company-os validate"
+say "company-os init my-workspace && cd my-workspace && company-os validate"

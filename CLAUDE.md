@@ -15,7 +15,7 @@ The CLI has no build step. Setup and use:
 ```bash
 pip install pyyaml                              # only dependency; Python 3.9+
 export PATH="$PWD/company-os-starter/bin:$PATH"
-cd company-os-starter/examples/workspace        # the CLI operates on a workspace root
+cd examples/workspace                           # the CLI operates on a workspace root
 ```
 
 Workspace root resolution order: `--root` flag → `$COMPANY_OS_WORKSPACE_ROOT` → current directory.

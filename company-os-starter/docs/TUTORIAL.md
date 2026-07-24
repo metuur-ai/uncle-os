@@ -5,7 +5,7 @@ tags: [doc/company-os-starter, kind/tutorial]
 
 # Tutorial: From Idea to Archived PRD with `company-os`
 
-This walkthrough uses the populated example in `examples/workspace/` and the
+This walkthrough uses the populated example in `../examples/workspace/` and the
 reference CLI in `bin/company-os`. Every command and output below was executed
 against this kit — you can reproduce the whole session.
 
@@ -21,13 +21,13 @@ directory to a completed change on a fresh workspace you scaffold yourself.
 ```bash
 # requirements: python3 + pyyaml  (pip install pyyaml)
 export PATH="$PWD/bin:$PATH"
-cd examples/workspace        # or: export COMPANY_OS_WORKSPACE_ROOT=$PWD/examples/workspace
+cd ../examples/workspace     # or: export COMPANY_OS_WORKSPACE_ROOT=$PWD/../examples/workspace
 ```
 
 The workspace layout (each directory is its own Git repo in real life):
 
 ```text
-examples/workspace/
+../examples/workspace/
 ├── company-os/standards/company-baseline.yaml      # 3 company controls
 ├── platforms/communications/
 │   ├── governance/requirements.yaml                # tiered, versioned rules

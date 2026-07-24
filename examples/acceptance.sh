@@ -9,7 +9,7 @@
 #   examples/acceptance.sh --update   # re-baseline the golden snapshot
 set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
-CLI="$HERE/../bin/company-os"
+CLI="$HERE/../company-os-starter/bin/company-os"
 GOLDEN="$HERE/golden-validate.txt"
 FED_GOLDEN="$HERE/federated-golden-validate.txt"
 TMP="$(mktemp)"
