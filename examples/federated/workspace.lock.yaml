@@ -3,7 +3,7 @@ generatedFrom: workspace.yaml
 repos:
 - name: platform-communications
   url: https://git.example.com/acme/platform-communications.git
-  root: platforms/communications
+  localDirectory: platforms/communications
   pin:
     commit: 714635868b0048af719450b9dd333f245cf541df
   resolvedCommit: 714635868b0048af719450b9dd333f245cf541df

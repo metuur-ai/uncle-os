@@ -359,7 +359,7 @@ with tempfile.TemporaryDirectory(dir="/tmp") as d:
           co.slice_state(ws, lock_repo) == "clean")
     (root / "workspace.yaml").write_text(
         "version: 1\nrepos:\n  - name: p\n    url: file:///x\n"
-        "    root: platforms/p\n    pin: {commit: deadbeef}\n    paths: [governance/]\n")
+        "    localDirectory: platforms/p\n    pin: {commit: deadbeef}\n    paths: [governance/]\n")
     (root / "workspace.lock.yaml").write_text(
         co.yaml.safe_dump({"version": 1, "repos": [lock_repo]}, sort_keys=False))
     manifest = co.load_manifest(ws)
@@ -410,7 +410,7 @@ else:
         (ws_dir / "teams").mkdir(parents=True)
         (ws_dir / "workspace.yaml").write_text(
             "version: 1\nrepos:\n  - name: p\n    url: file://%s\n"
-            "    root: platforms/p\n    pin: {commit: %s}\n"
+            "    localDirectory: platforms/p\n    pin: {commit: %s}\n"
             "    paths: [governance/]\n" % (src, sha))
         cli = str(CLI)
         r = subprocess.run([sys.executable, cli, "--root", str(ws_dir),

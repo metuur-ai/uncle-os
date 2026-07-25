@@ -53,12 +53,12 @@ version: 1
 repos:
   - name: company-os                     # cache key + status/lock label (unique)
     url: https://github.com/acme/company-os.git
-    root: company-os                     # where the slice lands in the canonical layout
+    localDirectory: company-os           # the local directory the slice lands in
     pin: {tag: v1.0.0}                   # EXACTLY ONE of commit:/tag: — no branches
     paths: [standards/, onboarding/]     # governance allowlist — DIRECTORIES ONLY
   - name: platform-communications
     url: https://github.com/acme/platform-communications.git
-    root: platforms/communications
+    localDirectory: platforms/communications
     pin: {commit: c7241463de650417298d402409ad56d00fcbebd5}
     paths: [governance/, components/, reality/, change-records/, archive/, generated/, skills/]
 ```
@@ -66,8 +66,9 @@ repos:
 Hard rules the CLI enforces at load (they fail `sync`, `status`, and `validate`
 identically):
 
-- **`name`, `url`, `root` are required.** `root` must be a relative path landing
-  under a canonical root (`company-os/`, `platforms/`, `teams/`, `company-ontology/`).
+- **`name`, `url`, `localDirectory` are required.** `localDirectory` is the local
+  directory the slice lands in; it must be a relative path landing under a
+  canonical root (`company-os/`, `platforms/`, `teams/`, `company-ontology/`).
 - **`pin:` accepts exactly one of `commit:` or `tag:`.** A branch name, a bare
   `ref:`, or *both* `commit:` and `tag:` together are rejected as floating or
   ambiguous (`GPF-R-6.3`). A `tag:` is resolved to a SHA at sync and recorded in
@@ -80,6 +81,8 @@ identically):
 > These field names differ from the earlier design sketch (which nested
 > `company-os:`/`platforms:`/`teams:` and allowed `branch:`). The flat `repos:`
 > list above is what `bin/company-os` parses today — treat the CLI as ground truth.
+> The destination key was formerly called `root:`; a manifest still using that
+> name fails at load with a message naming `localDirectory:`.
 
 ---
 
@@ -95,12 +98,12 @@ version: 1
 repos:
   - name: company-os
     url: https://github.com/acme/company-os.git
-    root: company-os
+    localDirectory: company-os
     pin: {tag: v1.0.0}
     paths: [standards/, onboarding/]
   - name: platform-communications
     url: https://github.com/acme/platform-communications.git
-    root: platforms/communications
+    localDirectory: platforms/communications
     pin: {tag: v2.1.0}
     paths: [governance/, components/, reality/, change-records/, archive/, generated/, skills/]
 YAML
@@ -153,7 +156,7 @@ gate `[8/8]`:
 repos:
 - name: platform-communications
   url: https://github.com/acme/platform-communications.git
-  root: platforms/communications
+  localDirectory: platforms/communications
   pin:
     tag: v2.1.0
   resolvedCommit: 6622076972b9f82b10e03ba584aa9199f77e9eb7

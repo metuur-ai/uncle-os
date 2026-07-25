@@ -2,21 +2,21 @@ version: 1
 repos:
   - name: company-os
     url: https://git.example.com/bank/company-os.git
-    root: company-os
+    localDirectory: company-os
     pin: {tag: v2026.2}
     paths: [standards/, onboarding/, skills/, templates/]
   - name: company-ontology
     url: https://git.example.com/bank/company-ontology.git
-    root: company-ontology
+    localDirectory: company-ontology
     pin: {tag: v2026.2}
     paths: [ids/, contexts/, context-maps/, concepts/, taxonomies/]
   - name: platform-payments
     url: https://git.example.com/bank/platform-payments.git
-    root: platforms/payments
+    localDirectory: platforms/payments
     pin: {commit: 2222222222222222222222222222222222222222}  # illustrative
     paths: [governance/, components/, reality/, skills/, templates/]
   - name: platform-identity
     url: https://git.example.com/bank/platform-identity.git
-    root: platforms/identity
+    localDirectory: platforms/identity
     pin: {commit: 4444444444444444444444444444444444444444}  # illustrative
     paths: [governance/, components/]

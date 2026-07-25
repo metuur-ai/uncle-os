@@ -2009,7 +2009,7 @@ def cmd_reality(ws, args):
 #   repos:
 #     - name: platform-communications      # cache key + status/lock label
 #       url:  file:///abs/path  OR  https://host/acme/platform-comms.git
-#       root: platforms/communications      # where the slice lands (canonical layout)
+#       localDirectory: platforms/communications  # where the slice lands locally
 #       pin:  {commit: <sha>}  OR  {tag: <tag>}   # EXACTLY ONE; branches rejected
 #       paths: [governance/, components/, reality/, skills/, templates/]  # allowlist
 #
@@ -2047,7 +2047,11 @@ def load_manifest(ws):
 def _validate_repo_entry(repo, i):
     if not isinstance(repo, dict):
         die(f"{MANIFEST_NAME}: repos[{i}] must be a mapping")
-    for f in ("name", "url", "root"):
+    if "root" in repo:
+        die(f"{MANIFEST_NAME}: repos[{i}] uses 'root:' — renamed to "
+            f"'localDirectory:' (the local directory the slice lands in). "
+            f"rename it, then: company-os workspace sync")
+    for f in ("name", "url", "localDirectory"):
         if not repo.get(f):
             die(f"{MANIFEST_NAME}: repos[{i}] missing required '{f}:'")
     repo_pin(repo)  # raises on floating / ambiguous pins
@@ -2078,17 +2082,17 @@ def repo_pin(repo):
 
 
 def repo_target_root(ws, repo):
-    """Resolve a repo's target root inside the canonical layout, refusing paths
-    that escape the workspace or land outside a canonical root."""
-    raw = str(repo["root"])
+    """Resolve a repo's localDirectory inside the canonical layout, refusing
+    paths that escape the workspace or land outside a canonical root."""
+    raw = str(repo["localDirectory"])
     rel = raw.strip("/")
     if os.path.isabs(raw) or ".." in Path(rel).parts or not rel:
-        die(f"repo '{repo['name']}': root '{raw}' must be a relative path inside "
-            f"the workspace (no absolute paths, no '..').")
+        die(f"repo '{repo['name']}': localDirectory '{raw}' must be a relative "
+            f"path inside the workspace (no absolute paths, no '..').")
     top = rel.split("/")[0]
     if top not in CANONICAL_ROOTS:
-        die(f"repo '{repo['name']}': root '{raw}' must land under one of "
-            f"{'/, '.join(CANONICAL_ROOTS)}/")
+        die(f"repo '{repo['name']}': localDirectory '{raw}' must land under one "
+            f"of {'/, '.join(CANONICAL_ROOTS)}/")
     return (ws.root / rel)
 
 
@@ -2364,20 +2368,21 @@ def cmd_workspace_sync(ws, manifest, frozen=False, only=None):
                 die(f"--frozen: materialized slice for '{name}' does not match the "
                     f"hash in {LOCK_NAME} (cache/objects inconsistent with lock). "
                     f"run online: company-os workspace sync")
-            print(f"  restored {name} @ {sha[:12]} (from lock) -> {repo['root']} "
-                  f"({len(files)} file(s))")
+            print(f"  restored {name} @ {sha[:12]} (from lock) "
+                  f"-> {repo['localDirectory']} ({len(files)} file(s))")
         else:
             sha = _fetch_pinned(cache, repo["url"], kind, ref)
             _checkout_slice(cache, sha, _sparse_dirs(paths))
             materialize_slice(ws, cache, target, paths)
             files, agg = hash_slice(ws, target)
             locked[name] = {
-                "name": name, "url": repo["url"], "root": repo["root"],
+                "name": name, "url": repo["url"],
+                "localDirectory": repo["localDirectory"],
                 "pin": {kind: ref}, "resolvedCommit": sha,
                 "sliceHash": agg, "files": files,
             }
-            print(f"  synced {name} @ {sha[:12]} ({kind} {ref}) -> {repo['root']} "
-                  f"({len(files)} file(s))")
+            print(f"  synced {name} @ {sha[:12]} ({kind} {ref}) "
+                  f"-> {repo['localDirectory']} ({len(files)} file(s))")
 
     ensure_cache_gitignored(ws)
     if not frozen:
@@ -2414,7 +2419,8 @@ def cmd_workspace_status(ws, manifest):
             label = state
             if state != "clean":
                 action_needed = True
-        print(f"  {name}: {kind}:{ref} @ {sha[:12]} -> {repo['root']} — {label}")
+        print(f"  {name}: {kind}:{ref} @ {sha[:12]} "
+              f"-> {repo['localDirectory']} — {label}")
     if action_needed:
         print("\nnext: company-os workspace sync")
     else:

@@ -134,7 +134,7 @@ version: 1
 repos:
   - name: testplat
     url: file://$SRC
-    root: platforms/testplat
+    localDirectory: platforms/testplat
     pin:
       commit: $ISHA
     paths:
