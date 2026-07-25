@@ -177,7 +177,19 @@ def format_checks_enforced(ws, team):
 
 # A directory is a workspace root if it holds at least one canonical federation
 # root. A standalone team workspace has only `teams/`, so ANY one suffices.
-CANONICAL_ROOTS = ("company-os", "platforms", "teams", "company-ontology")
+#
+# `knowledge/` is the catalog root: federated slices of FOREIGN documentation
+# (a component repo's docs/, sdd/, specs/) land here. It is deliberately a NODE
+# root but NOT a graph-docs root — see KNOWLEDGE_ROOT below.
+CANONICAL_ROOTS = ("company-os", "platforms", "teams", "company-ontology",
+                   "knowledge")
+
+# Knowledge slices come from repos that are not Company OS workspaces: their docs
+# carry no `type:`/`id:` frontmatter and the materialized slice is 0444. So this
+# root is excluded from `iter_graph_docs` — walking it would fail gate 4 on every
+# foreign doc and make `graph build` rewrite tags into read-only files. It still
+# gets a CLAUDE.md node (so agents can find it) and gate 8 integrity.
+KNOWLEDGE_ROOT = "knowledge"
 
 # -------------------------------------------------- federation (Option B) config
 # Presence of `workspace.yaml` at the root is the ONLY switch into federated mode
@@ -1638,10 +1650,38 @@ def rewrite_generated_block(path, block):
 
 
 def node_roots(ws):
-    """Federation roots that carry a CLAUDE.md context node (R-3.1)."""
+    """Federation roots that carry a CLAUDE.md context node (R-3.1).
+
+    Includes `knowledge/` — the catalog root is navigable even though its
+    contents are never ingested as graph docs (see KNOWLEDGE_ROOT)."""
     roots = [ws.company, *ws.all_platforms(), *ws.all_teams(),
-             ws.root / "company-ontology"]
+             ws.root / "company-ontology", ws.root / KNOWLEDGE_ROOT]
     return [r for r in roots if r.exists()]
+
+
+def iter_knowledge_docs(ws):
+    """Yield (path, title) for every markdown doc under `knowledge/`.
+
+    Deliberately tolerant, unlike iter_graph_docs: no frontmatter is required
+    and nothing is written back. Knowledge slices are foreign, read-only
+    content — this lists them for the context node, it does not govern them."""
+    root = ws.root / KNOWLEDGE_ROOT
+    if not root.is_dir():
+        return
+    for md in sorted(root.rglob("*.md")):
+        # Test the WORKSPACE-RELATIVE parts: matching md.parts would also skip
+        # every doc when the checkout itself lives under a dir named scratchpad.
+        if "scratchpad" in md.relative_to(root).parts or md.name == "CLAUDE.md":
+            continue
+        title = md.stem
+        try:
+            for line in md.read_text(errors="replace").splitlines():
+                if line.startswith("# "):
+                    title = line[2:].strip() or title
+                    break
+        except OSError:
+            pass
+        yield md, title
 
 
 def root_team_meta(ws, root):
@@ -1671,17 +1711,34 @@ def build_claude_node(ws, root, docs, team_meta=None):
     `type`, links to sibling federation roots, and (team roots) an identity
     summary. No time, no walk-order dependence — inputs are pre-sorted (R-3.7)."""
     lines = [f"## {root.name} — context index", ""]
-    by_type = {}
-    for rel, meta in docs:
-        by_type.setdefault(str(meta.get("type") or "other"), []).append((rel, meta))
-    if by_type:
-        lines.append("### Doc index")
-        for t in sorted(by_type):
-            lines.append(f"- **{t}**")
-            for rel, meta in sorted(by_type[t], key=lambda x: x[0]):
-                title = meta.get("title") or meta.get("id") or Path(rel).name
-                lines.append(f"  - [{title}]({rel})")
-        lines.append("")
+    if root.name == KNOWLEDGE_ROOT:
+        # `docs` is empty here by construction — iter_graph_docs never walks the
+        # catalog root. Index the foreign slices tolerantly instead, grouped by
+        # the directory each landed in.
+        areas = {}
+        for md, title in iter_knowledge_docs(ws):
+            rel = md.relative_to(root).as_posix()
+            parent = Path(rel).parent.as_posix()
+            areas.setdefault("." if parent == "." else parent, []).append((rel, title))
+        if areas:
+            lines.append("### Knowledge areas")
+            for area in sorted(areas):
+                lines.append(f"- **{area}**")
+                for rel, title in sorted(areas[area]):
+                    lines.append(f"  - [{title}]({rel})")
+            lines.append("")
+    else:
+        by_type = {}
+        for rel, meta in docs:
+            by_type.setdefault(str(meta.get("type") or "other"), []).append((rel, meta))
+        if by_type:
+            lines.append("### Doc index")
+            for t in sorted(by_type):
+                lines.append(f"- **{t}**")
+                for rel, meta in sorted(by_type[t], key=lambda x: x[0]):
+                    title = meta.get("title") or meta.get("id") or Path(rel).name
+                    lines.append(f"  - [{title}]({rel})")
+            lines.append("")
     others = [r for r in node_roots(ws) if r != root]
     if others:
         lines.append("### Federation roots")
@@ -2081,19 +2138,33 @@ def repo_pin(repo):
     return present[0], str(pin[present[0]])
 
 
-def repo_target_root(ws, repo):
-    """Resolve a repo's localDirectory inside the canonical layout, refusing
-    paths that escape the workspace or land outside a canonical root."""
-    raw = str(repo["localDirectory"])
+def slice_rel(name, local_directory):
+    """Workspace-relative POSIX path for a slice target, or die. Refuses paths
+    that escape the workspace or land outside a canonical root."""
+    raw = str(local_directory)
     rel = raw.strip("/")
     if os.path.isabs(raw) or ".." in Path(rel).parts or not rel:
-        die(f"repo '{repo['name']}': localDirectory '{raw}' must be a relative "
+        die(f"repo '{name}': localDirectory '{raw}' must be a relative "
             f"path inside the workspace (no absolute paths, no '..').")
-    top = rel.split("/")[0]
-    if top not in CANONICAL_ROOTS:
-        die(f"repo '{repo['name']}': localDirectory '{raw}' must land under one "
+    parts = Path(rel).parts
+    if parts[0] not in CANONICAL_ROOTS:
+        die(f"repo '{name}': localDirectory '{raw}' must land under one "
             f"of {'/, '.join(CANONICAL_ROOTS)}/")
-    return (ws.root / rel)
+    # `knowledge/` itself is CLI-owned: it holds the generated CLAUDE.md node.
+    # Targeting it bare would chmod that node 0444 via _make_readonly, after
+    # which graph build cannot rewrite it and gate 5 reports unfixable drift.
+    # Depth >= 2 is NOT a blanket rule — `company-os` and `company-ontology` are
+    # legitimate depth-1 targets whose node ships inside the slice.
+    if parts[0] == KNOWLEDGE_ROOT and len(parts) < 2:
+        die(f"repo '{name}': localDirectory '{raw}' must name an area under "
+            f"{KNOWLEDGE_ROOT}/ (e.g. {KNOWLEDGE_ROOT}/components/{name}), not "
+            f"the catalog root itself")
+    return rel
+
+
+def slice_target_root(ws, name, local_directory):
+    """Absolute path a slice materializes into."""
+    return ws.root / slice_rel(name, local_directory)
 
 
 # ---- git plumbing (version-robust; the ONLY subprocess users) ----
@@ -2347,7 +2418,7 @@ def cmd_workspace_sync(ws, manifest, frozen=False, only=None):
     for repo in repos:
         name = repo["name"]
         kind, ref = repo_pin(repo)
-        target = repo_target_root(ws, repo)
+        target = slice_target_root(ws, name, repo["localDirectory"])
         paths = repo.get("paths", DEFAULT_SLICE_PATHS)
         cache = ws.root / FEDERATION_CACHE / name
         if frozen:
