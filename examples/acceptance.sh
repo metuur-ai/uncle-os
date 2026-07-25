@@ -110,7 +110,8 @@ else
   SRC="$IWORK/src-testplat"; WS="$IWORK/ws"
   # Source repo: governance content (allowlisted) PLUS non-governance files that
   # the sparse allowlist must NOT pull (README.md at root, src/ subtree).
-  mkdir -p "$SRC/governance" "$SRC/components" "$SRC/src"
+  mkdir -p "$SRC/governance" "$SRC/components" "$SRC/src" "$SRC/docs/sdd"
+  echo "# Spec" > "$SRC/docs/sdd/spec.md"
   cat > "$SRC/governance/requirements.yaml" <<'YAML'
 version: 1
 platform: testplat
@@ -127,21 +128,26 @@ YAML
   ( cd "$SRC" && git init -q && git config user.email t@e && git config user.name t \
       && git add -A && git commit -q -m init ) || fail=1
   ISHA="$( cd "$SRC" && git rev-parse HEAD )"
-  # Workspace: just a manifest (marks the root); slice lands under platforms/.
+  # Workspace: just a manifest (marks the root). ONE repo, TWO destinations —
+  # a governance slice under platforms/ and a knowledge slice under knowledge/.
+  # The knowledge entry is deliberately NESTED (docs/sdd): depth-1 entries never
+  # exercised the parent-permission path that a re-sync needs.
   mkdir -p "$WS"
   cat > "$WS/workspace.yaml" <<YAML
 version: 1
 repos:
   - name: testplat
     url: file://$SRC
-    localDirectory: platforms/testplat
     pin:
       commit: $ISHA
-    paths:
-      - governance/
-      - components/
+    slices:
+      - localDirectory: platforms/testplat
+        paths: [governance/, components/]
+      - localDirectory: knowledge/testplat
+        paths: [docs/sdd]
 YAML
   SLICE="$WS/platforms/testplat"
+  KSLICE="$WS/knowledge/testplat"
   tree_hash() { find "$1" -type f ! -name '*.pyc' -print0 | sort -z | xargs -0 shasum | shasum | awk '{print $1}'; }
 
   if "$CLI" --root "$WS" workspace sync >/dev/null 2>&1; then
@@ -152,10 +158,43 @@ YAML
     else
       echo "FAIL: slice leaked non-allowlisted paths"; fail=1
     fi
-    h_online="$(tree_hash "$SLICE")"
+    # multi-slice: the second target holds its own content and only its own
+    if [ -f "$KSLICE/docs/sdd/spec.md" ] && [ ! -e "$KSLICE/governance" ] \
+       && [ ! -e "$SLICE/docs" ]; then
+      echo "ok: multi-slice targets are populated and isolated"
+    else
+      echo "FAIL: multi-slice targets leaked into each other"; fail=1
+    fi
+    # one repo => exactly one cache dir, one fetch
+    if [ "$(ls "$WS/.company-os/federation-cache" | wc -l | tr -d ' ')" = "1" ]; then
+      echo "ok: multi-slice repo uses a single git cache"
+    else
+      echo "FAIL: multi-slice repo produced more than one cache dir"; fail=1
+    fi
+    # the lock must carry slices: (and no top-level localDirectory:) — nothing
+    # READS that key at runtime, so an un-migrated lock would otherwise stay green
+    if grep -q "slices:" "$WS/workspace.lock.yaml" \
+       && ! grep -qE "^  localDirectory:" "$WS/workspace.lock.yaml"; then
+      echo "ok: lock records the slice list"
+    else
+      echo "FAIL: lock is missing slices: or still has a top-level localDirectory:"; fail=1
+    fi
+    # re-sync over the now read-only tree — regression guard for the nested entry
+    if "$CLI" --root "$WS" workspace sync >/dev/null 2>&1; then
+      echo "ok: re-sync over a read-only nested slice succeeds"
+    else
+      echo "FAIL: re-sync over a read-only nested slice failed"; fail=1
+    fi
+    # status must render every target and report clean (nothing exercises it otherwise)
+    if "$CLI" --root "$WS" workspace status 2>&1 | grep -q "platforms/testplat, knowledge/testplat — clean"; then
+      echo "ok: status lists every slice target and reports clean"
+    else
+      echo "FAIL: workspace status did not report all targets clean"; fail=1
+    fi
+    h_online="$(tree_hash "$WS/platforms")$(tree_hash "$WS/knowledge")"
     # --frozen re-materializes strictly from the lock (offline contract).
     if "$CLI" --root "$WS" workspace sync --frozen >/dev/null 2>&1; then
-      h_frozen="$(tree_hash "$SLICE")"
+      h_frozen="$(tree_hash "$WS/platforms")$(tree_hash "$WS/knowledge")"
       if [ "$h_online" = "$h_frozen" ]; then
         echo "ok: --frozen reproduces slice bytes from lock ($h_frozen)"
       else

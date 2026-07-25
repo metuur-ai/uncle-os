@@ -12,6 +12,7 @@ validating workspace <WORKSPACE>
 
 [4/7] frontmatter core and tag derivation (interop contract)
   [ok] company-os/onboarding/developer.md: core fields + tags in sync
+  [ok] company-os/skills/syncing-knowledge.SKILL.md: core fields + tags in sync
   [ok] platforms/communications/archive/prds/2026-per-channel-quiet-hours/outcome.md: core fields + tags in sync
   [ok] platforms/communications/archive/prds/2026-per-channel-quiet-hours/prd.md: core fields + tags in sync
   [ok] platforms/communications/reality/components/customer-notification-service.md: core fields + tags in sync
@@ -35,6 +36,6 @@ validating workspace <WORKSPACE>
   [ok] communications: feature-index in sync (1 component(s))
 
 [7/7] custom skills layering (shadowing + extends resolution)
-  [ok] skills layered cleanly (1 canonical, 0 team; no shadowing or dangling extends)
+  [ok] skills layered cleanly (2 canonical, 0 team; no shadowing or dangling extends)
 
 PASS

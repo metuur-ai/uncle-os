@@ -25,12 +25,12 @@ validating workspace <WORKSPACE>
 
 [5/8] CLAUDE.md context node drift (fail-safe, absence-tolerant)
   [ok] company-os/CLAUDE.md: context node in sync
-  [ok] platforms/communications: no CLAUDE.md node (absent -> pass)
+  [ok] platforms/communications/CLAUDE.md: context node in sync
   [ok] teams/customer-engagement/CLAUDE.md: context node in sync
   [ok] company-ontology/CLAUDE.md: context node in sync
 
 [6/8] feature-index drift (derived component->artifact map)
-  [ok] communications: no feature-index (absent -> pass; run graph build to enable)
+  [ok] communications: feature-index in sync (1 component(s))
 
 [7/8] custom skills layering (shadowing + extends resolution)
   [ok] skills layered cleanly (1 canonical, 0 team; no shadowing or dangling extends)
