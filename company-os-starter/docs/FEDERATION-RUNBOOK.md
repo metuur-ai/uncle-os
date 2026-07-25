@@ -66,9 +66,18 @@ repos:
 Hard rules the CLI enforces at load (they fail `sync`, `status`, and `validate`
 identically):
 
-- **`name`, `url`, `localDirectory` are required.** `localDirectory` is the local
-  directory the slice lands in; it must be a relative path landing under a
-  canonical root (`company-os/`, `platforms/`, `teams/`, `company-ontology/`).
+- **`name`, `url` are required, plus a destination.** `localDirectory` is the
+  local directory the slice lands in; it must be a relative path landing under a
+  canonical root (`company-os/`, `platforms/`, `teams/`, `company-ontology/`,
+  `knowledge/`). `name` must be a plain label — it keys the git cache directory.
+- **A repo contributing several areas uses `slices:` instead.** Each entry is a
+  `{paths, localDirectory}` pair; the repo is fetched once, checked out once over
+  the union of every entry's allowlist, and materialized into each target. Setting
+  `slices:` together with a top-level `localDirectory:` or `paths:` is rejected
+  rather than silently ignoring the top-level key. Slice targets must be disjoint
+  across the whole manifest — equal or nested targets are refused, because the
+  outer slice's read-only pass would freeze the inner one's parent and break the
+  next sync.
 - **`pin:` accepts exactly one of `commit:` or `tag:`.** A branch name, a bare
   `ref:`, or *both* `commit:` and `tag:` together are rejected as floating or
   ambiguous (`GPF-R-6.3`). A `tag:` is resolved to a SHA at sync and recorded in
@@ -83,6 +92,40 @@ identically):
 > list above is what `bin/company-os` parses today — treat the CLI as ground truth.
 > The destination key was formerly called `root:`; a manifest still using that
 > name fails at load with a message naming `localDirectory:`.
+
+### The knowledge catalog (`knowledge/`)
+
+Governance slices come from Company OS-shaped repos. A **knowledge slice** comes
+from an ordinary component repo that contributes only documentation — `docs/sdd`,
+`specs/`, `architecture/` — and never its source code. Those land under
+`knowledge/`:
+
+```yaml
+  - name: component-library
+    url: https://github.com/acme/component-library.git
+    pin: {tag: v1.2.0}
+    slices:
+      - {paths: [docs/sdd],       localDirectory: knowledge/components/component-library}
+      - {paths: [architecture],   localDirectory: knowledge/architecture/component-library}
+      - {paths: [.claude/skills], localDirectory: knowledge/skills/component-library}
+```
+
+`knowledge/` is a **node root but not a graph-docs root**, and the distinction is
+deliberate:
+
+- It gets a generated `CLAUDE.md` context node listing every area and document, and
+  it appears in every sibling root's Federation-roots cross-links — so an agent can
+  find it. Gate `[8/8]` hash-locks it like any other slice.
+- It is **not** walked by `graph build` or validate gates `[1/8]`–`[7/8]`. Foreign
+  docs carry no `type:`/`id:` frontmatter, so gate `[4/8]` would reject them; and
+  the slice is `0444`, so tag rewriting would fail against read-only files. The
+  catalog is indexed for navigation, never governed.
+
+Two constraints follow. `localDirectory: knowledge` alone is refused — the catalog
+root is CLI-owned (it holds the generated node), so target an area beneath it. And
+the path below the target mirrors the source: `paths: [docs/sdd]` into
+`knowledge/components/x` lands at `knowledge/components/x/docs/sdd/`. There is no
+rename.
 
 ---
 
@@ -147,16 +190,20 @@ $ git check-ignore .company-os
 .company-os              # cache — NOT committed
 ```
 
-The lock records, per repo, the original pin, the resolved commit, an aggregate
-`sliceHash`, and a `{path: sha256}` map. That map is the hand-edit oracle for
-gate `[8/8]`:
+The lock records, per repo, the original pin, the resolved commit, the resolved
+slice list, an aggregate `sliceHash` over the union of that repo's slices, and a
+`{path: sha256}` map. That map is the hand-edit oracle for gate `[8/8]`; the
+slice list is what makes a moved target detectable without a re-sync. The entry
+stays flat and per-repo, which is why `--only` remains a whole-repo switch:
 
 ```yaml
 # workspace.lock.yaml (excerpt)
 repos:
 - name: platform-communications
   url: https://github.com/acme/platform-communications.git
-  localDirectory: platforms/communications
+  slices:
+  - localDirectory: platforms/communications
+    paths: [governance/, components/, reality/, skills/, templates/]
   pin:
     tag: v2.1.0
   resolvedCommit: 6622076972b9f82b10e03ba584aa9199f77e9eb7

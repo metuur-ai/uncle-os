@@ -340,6 +340,75 @@ check("R-6.3 both commit+tag rejected (ambiguous)",
 check("R-6.3 empty pin rejected",
       _dies(lambda: co.repo_pin({"name": "r", "pin": {}})))
 
+# Multi-slice manifests — one repo, one clone, N destinations. A bare
+# localDirectory:/paths: pair must keep normalizing to a single slice.
+_bare = {"name": "r", "url": "file:///x", "localDirectory": "knowledge/a",
+         "paths": ["docs/sdd"]}
+check("slices: bare pair normalizes to one slice",
+      co._repo_slices(_bare) == [{"localDirectory": "knowledge/a",
+                                  "paths": ["docs/sdd"]}])
+check("slices: omitted paths default to DEFAULT_SLICE_PATHS",
+      co._repo_slices({"name": "r", "localDirectory": "knowledge/a"})[0]["paths"]
+      == list(co.DEFAULT_SLICE_PATHS))
+check("slices: list yields one entry per slice",
+      len(co._repo_slices({"name": "r", "slices": [
+          {"paths": ["docs/sdd"], "localDirectory": "knowledge/a"},
+          {"paths": ["arch"], "localDirectory": "knowledge/b"}]})) == 2)
+check("slices: + top-level localDirectory rejected",
+      _dies(lambda: co._repo_slices({"name": "r", "localDirectory": "knowledge/a",
+                                     "slices": [{"localDirectory": "knowledge/b"}]})))
+check("slices: + top-level paths rejected",
+      _dies(lambda: co._repo_slices({"name": "r", "paths": ["d"],
+                                     "slices": [{"localDirectory": "knowledge/b"}]})))
+check("slices: neither localDirectory nor slices rejected",
+      _dies(lambda: co._repo_slices({"name": "r"})))
+check("slices: root: inside a slice names the rename",
+      _dies(lambda: co._repo_slices({"name": "r",
+                                     "slices": [{"root": "knowledge/a"}]})))
+
+# sliceHash must not depend on manifest slice order: the aggregate is computed
+# ONCE over the union, so merging in either order gives the same digest.
+_f1, _f2 = {"b/2.md": "bb", "a/1.md": "aa"}, {"c/3.md": "cc"}
+check("aggregate_hash is merge-order independent",
+      co.aggregate_hash({**_f1, **_f2}) == co.aggregate_hash({**_f2, **_f1}))
+
+# knowledge/ is the catalog root: bare targeting would freeze its generated node
+check("knowledge/ bare target rejected (depth >= 2 required)",
+      _dies(lambda: co.slice_rel("r", "knowledge")))
+check("knowledge/<area> accepted",
+      co.slice_rel("r", "knowledge/components/x") == "knowledge/components/x")
+check("non-canonical root still rejected",
+      _dies(lambda: co.slice_rel("r", "elsewhere/x")))
+check("unsafe repo name rejected (it keys the cache dir)",
+      _dies(lambda: co._validate_repo_entry(
+          {"name": "../evil", "url": "file:///x", "localDirectory": "knowledge/a",
+           "pin": {"commit": "abc"}}, 0)))
+
+
+def _manifest_dies(root, body):
+    (root / "workspace.yaml").write_text("version: 1\nrepos:\n" + body)
+    return _dies(lambda: co.load_manifest(co.Workspace(root)))
+
+
+# Overlapping targets corrupt the lock and break re-sync (the outer slice's
+# _make_readonly freezes the inner one's parent). Rejected with a global view.
+with tempfile.TemporaryDirectory(dir="/tmp") as d:
+    r = Path(d)
+    (r / "teams").mkdir()
+    check("nested targets in one repo rejected", _manifest_dies(r,
+          "  - name: a\n    url: file:///x\n    pin: {commit: dead}\n    slices:\n"
+          "      - {paths: [d], localDirectory: knowledge/a}\n"
+          "      - {paths: [e], localDirectory: knowledge/a/b}\n"))
+    check("two repos sharing a target rejected", _manifest_dies(r,
+          "  - name: a\n    url: file:///x\n    pin: {commit: dead}\n"
+          "    localDirectory: knowledge/x\n"
+          "  - name: b\n    url: file:///y\n    pin: {commit: beef}\n"
+          "    localDirectory: knowledge/x\n"))
+    check("sibling targets sharing a prefix are NOT nested", not _manifest_dies(r,
+          "  - name: a\n    url: file:///x\n    pin: {commit: dead}\n    slices:\n"
+          "      - {paths: [d], localDirectory: platforms/comms}\n"
+          "      - {paths: [e], localDirectory: platforms/comms-v2}\n"))
+
 # GPF-R-6.1 — absent manifest => monorepo mode (None), no behavior change
 with tempfile.TemporaryDirectory(dir="/tmp") as d:
     check("R-6.1 no workspace.yaml => load_manifest None",
@@ -353,6 +422,8 @@ with tempfile.TemporaryDirectory(dir="/tmp") as d:
     slice_file.parent.mkdir(parents=True)
     slice_file.write_text("schemaVersion: '1.0'\n")
     good = hashlib.sha256(slice_file.read_bytes()).hexdigest()
+    # files-only entry: slice_state must NEVER grow a dependency on any other
+    # lock key — that contract is what keeps --only per-repo and gate 8 cheap.
     lock_repo = {"name": "p", "resolvedCommit": "deadbeef", "sliceHash": "x",
                  "files": {"platforms/p/governance/requirements.yaml": good}}
     check("R-7.5 clean slice => state 'clean'",
@@ -360,11 +431,26 @@ with tempfile.TemporaryDirectory(dir="/tmp") as d:
     (root / "workspace.yaml").write_text(
         "version: 1\nrepos:\n  - name: p\n    url: file:///x\n"
         "    localDirectory: platforms/p\n    pin: {commit: deadbeef}\n    paths: [governance/]\n")
+    # federated_slice_problems DOES read slices: it compares the manifest's slice
+    # set to the lock's, so a moved target without a re-sync cannot report clean.
+    lock_entry = dict(lock_repo,
+                      slices=[{"localDirectory": "platforms/p",
+                               "paths": ["governance/"]}])
     (root / "workspace.lock.yaml").write_text(
-        co.yaml.safe_dump({"version": 1, "repos": [lock_repo]}, sort_keys=False))
+        co.yaml.safe_dump({"version": 1, "repos": [lock_entry]}, sort_keys=False))
     manifest = co.load_manifest(ws)
     probs0, n0 = co.federated_slice_problems(ws, manifest)
     check("R-7.5 in-sync slice => no problems", probs0 == [] and n0 == 1)
+    # slice-set drift: same bytes on disk, different target in the manifest
+    moved = dict(lock_entry, slices=[{"localDirectory": "platforms/other",
+                                      "paths": ["governance/"]}])
+    (root / "workspace.lock.yaml").write_text(
+        co.yaml.safe_dump({"version": 1, "repos": [moved]}, sort_keys=False))
+    probsd, _ = co.federated_slice_problems(ws, co.load_manifest(ws))
+    check("R-7.5 slice-set drift detected though bytes still match",
+          any("slice set" in p and "workspace sync" in p for p in probsd))
+    (root / "workspace.lock.yaml").write_text(
+        co.yaml.safe_dump({"version": 1, "repos": [lock_entry]}, sort_keys=False))
     # hand-edit the read-derived slice
     slice_file.write_text("schemaVersion: '1.0'\n# sneaky\n")
     check("R-7.5 hand-edit => state 'drifted'",
@@ -402,16 +488,23 @@ else:
         (src / "governance").mkdir()
         (src / "governance" / "requirements.yaml").write_text("r: 1\n")
         (src / "README.md").write_text("NOT governance\n")  # must NOT materialize
+        # NESTED allowlist entry — the knowledge-catalog shape. Depth-1 entries
+        # like governance/ never exercised the parent-permission path in
+        # _force_remove/copytree, so a re-sync used to raise PermissionError.
+        (src / "docs" / "sdd").mkdir(parents=True)
+        (src / "docs" / "sdd" / "spec.md").write_text("# Spec\n")
         _g("add", "-A")
         _g("commit", "-q", "-m", "c1")
         sha = subprocess.run(["git", "-C", str(src), "rev-parse", "HEAD"],
                              check=True, capture_output=True, text=True).stdout.strip()
         ws_dir = d / "ws"
         (ws_dir / "teams").mkdir(parents=True)
+        # ONE repo, TWO destinations: a governance slice and a knowledge slice.
         (ws_dir / "workspace.yaml").write_text(
             "version: 1\nrepos:\n  - name: p\n    url: file://%s\n"
-            "    localDirectory: platforms/p\n    pin: {commit: %s}\n"
-            "    paths: [governance/]\n" % (src, sha))
+            "    pin: {commit: %s}\n    slices:\n"
+            "      - {paths: [governance/], localDirectory: platforms/p}\n"
+            "      - {paths: [docs/sdd], localDirectory: knowledge/p}\n" % (src, sha))
         cli = str(CLI)
         r = subprocess.run([sys.executable, cli, "--root", str(ws_dir),
                             "workspace", "sync"], capture_output=True, text=True)
@@ -421,23 +514,46 @@ else:
               r.returncode == 0 and files == ["platforms/p/governance/requirements.yaml"])
         check("R-7.1 non-governance file (README.md) NOT materialized",
               not any("README" in f for f in files))
+        kfiles = [p.relative_to(ws_dir).as_posix()
+                  for p in (ws_dir / "knowledge" / "p").rglob("*") if p.is_file()]
+        check("multi-slice: second slice lands in its own knowledge target",
+              kfiles == ["knowledge/p/docs/sdd/spec.md"])
+        check("multi-slice: targets stay isolated (no cross-contamination)",
+              not any("docs" in f for f in files))
+        check("multi-slice: ONE cache dir for the whole repo",
+              [p.name for p in (ws_dir / ".company-os" / "federation-cache").iterdir()]
+              == ["p"])
         lock = co.load_yaml(ws_dir / "workspace.lock.yaml", {})
         check("R-7.2 lock records resolved SHA + per-file hash",
               lock["repos"][0]["resolvedCommit"] == sha
               and "platforms/p/governance/requirements.yaml" in lock["repos"][0]["files"])
+        check("multi-slice: ONE flat lock entry whose files map is the union",
+              len(lock["repos"]) == 1
+              and sorted(lock["repos"][0]["files"]) == [
+                  "knowledge/p/docs/sdd/spec.md",
+                  "platforms/p/governance/requirements.yaml"]
+              and len(lock["repos"][0]["slices"]) == 2)
+        # Re-sync over the read-only tree: the regression guard for the nested
+        # allowlist entry (docs/sdd) whose parent was frozen 0555 by the first run.
+        r2 = subprocess.run([sys.executable, cli, "--root", str(ws_dir),
+                             "workspace", "sync"], capture_output=True, text=True)
+        check("multi-slice: re-sync over a read-only nested slice succeeds",
+              r2.returncode == 0)
 
         def _tree():
             items = []
-            for p in sorted((ws_dir / "platforms").rglob("*")):
-                if p.is_file():
-                    items.append(p.relative_to(ws_dir).as_posix() + hashlib.sha256(
-                        p.read_bytes()).hexdigest())
+            for base in ("platforms", "knowledge"):
+                for p in sorted((ws_dir / base).rglob("*")):
+                    if p.is_file():
+                        items.append(p.relative_to(ws_dir).as_posix() + hashlib.sha256(
+                            p.read_bytes()).hexdigest())
             return hashlib.sha256("\n".join(items).encode()).hexdigest()
         h_before = _tree()
-        # wipe slice, make source unreachable, materialize --frozen from lock
-        for p in sorted((ws_dir / "platforms").rglob("*"), reverse=True):
-            os.chmod(p, 0o755)
-        shutil.rmtree(ws_dir / "platforms")
+        # wipe slices, make source unreachable, materialize --frozen from lock
+        for base in ("platforms", "knowledge"):
+            for p in sorted((ws_dir / base).rglob("*"), reverse=True):
+                os.chmod(p, 0o755)
+            shutil.rmtree(ws_dir / base)
         os.rename(src, d / "src.gone")
         rf = subprocess.run([sys.executable, cli, "--root", str(ws_dir),
                              "workspace", "sync", "--frozen"],

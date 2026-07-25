@@ -2070,9 +2070,21 @@ def cmd_reality(ws, args):
 #       pin:  {commit: <sha>}  OR  {tag: <tag>}   # EXACTLY ONE; branches rejected
 #       paths: [governance/, components/, reality/, skills/, templates/]  # allowlist
 #
+# A repo contributing SEVERAL areas declares `slices:` instead of the top-level
+# localDirectory:/paths: pair — one clone, one cache, N destinations:
+#
+#     - name: component-library
+#       url:  https://host/acme/component-library.git
+#       pin:  {tag: v1.2.0}
+#       slices:
+#         - {paths: [docs/sdd],      localDirectory: knowledge/components/cl}
+#         - {paths: [.claude/skills], localDirectory: knowledge/skills/cl}
+#
 # workspace.lock.yaml (machine-owned, committed) records per repo: the original
-# pin, the resolved commit SHA (tags resolved at sync — GPF-R-6.4), an aggregate
-# sliceHash, and a {relpath: sha256} map that is the hand-edit oracle (GPF-R-7.5).
+# pin, the resolved commit SHA (tags resolved at sync — GPF-R-6.4), the resolved
+# slice list, an aggregate sliceHash over the UNION of that repo's slices, and a
+# {relpath: sha256} map that is the hand-edit oracle (GPF-R-7.5). The lock entry
+# stays flat and per-repo so `--only`, slice_state, and gate 8 need no changes.
 
 def manifest_path(ws):
     return ws.root / MANIFEST_NAME
@@ -2092,13 +2104,75 @@ def load_manifest(ws):
     if not data["repos"]:
         die(f"{MANIFEST_NAME}: 'repos:' is empty — remove the file for monorepo "
             f"mode, or add at least one repo. then: company-os workspace sync")
-    seen = set()
+    seen, targets = set(), {}
     for i, repo in enumerate(data["repos"]):
         _validate_repo_entry(repo, i)
-        if repo["name"] in seen:
-            die(f"{MANIFEST_NAME}: duplicate repo name '{repo['name']}'")
-        seen.add(repo["name"])
+        name = repo["name"]
+        if name in seen:
+            die(f"{MANIFEST_NAME}: duplicate repo name '{name}'")
+        seen.add(name)
+        # Cross-repo target collision needs the global view _validate_repo_entry
+        # lacks. Equal or NESTED targets are rejected: on the second sync the
+        # outer slice's _make_readonly chmods the inner target's parent 0555,
+        # and _force_remove re-chmods only the failing path, not its parent, so
+        # rmtree raises an unhandled PermissionError. Overlapping targets also
+        # cross-contaminate the lock's files map.
+        for s in _repo_slices(repo):
+            rel = slice_rel(name, s["localDirectory"])
+            parts = Path(rel).parts
+            for other, owner in targets.items():
+                op = Path(other).parts
+                # compare on parts, not str.startswith, so 'platforms/comms' and
+                # 'platforms/comms-v2' are not treated as nested
+                if parts[:len(op)] == op or op[:len(parts)] == parts:
+                    die(f"{MANIFEST_NAME}: slice target '{rel}' (repo '{name}') "
+                        f"overlaps '{other}' (repo '{owner}') — targets must be "
+                        f"disjoint. then: company-os workspace sync")
+            targets[rel] = name
     return data
+
+
+def _slice_paths(name, paths, where):
+    if paths is None:
+        return list(DEFAULT_SLICE_PATHS)
+    if not isinstance(paths, list) or not paths:
+        die(f"repo '{name}': '{where}' must be a non-empty allowlist")
+    return [str(p) for p in paths]
+
+
+def _repo_slices(repo):
+    """Normalized [{localDirectory, paths}] for one repo entry.
+
+    A repo declares EITHER a top-level localDirectory:/paths: pair (one slice)
+    OR a slices: list (N slices sharing one clone and one cache). Mixing them is
+    rejected rather than silently ignoring the top-level keys."""
+    name = repo.get("name", "?")
+    raw = repo.get("slices")
+    if raw is None:
+        if not repo.get("localDirectory"):
+            die(f"repo '{name}': needs either 'localDirectory:' (one slice) or "
+                f"'slices:' (several). then: company-os workspace sync")
+        return [{"localDirectory": str(repo["localDirectory"]),
+                 "paths": _slice_paths(name, repo.get("paths"), "paths")}]
+    for k in ("localDirectory", "paths"):
+        if k in repo:
+            die(f"repo '{name}': cannot set both 'slices:' and top-level '{k}:' "
+                f"— move it into a slices entry, then: company-os workspace sync")
+    if not isinstance(raw, list) or not raw:
+        die(f"repo '{name}': 'slices:' must be a non-empty list of "
+            f"{{paths, localDirectory}} entries")
+    out = []
+    for j, s in enumerate(raw):
+        if not isinstance(s, dict):
+            die(f"repo '{name}': slices[{j}] must be a mapping")
+        if "root" in s:
+            die(f"repo '{name}': slices[{j}] uses 'root:' — renamed to "
+                f"'localDirectory:'. rename it, then: company-os workspace sync")
+        if not s.get("localDirectory"):
+            die(f"repo '{name}': slices[{j}] missing required 'localDirectory:'")
+        out.append({"localDirectory": str(s["localDirectory"]),
+                    "paths": _slice_paths(name, s.get("paths"), f"slices[{j}].paths")})
+    return out
 
 
 def _validate_repo_entry(repo, i):
@@ -2108,13 +2182,18 @@ def _validate_repo_entry(repo, i):
         die(f"{MANIFEST_NAME}: repos[{i}] uses 'root:' — renamed to "
             f"'localDirectory:' (the local directory the slice lands in). "
             f"rename it, then: company-os workspace sync")
-    for f in ("name", "url", "localDirectory"):
+    for f in ("name", "url"):
         if not repo.get(f):
             die(f"{MANIFEST_NAME}: repos[{i}] missing required '{f}:'")
-    repo_pin(repo)  # raises on floating / ambiguous pins
-    paths = repo.get("paths", DEFAULT_SLICE_PATHS)
-    if not isinstance(paths, list) or not paths:
-        die(f"repo '{repo['name']}': 'paths:' must be a non-empty allowlist")
+    # `name` keys the cache directory (FEDERATION_CACHE/<name>), so it must be a
+    # plain label — otherwise '../evil' escapes the cache and writes anywhere.
+    name = str(repo["name"])
+    if not re.match(r"^[A-Za-z0-9][A-Za-z0-9._-]*$", name):
+        die(f"{MANIFEST_NAME}: repos[{i}] name '{name}' must be a plain label "
+            f"([A-Za-z0-9._-], not starting with '.') — it keys the git cache "
+            f"directory")
+    repo_pin(repo)      # raises on floating / ambiguous pins
+    _repo_slices(repo)  # raises on a malformed slices:/localDirectory:/paths: shape
 
 
 def repo_pin(repo):
@@ -2286,6 +2365,16 @@ def materialize_slice(ws, cache, target, paths):
     then mark them read-only. Never copies non-allowlisted content, so the
     workspace layout holds governance slices only (GPF-R-7.1). Allowlisted paths
     absent upstream are simply skipped (a platform repo may have no skills/)."""
+    # A prior materialization left this tree 0444/0555. Restore write across the
+    # WHOLE target before touching it: rmtree and unlink need write on the parent
+    # of each entry, and copytree needs it to mkdir — neither is covered by
+    # chmod-ing only the path being removed. This bites exactly when an allowlist
+    # entry is nested (docs/sdd), which is the norm for knowledge slices; every
+    # pre-existing fixture used depth-1 entries (governance/) and never hit it.
+    if target.exists():
+        _chmod_writable(target)
+        for p in target.rglob("*"):
+            _chmod_writable(p)
     for p in paths:
         rel = str(p).strip("/")
         if rel:
@@ -2296,7 +2385,11 @@ def materialize_slice(ws, cache, target, paths):
             continue
         src, dst = cache / rel, target / rel
         if src.is_dir():
-            shutil.copytree(src, dst)
+            # dirs_exist_ok: a paths list naming a file before its containing
+            # directory would otherwise raise FileExistsError. DEFAULT_SLICE_PATHS
+            # is safe only by ordering luck; hand-written multi-slice manifests
+            # make the bad ordering likely.
+            shutil.copytree(src, dst, dirs_exist_ok=True)
         elif src.is_file():
             dst.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(src, dst)
@@ -2312,18 +2405,71 @@ def _sha256_file(path):
     return h.hexdigest()
 
 
-def hash_slice(ws, target):
-    """(per-file {ws-relative posix path: sha256}, aggregate sliceHash) for a
-    materialized slice — deterministic (sorted) given identical bytes."""
+def hash_tree(ws, target, paths):
+    """{ws-relative posix path: sha256} for the ALLOWLISTED content of one
+    materialized slice.
+
+    Scoped to `paths`, mirroring materialize_slice, rather than walking the whole
+    target: a derived artifact that appeared under the target (a `generated/`
+    aggregate, a CLAUDE.md node) would otherwise be absorbed into the lock and
+    frozen 0444 by the next sync, after which graph build cannot rewrite it."""
     files = {}
-    if target.exists():
-        for p in sorted(target.rglob("*")):
-            if p.is_file() and not p.is_symlink():
-                files[p.relative_to(ws.root).as_posix()] = _sha256_file(p)
+    for p in paths:
+        rel = str(p).strip("/")
+        if not rel:
+            continue
+        src = target / rel
+        for f in (sorted(src.rglob("*")) if src.is_dir() else [src]):
+            if f.is_file() and not f.is_symlink():
+                files[f.relative_to(ws.root).as_posix()] = _sha256_file(f)
+    return files
+
+
+def aggregate_hash(files):
+    """Deterministic digest over a {path: sha256} map.
+
+    Computed ONCE over the union of a repo's slices. Chaining per-slice digests
+    would make the result depend on manifest slice order, so reordering slices:
+    with no content change would flip sliceHash and make --frozen die blaming
+    the object cache."""
     agg = hashlib.sha256()
     for rel in sorted(files):
         agg.update(rel.encode() + b"\0" + files[rel].encode() + b"\n")
-    return files, agg.hexdigest()
+    return agg.hexdigest()
+
+
+def slice_key(slices):
+    """Order-independent identity of a slice set, for manifest-vs-lock drift."""
+    return sorted((str(s.get("localDirectory", "")).strip("/"),
+                   tuple(sorted(str(p).strip("/") for p in (s.get("paths") or []))))
+                  for s in slices)
+
+
+def _targets_label(slices):
+    """One-line render of a repo's destinations; identical to the old single
+    localDirectory output when a repo has exactly one slice."""
+    return ", ".join(str(s["localDirectory"]) for s in slices)
+
+
+def _materialize_all(ws, cache, name, slices, sha):
+    """Check out ONE cone covering every slice's allowlist, then materialize each
+    slice into its own target. Returns the UNION {relpath: sha256} map.
+
+    The union checkout is mandatory: _checkout_slice uses `sparse-checkout set`,
+    not `add`, so a per-slice checkout loop would have each call clobber the
+    previous cone and leave later slices empty."""
+    union_paths = []
+    for s in slices:
+        for p in s["paths"]:
+            if p not in union_paths:
+                union_paths.append(p)
+    _checkout_slice(cache, sha, _sparse_dirs(union_paths))
+    files = {}
+    for s in slices:
+        target = slice_target_root(ws, name, s["localDirectory"])
+        materialize_slice(ws, cache, target, s["paths"])
+        files.update(hash_tree(ws, target, s["paths"]))
+    return files
 
 
 def slice_state(ws, lock_repo):
@@ -2360,6 +2506,13 @@ def federated_slice_problems(ws, manifest):
                             f"entry (lock does not cover the manifest) — "
                             f"run: company-os workspace sync")
             continue
+        # Slice-set drift: move a localDirectory (or add a slice) without
+        # re-syncing and the OLD files still exist and still hash-match, so the
+        # per-file loop below reports clean. Compare the sets explicitly.
+        if slice_key(_repo_slices(repo)) != slice_key(lr.get("slices") or []):
+            problems.append(f"repo '{name}': slice set in {MANIFEST_NAME} differs "
+                            f"from {LOCK_NAME} (a target or allowlist changed "
+                            f"without a re-sync) — run: company-os workspace sync")
         for rel, want in (lr.get("files") or {}).items():
             n_files += 1
             p = ws.root / rel
@@ -2418,8 +2571,6 @@ def cmd_workspace_sync(ws, manifest, frozen=False, only=None):
     for repo in repos:
         name = repo["name"]
         kind, ref = repo_pin(repo)
-        target = slice_target_root(ws, name, repo["localDirectory"])
-        paths = repo.get("paths", DEFAULT_SLICE_PATHS)
         cache = ws.root / FEDERATION_CACHE / name
         if frozen:
             lr = lock_by_name.get(name)
@@ -2427,33 +2578,35 @@ def cmd_workspace_sync(ws, manifest, frozen=False, only=None):
                 die(f"--frozen: {LOCK_NAME} has no entry for repo '{name}' (lock "
                     f"does not cover the manifest). re-run online: "
                     f"company-os workspace sync")
+            # Materialize from the LOCK, not the manifest — otherwise a manifest
+            # edit silently redirects the "strictly from the lock" path.
+            slices = lr.get("slices")
+            if not slices:
+                die(f"--frozen: {LOCK_NAME} entry for '{name}' predates slice "
+                    f"recording. re-run online once: company-os workspace sync")
             sha = lr["resolvedCommit"]
             if not (cache / ".git").is_dir():
                 die(f"--frozen: no local cache for '{name}' at "
                     f"{cache.relative_to(ws.root)} and network is disabled. run "
                     f"online first: company-os workspace sync")
-            _checkout_slice(cache, sha, _sparse_dirs(paths))
-            materialize_slice(ws, cache, target, paths)
-            files, agg = hash_slice(ws, target)
-            if agg != lr.get("sliceHash"):
+            files = _materialize_all(ws, cache, name, slices, sha)
+            if aggregate_hash(files) != lr.get("sliceHash"):
                 die(f"--frozen: materialized slice for '{name}' does not match the "
                     f"hash in {LOCK_NAME} (cache/objects inconsistent with lock). "
                     f"run online: company-os workspace sync")
             print(f"  restored {name} @ {sha[:12]} (from lock) "
-                  f"-> {repo['localDirectory']} ({len(files)} file(s))")
+                  f"-> {_targets_label(slices)} ({len(files)} file(s))")
         else:
+            slices = _repo_slices(repo)
             sha = _fetch_pinned(cache, repo["url"], kind, ref)
-            _checkout_slice(cache, sha, _sparse_dirs(paths))
-            materialize_slice(ws, cache, target, paths)
-            files, agg = hash_slice(ws, target)
+            files = _materialize_all(ws, cache, name, slices, sha)
             locked[name] = {
-                "name": name, "url": repo["url"],
-                "localDirectory": repo["localDirectory"],
+                "name": name, "url": repo["url"], "slices": slices,
                 "pin": {kind: ref}, "resolvedCommit": sha,
-                "sliceHash": agg, "files": files,
+                "sliceHash": aggregate_hash(files), "files": files,
             }
             print(f"  synced {name} @ {sha[:12]} ({kind} {ref}) "
-                  f"-> {repo['localDirectory']} ({len(files)} file(s))")
+                  f"-> {_targets_label(slices)} ({len(files)} file(s))")
 
     ensure_cache_gitignored(ws)
     if not frozen:
@@ -2482,16 +2635,21 @@ def cmd_workspace_status(ws, manifest):
         sha = lr.get("resolvedCommit", "?")
         pin_lock = lr.get("pin", {})
         pin_drift = pin_lock.get(kind) != ref or [k for k in pin_lock if pin_lock[k]] != [kind]
+        slices = _repo_slices(repo)
+        slice_drift = slice_key(slices) != slice_key(lr.get("slices") or [])
         state = slice_state(ws, lr)
         if pin_drift:
             label = f"drifted (manifest pin {kind}:{ref} != lock {pin_lock})"
+            action_needed = True
+        elif slice_drift:
+            label = f"drifted (slice set in {MANIFEST_NAME} != {LOCK_NAME})"
             action_needed = True
         else:
             label = state
             if state != "clean":
                 action_needed = True
         print(f"  {name}: {kind}:{ref} @ {sha[:12]} "
-              f"-> {repo['localDirectory']} — {label}")
+              f"-> {_targets_label(slices)} — {label}")
     if action_needed:
         print("\nnext: company-os workspace sync")
     else:
