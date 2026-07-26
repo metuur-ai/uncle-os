@@ -145,6 +145,39 @@ func TestGateMatchesReferenceOnSynthesizedWorkspaces(t *testing.T) {
 			mkskill(t, filepath.Join(ws.Root, "teams", "core", "skills", "creating-prd.SKILL.md"),
 				"skill://team/creating-prd-copy", "team", "", "")
 		}},
+		// `s["id"] == k["id"]` is Python's `==`, which spans the numeric tower:
+		// 5 == 5.0 and True == 1 are conflicts even though str() renders them
+		// differently. No committed golden carries this shape, and Value.Equal
+		// compared kind-and-text, so gate 7 stayed CLEAN where Python reports
+		// [FAIL].
+		{"int id shadowed by the same value as a float", func(t *testing.T, ws *workspace.Workspace) {
+			mkskill(t, filepath.Join(ws.Root, "company-os", "skills", "numeric.SKILL.md"),
+				"5", "", "", "")
+			mkskill(t, filepath.Join(ws.Root, "teams", "core", "skills", "numeric-copy.SKILL.md"),
+				"5.0", "team", "", "")
+		}},
+		{"int id shadowed by the same value as a bool", func(t *testing.T, ws *workspace.Workspace) {
+			mkskill(t, filepath.Join(ws.Root, "company-os", "skills", "one.SKILL.md"),
+				"1", "", "", "")
+			mkskill(t, filepath.Join(ws.Root, "teams", "core", "skills", "one-copy.SKILL.md"),
+				"true", "team", "", "")
+		}},
+		// ...and the negative: a str "5" is not the int 5, which is what the
+		// kind test was there for and must survive the fix.
+		{"string id does not shadow the same digits as an int", func(t *testing.T, ws *workspace.Workspace) {
+			mkskill(t, filepath.Join(ws.Root, "company-os", "skills", "digits.SKILL.md"),
+				"5", "", "", "")
+			mkskill(t, filepath.Join(ws.Root, "teams", "core", "skills", "digits-copy.SKILL.md"),
+				"'5'", "team", "", "")
+		}},
+		// A personal rule named exactly `.md` has the stem ".md" under pathlib,
+		// not "" — and "" would collide with every other empty-named skill.
+		{"personal rule named exactly .md", func(t *testing.T, ws *workspace.Workspace) {
+			write(t, filepath.Join(ws.Root, "teams", "core", "scratchpad", "personal-rules", ".md"),
+				"---\ntype: personal-rule\n---\n\n# dotfile\n")
+			write(t, filepath.Join(ws.Root, "teams", "core", "scratchpad", "personal-rules", "other.md"),
+				"---\ntype: personal-rule\n---\n\n# other\n")
+		}},
 		// A company-layer skill that is NOT canonical protects nothing.
 		{"non-canonical company skill is not shadowable", func(t *testing.T, ws *workspace.Workspace) {
 			mkskill(t, filepath.Join(ws.Root, "company-os", "skills", "draft.SKILL.md"),

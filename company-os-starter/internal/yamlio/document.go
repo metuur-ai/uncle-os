@@ -43,6 +43,8 @@ import (
 	"io"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/metuur-ai/uncle-os/company-os-starter/internal/model"
 )
 
 // emitIndent is the block indent Bytes emits at. PyYAML's emitter indents block
@@ -65,6 +67,11 @@ type SyntaxError struct{ Err error }
 
 func (e *SyntaxError) Error() string { return "yamlio: " + e.Err.Error() }
 func (e *SyntaxError) Unwrap() error { return e.Err }
+
+// ExitCode is R-4.5 and R-0.7a(e): malformed YAML exits 4 with a diagnostic
+// where Python exits 1 through a traceback. Implemented rather than wrapped in a
+// model.Error so callers keep matching *SyntaxError with errors.As.
+func (e *SyntaxError) ExitCode() model.ExitCode { return model.ExitArtifact }
 
 func syntaxf(format string, a ...any) error {
 	return &SyntaxError{Err: fmt.Errorf(format, a...)}

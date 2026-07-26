@@ -50,14 +50,31 @@ Any failure prints as `[FAIL] ...` inline under its gate, exits non-zero, and
 ends the run with `FAIL — N problem(s)` instead of `PASS` — that exit code
 is what CI acts on.
 
+Gate findings exit **1**. A run that could not be completed at all exits
+something else — **3** if you are not in a workspace root, **4** if a YAML
+file is malformed, **6** if git is missing — so a red build tells you whether
+to go read the findings or go fix the environment. The full list is in
+[reference/company-os-cli.md § Exit codes](../reference/company-os-cli.md#exit-codes).
+Branch on the code; never grep stdout.
+
 ## Wire it into CI
 
 ```yaml
 # .github/workflows/os-validate.yml (any OS repo)
-- run: pip install pyyaml
-- run: bin/company-os --root . validate
-- run: bin/company-os governance resolve --team <team> && git diff --exit-code teams/*/generated/
+- name: install company-os
+  env: {COMPANY_OS_VERSION: v1.0.0}   # pin it; don't track latest in CI
+  run: |
+    curl -fsSLo /usr/local/bin/company-os \
+      <release-url>/$COMPANY_OS_VERSION/company-os_${COMPANY_OS_VERSION}_linux_amd64
+    chmod +x /usr/local/bin/company-os
+- run: company-os --root . validate
+- run: company-os governance resolve --team <team> && git diff --exit-code teams/*/generated/
 ```
+
+The install step is one download — the CLI is a static binary with no runtime
+dependency, so there is no language toolchain, no package install, and no
+lockfile to cache. Pin the version: a workspace validated by two different
+builds in the same week is a confusing failure to debug.
 
 The second step is not redundant with `validate` — it proves
 `effective-governance.yaml` is truly derived. If someone hand-edited it, the

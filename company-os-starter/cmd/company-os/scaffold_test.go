@@ -29,6 +29,11 @@ func TestScaffoldGuidanceChain(t *testing.T) {
 	out := runOK(t, "--root", root, "init", "--company", "Acme Inc.",
 		"--team", "Core Team!", "--platform", "My Platform!!")
 	wantLines(t, out, []string{
+		"  wrote index platforms/my-platform/generated/feature-index.yaml",
+		"  node company-os/CLAUDE.md",
+		"  node platforms/my-platform/CLAUDE.md",
+		"  node teams/core-team/CLAUDE.md",
+		"  node company-ontology/CLAUDE.md",
 		"initialized workspace at " + resolved,
 		"  company: Acme Inc. | first team: core-team | first platform: my-platform",
 		`next: cd ` + resolved + ` && company-os discover new --team core-team "<discovery title>"`,
@@ -36,24 +41,40 @@ func TestScaffoldGuidanceChain(t *testing.T) {
 
 	out = runOK(t, "--root", root, "add", "platform", "second")
 	wantLines(t, out, []string{
+		"  wrote index platforms/second/generated/feature-index.yaml",
+		"  node company-os/CLAUDE.md",
+		"  node platforms/my-platform/CLAUDE.md",
+		"  node platforms/second/CLAUDE.md",
+		"  node teams/core-team/CLAUDE.md",
+		"  node company-ontology/CLAUDE.md",
 		"added platform 'second'",
 		"next: company-os add component --platform second <component-id>",
 	})
 
 	out = runOK(t, "--root", root, "add", "team", "second")
 	wantLines(t, out, []string{
+		"  node company-os/CLAUDE.md",
+		"  node platforms/my-platform/CLAUDE.md",
+		"  node platforms/second/CLAUDE.md",
+		"  node teams/core-team/CLAUDE.md",
+		"  node teams/second/CLAUDE.md",
+		"  node company-ontology/CLAUDE.md",
 		"added team 'second'",
 		`next: company-os discover new --team second "<discovery title>"`,
 	})
 
 	out = runOK(t, "--root", root, "add", "component", "billing-api", "--platform", "second")
 	wantLines(t, out, []string{
+		"  wrote index platforms/second/generated/feature-index.yaml",
+		"  node teams/second/CLAUDE.md",
 		"added component 'billing-api' to platform 'second'",
 		"next: company-os reality new --platform second billing-api",
 	})
 
 	out = runOK(t, "--root", root, "reality", "new", "--platform", "second", "billing-api")
 	wantLines(t, out, []string{
+		"  wrote index platforms/second/generated/feature-index.yaml",
+		"  node platforms/second/CLAUDE.md",
 		"created platforms/second/reality/components/billing-api.md",
 		"  template: built-in templates/reality-component.md",
 		"next: fill in Business rules / Current limitations, then continue: " +
@@ -103,8 +124,9 @@ func runOK(t *testing.T, argv ...string) string {
 
 // wantLines asserts the command's stdout is exactly these lines. It is an
 // equality check rather than a Contains check because rebuild_generated's output
-// (once internal/graph lands) must appear BEFORE them, and a Contains check
-// would not notice it landing after.
+// must appear BEFORE the command's own, and a Contains check would not notice it
+// landing after. Every expectation above was captured from bin/company-os
+// running the same five-command sequence.
 func wantLines(t *testing.T, got string, lines []string) {
 	t.Helper()
 	want := strings.Join(lines, "\n") + "\n"

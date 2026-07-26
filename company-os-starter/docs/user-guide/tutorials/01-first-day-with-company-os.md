@@ -10,39 +10,73 @@ through discovery → PRD → done, and a green `company-os validate`. Budget
 about 25 minutes.
 
 > **Tip:** Company OS has no server, no database, and no account to create.
-> Everything you're about to do is files in a folder plus a CLI that guides
-> you through them.
+> Everything you're about to do is files in a folder plus a single-binary CLI
+> that guides you through them.
 
 ## 1. Install the CLI
 
-The fastest path is the bundled installer — it vendors its only dependency
-(PyYAML) so there's no `pip install` and no network access needed at
-install time:
+`company-os` is a single static binary. There is nothing to install
+underneath it — no interpreter, no runtime, no package manager. Download the
+one for your platform, make it executable, and put it somewhere on your
+`PATH`:
 
 ```bash
-git clone <this repo> && cd company-os-starter
-./install.sh
+# pick the artifact matching your machine, e.g.
+#   company-os_<version>_darwin_arm64   (Apple Silicon Mac)
+#   company-os_<version>_darwin_amd64   (Intel Mac)
+#   company-os_<version>_linux_amd64
+curl -fsSLo company-os <release-url>/company-os_<version>_darwin_arm64
+chmod +x company-os
+mkdir -p ~/.local/bin && mv company-os ~/.local/bin/
 ```
 
-Expected tail of the output:
+<!-- INSTALL-CAVEATS: macOS Gatekeeper / quarantine guidance is owned by task
+     5.2 and lands here. Do not duplicate it elsewhere. -->
 
-```text
-✓ Installed launcher at /Users/you/.local/bin/company-os
-✓ Smoke test passed (company-os runs with the vendored YAML).
+### macOS: the first run will be blocked
 
-Done. Try:
-  company-os --help
-  company-os init my-workspace && cd my-workspace && company-os validate
+**This applies on macOS only, and only to a binary you downloaded.** Releases
+are not yet Apple-notarized. macOS tags anything a browser downloads with a
+`com.apple.quarantine` attribute, and Gatekeeper refuses to execute a
+quarantined binary it cannot verify. Run it and it does not fail — it hangs,
+and nothing is printed, which is a worse first impression than an error would
+be. Launched from Finder you get "cannot be opened because the developer cannot
+be verified" instead.
+
+Clear the attribute once, right after moving the binary into place:
+
+```bash
+xattr -d com.apple.quarantine ~/.local/bin/company-os
 ```
 
-If `~/.local/bin` isn't already on your `PATH`, the installer tells you the
-exact line to add to your shell profile — do that now, then restart your
-shell.
+That is the whole workaround. It is per-download, so you will do it again the
+next time you upgrade by downloading. It is not needed at all if you built from
+source, if you fetched the binary with `curl` rather than a browser, or on
+Linux.
 
-> **Note:** Prefer working from source instead? `pip install pyyaml && export
-> PATH="$PWD/bin:$PATH"` gets you the same CLI without installing anything —
-> see the repo's top-level `README.md`. The rest of this tutorial works
-> identically either way.
+Check the attribute is gone before you blame anything else:
+
+```bash
+xattr ~/.local/bin/company-os      # prints nothing (or only com.apple.provenance)
+```
+
+Notarization is the real fix and is
+[documented for maintainers](../how-to/release-and-upgrade.md#macos-signing-and-notarization).
+Until it happens, this step is an accepted cost, recorded as such in the
+project's design docs.
+
+If `~/.local/bin` isn't already on your `PATH`, add it to your shell profile
+now and restart your shell:
+
+```bash
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+```
+
+> **Note:** Building from source instead? From `company-os-starter/`, run
+> `make install` — it builds the binary and copies it to `~/.local/bin`
+> (override with `PREFIX=/some/where`). Requires the Go toolchain, which is a
+> build-time requirement only; the binary it produces has no dependencies. The
+> rest of this tutorial works identically either way.
 
 Confirm it's working:
 

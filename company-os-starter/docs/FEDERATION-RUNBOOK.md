@@ -89,7 +89,7 @@ identically):
 
 > These field names differ from the earlier design sketch (which nested
 > `company-os:`/`platforms:`/`teams:` and allowed `branch:`). The flat `repos:`
-> list above is what `bin/company-os` parses today — treat the CLI as ground truth.
+> list above is what the CLI parses today — treat the CLI as ground truth.
 > The destination key was formerly called `root:`; a manifest still using that
 > name fails at load with a message naming `localDirectory:`.
 
@@ -444,11 +444,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: pip install pyyaml
-      - run: bin/company-os --root . validate      # committed slices vs committed lock; offline
+      - name: install company-os     # one static binary; no runtime dependency
+        env: {COMPANY_OS_VERSION: v1.0.0}
+        run: |
+          curl -fsSLo /usr/local/bin/company-os \
+            <release-url>/$COMPANY_OS_VERSION/company-os_${COMPANY_OS_VERSION}_linux_amd64
+          chmod +x /usr/local/bin/company-os
+      - run: company-os --root . validate      # committed slices vs committed lock; offline
       # optional: prove generated/ is truly derived (same pattern as monorepo CI)
       - run: |
-          bin/company-os governance resolve --team customer-engagement
+          company-os governance resolve --team customer-engagement
           git diff --exit-code teams/*/generated/
 ```
 
@@ -473,13 +478,24 @@ jobs:
         with: {path: pr}
       - uses: actions/checkout@v4          # the composition repo: siblings + lock + native dirs
         with: {repository: acme/company-workspace, path: ws}
-      - run: pip install pyyaml
+      - name: install company-os     # one static binary; no runtime dependency
+        env: {COMPANY_OS_VERSION: v1.0.0}
+        run: |
+          curl -fsSLo /usr/local/bin/company-os \
+            <release-url>/$COMPANY_OS_VERSION/company-os_${COMPANY_OS_VERSION}_linux_amd64
+          chmod +x /usr/local/bin/company-os
 
       # Build a CI manifest that drops THIS repo (so its content is validated
       # natively, not hash-checked against the lock as a slice).
+      #
+      # The inline Python below is this workflow's own YAML surgery, not the
+      # CLI's — `company-os` itself needs nothing installed. Any YAML editor
+      # will do; swap in `yq` if you'd rather not `pip install pyyaml` for
+      # this one step.
       - name: compose
         working-directory: ws
         run: |
+          pip install pyyaml
           python - <<'PY'
           import yaml
           m = yaml.safe_load(open("workspace.yaml"))
@@ -490,11 +506,11 @@ jobs:
           rm -rf platforms/communications
           mkdir -p platforms/communications
           cp -R ../pr/. platforms/communications/
-          bin/company-os graph build        # keep feature-index / CLAUDE.md nodes current
+          company-os graph build        # keep feature-index / CLAUDE.md nodes current
 
       - name: validate
         working-directory: ws
-        run: bin/company-os --root . validate
+        run: company-os --root . validate
 ```
 
 Verified result of Pattern B — the PR's content passes gates `[1/8]`–`[7/8]`, and

@@ -8,27 +8,56 @@ package main
 // fourth deliberately does not: `scratchpad init` prints no next step in the
 // oracle, and R-1.9 says it must keep printing exactly what it prints today,
 // because R-0.8 outranks R-1.8. Do not "complete" the chain here.
+//
+// All four return RECORDS rather than writing to `out`. They wrote prose
+// directly until R-3.4b: one JSON encoder over the record types cannot serve a
+// command that produces none, and R-3.7 requires their `--json` envelope to name
+// what they created instead of defaulting to an empty document. renderPlain
+// writes each finding's Message back out verbatim, so the bytes are the same
+// bytes — the format strings moved, they did not change. The next command also
+// lands in Fields under model.FieldNext, which is R-3.6.
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
+	"github.com/metuur-ai/uncle-os/company-os-starter/internal/graph"
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/model"
+	"github.com/metuur-ai/uncle-os/company-os-starter/internal/render"
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/scaffold"
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/workspace"
 )
 
 // rebuildGenerated is the scaffold -> graph seam (bin/company-os:1803).
 //
-// It is nil until task 2.3 lands internal/graph, at which point this becomes
-// graph.RebuildGenerated and nothing else in this file changes. While it is nil
-// the scaffolding commands write their SOURCE artifacts correctly and produce
-// none of the derived ones: no frontmatter tag rewrite, no feature-index, no
-// CLAUDE.md node, and none of the "  wrote index …" / "  node …" lines the
-// oracle prints before each command's own output.
-var rebuildGenerated scaffold.Rebuild
+// internal/scaffold declares the type and internal/graph satisfies it; the wire
+// is here because this is the only package allowed to depend on both, which is
+// what keeps `scaffold -> graph` from becoming an import edge and a cycle.
+//
+// The []string return is not a convenience. Output ORDER is load-bearing: every
+// derived line the rebuild produces precedes the command's own "added platform
+// 'x'", and only cmd/ may write. So graph returns records, render.Graph turns
+// them into the same sentences `graph build` prints, and the caller emits them
+// in front of its own.
+var rebuildGenerated scaffold.Rebuild = func(ws *workspace.Workspace) ([]string, error) {
+	sections, err := graph.Rebuild(ws)
+	if err != nil {
+		return nil, err
+	}
+	var buf bytes.Buffer
+	if err := render.Graph(&buf, sections); err != nil {
+		return nil, err
+	}
+	text := strings.TrimSuffix(buf.String(), "\n")
+	if text == "" {
+		return nil, nil
+	}
+	return strings.Split(text, "\n"), nil
+}
 
 // cmdInit is cmd_init (bin/company-os:1968-1995).
 func cmdInit(ws *workspace.Workspace, args *Args, out io.Writer) ([]model.GateResult, error) {
@@ -36,19 +65,30 @@ func cmdInit(ws *workspace.Workspace, args *Args, out io.Writer) ([]model.GateRe
 		Company:  args.Company,
 		Team:     args.Team,
 		Platform: args.Platform,
-		Prompt:   stdinPrompt(out),
+		Prompt:   stdinPrompt(promptWriter(args, out)),
 		Rebuild:  rebuildGenerated,
 	})
 	if err != nil {
 		return nil, err
 	}
-	writeLines(out, res.Generated)
-	fmt.Fprintf(out, "initialized workspace at %s\n", res.Root)
-	fmt.Fprintf(out, "  company: %s | first team: %s | first platform: %s\n",
-		res.Company, res.Team, res.Platform)
-	fmt.Fprintf(out, "next: cd %s && company-os discover new --team %s \"<discovery title>\"\n",
+	next := fmt.Sprintf("cd %s && company-os discover new --team %s \"<discovery title>\"",
 		res.Root, res.Team)
-	return nil, nil
+	return append(generatedSection(res.Generated), model.GateResult{
+		Ordinal: 1, Slug: model.SlugInit, Title: res.Company,
+		Findings: []model.Finding{
+			line(model.CodeInitCreated,
+				fmt.Sprintf("initialized workspace at %s", res.Root),
+				model.Fields{"root": res.Root}),
+			line(model.CodeInitSummary,
+				fmt.Sprintf("  company: %s | first team: %s | first platform: %s",
+					res.Company, res.Team, res.Platform),
+				model.Fields{
+					"company": res.Company, "team": res.Team, "platform": res.Platform,
+				}),
+			line(model.CodeInitNext, "next: "+next,
+				model.Fields{model.FieldNext: next}),
+		},
+	}), nil
 }
 
 // stdinPrompt returns the interactive half of _prompt (bin/company-os:1962-1965),
@@ -70,53 +110,106 @@ func stdinPrompt(out io.Writer) scaffold.Prompt {
 }
 
 // cmdAdd is cmd_add (bin/company-os:1997-2027).
-func cmdAdd(ws *workspace.Workspace, args *Args, out io.Writer) ([]model.GateResult, error) {
+func cmdAdd(ws *workspace.Workspace, args *Args, _ io.Writer) ([]model.GateResult, error) {
 	res, err := scaffold.Add(ws, scaffold.AddKind(args.Kind), args.Name, args.Platform, rebuildGenerated)
 	if err != nil {
 		return nil, err
 	}
-	writeLines(out, res.Generated)
+	var created, next string
+	fields := model.Fields{"kind": string(res.Kind), "id": res.ID}
 	switch res.Kind {
 	case scaffold.AddPlatform:
-		fmt.Fprintf(out, "added platform '%s'\n", res.ID)
-		fmt.Fprintf(out, "next: company-os add component --platform %s <component-id>\n", res.ID)
+		created = fmt.Sprintf("added platform '%s'", res.ID)
+		next = fmt.Sprintf("company-os add component --platform %s <component-id>", res.ID)
 	case scaffold.AddTeam:
-		fmt.Fprintf(out, "added team '%s'\n", res.ID)
-		fmt.Fprintf(out, "next: company-os discover new --team %s \"<discovery title>\"\n", res.ID)
+		created = fmt.Sprintf("added team '%s'", res.ID)
+		next = fmt.Sprintf("company-os discover new --team %s \"<discovery title>\"", res.ID)
 	case scaffold.AddComponent:
-		fmt.Fprintf(out, "added component '%s' to platform '%s'\n", res.ID, res.Platform)
-		fmt.Fprintf(out, "next: company-os reality new --platform %s %s\n", res.Platform, res.ID)
+		created = fmt.Sprintf("added component '%s' to platform '%s'", res.ID, res.Platform)
+		next = fmt.Sprintf("company-os reality new --platform %s %s", res.Platform, res.ID)
+		fields["platform"] = res.Platform
 	}
-	return nil, nil
+	return append(generatedSection(res.Generated), model.GateResult{
+		Ordinal: 1, Slug: model.SlugAdd, Title: res.ID,
+		Findings: []model.Finding{
+			line(model.CodeAddCreated, created, fields),
+			line(model.CodeAddNext, "next: "+next, model.Fields{model.FieldNext: next}),
+		},
+	}), nil
 }
 
 // cmdReality is cmd_reality (bin/company-os:2030-2058).
-func cmdReality(ws *workspace.Workspace, args *Args, out io.Writer) ([]model.GateResult, error) {
+func cmdReality(ws *workspace.Workspace, args *Args, _ io.Writer) ([]model.GateResult, error) {
 	res, err := scaffold.RealityNew(ws, args.Platform, args.ComponentArg, rebuildGenerated)
 	if err != nil {
 		return nil, err
 	}
-	writeLines(out, res.Generated)
-	fmt.Fprintf(out, "created %s\n", res.Path)
-	fmt.Fprintf(out, "  template: %s\n", res.Source)
-	fmt.Fprintf(out, "next: fill in Business rules / Current limitations, then continue: "+
-		"company-os prd complete --platform %s <prd-id>\n", res.Platform)
-	return nil, nil
+	// The oracle's next-step line wraps its command in prose, so the bare command
+	// and the rendered line are spelled separately (R-3.6).
+	next := fmt.Sprintf("company-os prd complete --platform %s <prd-id>", res.Platform)
+	return append(generatedSection(res.Generated), model.GateResult{
+		Ordinal: 1, Slug: model.SlugRealityNew, Title: res.Component,
+		Findings: []model.Finding{
+			line(model.CodeRealityCreated, "created "+res.Path,
+				model.Fields{"path": res.Path, "component": res.Component,
+					"platform": res.Platform}),
+			line(model.CodeRealityTemplate, "  template: "+res.Source,
+				model.Fields{"source": res.Source}),
+			line(model.CodeRealityNext,
+				"next: fill in Business rules / Current limitations, then continue: "+next,
+				model.Fields{model.FieldNext: next}),
+		},
+	}), nil
 }
 
 // cmdScratchpad is cmd_scratchpad (bin/company-os:1141-1155). One line, no next
 // step — see the file comment.
-func cmdScratchpad(_ *workspace.Workspace, args *Args, out io.Writer) ([]model.GateResult, error) {
+func cmdScratchpad(_ *workspace.Workspace, args *Args, _ io.Writer) ([]model.GateResult, error) {
 	res, err := scaffold.ScratchpadInit(args.Repo)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Fprintf(out, "initialized %s and updated .gitignore\n", res.Base)
-	return nil, nil
+	return []model.GateResult{{
+		Ordinal: 1, Slug: model.SlugScratchpad, Title: res.Base,
+		Findings: []model.Finding{
+			line(model.CodeScratchpadCreated,
+				fmt.Sprintf("initialized %s and updated .gitignore", res.Base),
+				model.Fields{"path": res.Base}),
+		},
+	}}, nil
 }
 
-func writeLines(out io.Writer, lines []string) {
-	for _, l := range lines {
-		fmt.Fprintln(out, l)
+// generatedSection wraps rebuild_generated's lines, which the oracle prints
+// before each scaffolding command's own output. Nothing is returned for an empty
+// rebuild, so the section never appears as an empty block in `--json`.
+func generatedSection(lines []string) []model.GateResult {
+	if len(lines) == 0 {
+		return nil
 	}
+	s := model.GateResult{Ordinal: 0, Slug: model.SlugGenerated}
+	for _, l := range lines {
+		s.Findings = append(s.Findings, line(model.CodeGenerated, l, nil))
+	}
+	return []model.GateResult{s}
+}
+
+// line builds one whole-line record. Message is the finished line — see the file
+// comment for why these five commands freeze their bytes at the producer rather
+// than at the renderer.
+func line(code, message string, f model.Fields) model.Finding {
+	if f == nil {
+		f = model.Fields{}
+	}
+	return model.Finding{
+		Severity: model.SevOK, Code: code, Message: message, Fields: f,
+	}
+}
+
+// promptWriter keeps the interactive wizard's prompts off `--json` stdout
+// (R-3.2, R-3.9). They are progress, not results.
+func promptWriter(args *Args, out io.Writer) io.Writer {
+	if args.JSON {
+		return os.Stderr
+	}
+	return out
 }

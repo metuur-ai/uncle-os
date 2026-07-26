@@ -86,7 +86,11 @@ intent but are built only on real demand — never as speculative surface.
   `spec trace`, EARS `ears:` blocks).
 - No mirroring of external system *content* — tickets, Figma, Slack stay
   external; we store **pointers** only (#8).
-- No new runtime dependencies (Python 3.9+ / PyYAML only).
+- No new runtime dependencies (Python 3.9+ / PyYAML only). *(Amended
+  2026-07-26: this policy governs **runtime** prerequisites on the user's
+  machine. After the Go port there are none at all — build-time Go modules
+  linked into the static binary do not violate it. See
+  [Amendment 1](../ears/federation-enrichment.md#amendment-1--r-74-partial-retirement-2026-07-26).)*
 - No forced adoption: identity, onboarding, and all deferred items are opt-in;
   a team omitting them still validates.
 - Document body/section format stays guidance (opt-in blocking via the existing

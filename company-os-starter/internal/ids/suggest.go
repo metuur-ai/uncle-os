@@ -143,15 +143,38 @@ func quickRatio(a, b []rune) float64 {
 	return calculateRatio(matches, len(a)+len(b))
 }
 
-// ratio is SequenceMatcher(None, a, b).ratio() with the default autojunk, which
-// is inert here: it only engages for len(b) >= 200 and no canonical ID is that
-// long. With no junk and no popular elements, the total matched size is the sum
-// over get_matching_blocks, and the merge pass in that function does not change
-// the sum — so the recursion below is enough and the block list is not built.
+// autojunkMin is SequenceMatcher.__chain_b's `n >= 200` (difflib.py), where n is
+// len(seq2).
+//
+// A previous note here called autojunk inert "because no canonical ID is that
+// long". That was wrong about which sequence it measures: get_close_matches sets
+// seq2 to the WORD, and the word is the unknown id a user typed at
+// `governance explain`, not a registry entry. Measured against CPython's difflib:
+// identical results for every word under 200 runes, and a divergence on 200 of
+// 200 sampled words at or above it — Python returning [] where this returned up
+// to three suggestions.
+const autojunkMin = 200
+
+// ratio is SequenceMatcher(None, a, b).ratio(). With no junk the total matched
+// size is the sum over get_matching_blocks, and the merge pass in that function
+// does not change the sum — so the recursion below is enough and the block list
+// is not built.
 func ratio(a, b []rune) float64 {
 	b2j := map[rune][]int{}
 	for j, r := range b {
 		b2j[r] = append(b2j[r], j)
+	}
+	// __chain_b's autojunk pass: a character appearing in more than 1% of a long
+	// seq2 becomes "popular" and is dropped from the index, so the DP below can
+	// no longer start a match on it. It stays visible to find_longest_match's
+	// extension loops, which is why those are no longer omitted.
+	if len(b) >= autojunkMin {
+		ncut := len(b)/100 + 1
+		for r, idxs := range b2j {
+			if len(idxs) > ncut {
+				delete(b2j, r)
+			}
+		}
 	}
 
 	matches := 0
@@ -175,9 +198,12 @@ func ratio(a, b []rune) float64 {
 	return calculateRatio(matches, len(a)+len(b))
 }
 
-// longestMatch is SequenceMatcher.find_longest_match, minus the four junk-
-// extension loops: with no junk element they either cannot extend (the DP
-// already found the maximal run) or are guarded by isbjunk and never run.
+// longestMatch is SequenceMatcher.find_longest_match. Its last two extension
+// loops are omitted: both are guarded by isbjunk, and bjunk is the isjunk-based
+// set, which is empty here because get_close_matches passes isjunk=None. The
+// first two are NOT omitted — `not isbjunk(...)` is vacuously true, so they run,
+// and they are the only thing that can grow a match across a character autojunk
+// pruned out of b2j.
 func longestMatch(a, b []rune, b2j map[rune][]int, alo, ahi, blo, bhi int) (int, int, int) {
 	besti, bestj, bestsize := alo, blo, 0
 	j2len := map[int]int{}
@@ -197,6 +223,13 @@ func longestMatch(a, b []rune, b2j map[rune][]int, alo, ahi, blo, bhi int) (int,
 			}
 		}
 		j2len = newj2len
+	}
+	for besti > alo && bestj > blo && a[besti-1] == b[bestj-1] {
+		besti, bestj, bestsize = besti-1, bestj-1, bestsize+1
+	}
+	for besti+bestsize < ahi && bestj+bestsize < bhi &&
+		a[besti+bestsize] == b[bestj+bestsize] {
+		bestsize++
 	}
 	return besti, bestj, bestsize
 }

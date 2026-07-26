@@ -2,6 +2,8 @@ package skills
 
 import (
 	"fmt"
+	"math"
+	"math/big"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -10,6 +12,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/frontmatter"
+	"github.com/metuur-ai/uncle-os/company-os-starter/internal/model"
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/workspace"
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/yamlio"
 )
@@ -56,9 +59,16 @@ type Value struct {
 	Text string
 	// Truthy is Python's `if value:`.
 	Truthy bool
-	// kind is the Python type name. It exists only so that Equal can refuse to
-	// call two values of different types equal when their str() forms collide.
+	// kind is the Python type name. It exists so that Equal can refuse to call
+	// two values of different types equal when their str() forms collide.
 	kind string
+	// nan marks the one value Python refuses to call equal to itself.
+	nan bool
+	// num is the value as a real number, set for bool, int and float and nil
+	// for everything else. bool, int and float are ONE comparison domain in
+	// Python — bool subclasses int, and int/float compare numerically — so
+	// equality there cannot be answered from kind and Text.
+	num *big.Float
 }
 
 // NewValue builds the Value a STRING-typed frontmatter field produces. It is
@@ -70,7 +80,28 @@ func NewValue(text string) Value {
 }
 
 // Equal is Python's `==` between two frontmatter values.
-func (v Value) Equal(o Value) bool { return v.kind == o.kind && v.Text == o.Text }
+//
+// It cannot be `kind == kind && Text == Text`. `s["id"] == k["id"]` (`:852`) is
+// Python's `==`, which compares VALUES across the numeric tower: `5 == 5.0` and
+// `True == 1` are both true, while str(5) is "5" and str(5.0) is "5.0". A
+// kind-and-text test therefore MISSED a shadowing conflict — gate 7 stayed clean
+// on a team skill carrying `id: 5.0` against a canonical `id: 5`, which Python
+// reports as [FAIL].
+//
+// Outside the numeric tower Python has no cross-type equality among the types
+// safe_load produces, so kind and Text remain the right test there.
+func (v Value) Equal(o Value) bool {
+	if v.nan || o.nan {
+		return false
+	}
+	if v.num != nil && o.num != nil {
+		return v.num.Cmp(o.num) == 0
+	}
+	if v.num != nil || o.num != nil {
+		return false
+	}
+	return v.kind == o.kind && v.Text == o.Text
+}
 
 // String is str(value).
 func (v Value) String() string { return v.Text }
@@ -135,7 +166,27 @@ func Name(path string) string {
 	if strings.HasSuffix(n, Suffix) {
 		return n[:len(n)-len(Suffix)]
 	}
-	return strings.TrimSuffix(n, filepath.Ext(n))
+	return pyStem(n)
+}
+
+// pyStem is PurePath.stem. It is not strings.TrimSuffix(n, filepath.Ext(n)):
+// pathlib treats a LEADING dot as part of the name rather than as a suffix
+// separator, so `Path(".md").stem` is ".md" where filepath.Ext(".md") is ".md"
+// and the trim leaves "". A personal rule named exactly `.md` under
+// teams/<t>/scratchpad/personal-rules/ therefore had an EMPTY shadowing
+// identity, which matches every other empty-named skill.
+//
+// pathlib's rule (PurePath.suffix): the last dot is a separator only when it is
+// neither the first character nor the last. The indices below are byte offsets
+// where Python's are character offsets, which agrees because '.' is ASCII: a dot
+// at byte 0 is a dot at character 0, and a dot with any byte after it has any
+// character after it.
+func pyStem(name string) string {
+	i := strings.LastIndexByte(name, '.')
+	if 0 < i && i < len(name)-1 {
+		return name[:i]
+	}
+	return name
 }
 
 // Discover merges the four skill layers, each labeled with its origin
@@ -255,8 +306,10 @@ func read(ws *workspace.Workspace, path string, layer Layer, platform, team stri
 //
 // A frontmatter block that loads to a truthy NON-mapping (a list, a bare
 // scalar) makes Python raise AttributeError on the first .get() and exit 1
-// through a traceback; the error returned here carries no explicit code, which
-// model.CodeOf also resolves to 1.
+// through a traceback. R-0.7a(j) sanctions replacing that with a diagnostic and
+// exit 4 — the document is well-formed YAML of the wrong shape, which is an
+// artifact error — so the error carries ExitArtifact, as internal/roles and
+// internal/scaffold already do for the same condition.
 func mapping(path string, block []byte) (*yaml.Node, error) {
 	if block == nil {
 		return nil, nil
@@ -270,7 +323,8 @@ func mapping(path string, block []byte) (*yaml.Node, error) {
 	}
 	root := yamlio.Deref(doc.Root())
 	if root == nil || root.Kind != yaml.MappingNode {
-		return nil, fmt.Errorf("%s: frontmatter is not a mapping", path)
+		return nil, model.Errorf(model.ExitArtifact,
+			"%s: frontmatter is not a mapping", path)
 	}
 	return root, nil
 }
@@ -293,7 +347,10 @@ func value(path, key string, meta *yaml.Node) (Value, error) {
 		return absent, nil
 	}
 	if n.Kind != yaml.ScalarNode {
-		return Value{}, fmt.Errorf("%s: frontmatter '%s' must be a scalar", path, key)
+		// Same R-0.7a(j) wrong-shape ruling as mapping() above: well-formed YAML,
+		// wrong shape, exit 4.
+		return Value{}, model.Errorf(model.ExitArtifact,
+			"%s: frontmatter '%s' must be a scalar", path, key)
 	}
 	sc, err := yamlio.Resolve(n)
 	if err != nil {
@@ -305,10 +362,26 @@ func value(path, key string, meta *yaml.Node) (Value, error) {
 		v.kind, v.Truthy = "NoneType", false
 	case yamlio.KindBool:
 		v.kind, v.Truthy = "bool", sc.Bool
+		v.num = big.NewFloat(0)
+		if sc.Bool {
+			v.num = big.NewFloat(1)
+		}
 	case yamlio.KindInt:
 		v.kind, v.Truthy = "int", sc.Int != nil && sc.Int.Sign() != 0
+		if sc.Int != nil {
+			v.num = new(big.Float).SetInt(sc.Int)
+		} else {
+			v.num = big.NewFloat(0)
+		}
 	case yamlio.KindFloat:
 		v.kind, v.Truthy = "float", sc.Float != 0
+		// A NaN is never equal to anything, including itself, and big.Float
+		// cannot hold one, so it is flagged rather than measured.
+		if math.IsNaN(sc.Float) {
+			v.nan = true
+		} else {
+			v.num = big.NewFloat(sc.Float)
+		}
 	case yamlio.KindTimestamp:
 		// datetime.date and datetime.datetime are always truthy.
 		v.kind, v.Truthy = "datetime", true

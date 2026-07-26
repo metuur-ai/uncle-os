@@ -250,3 +250,35 @@ func write(t *testing.T, path, content string) {
 		t.Fatal(err)
 	}
 }
+
+// TestListMatchesReferenceCLIOnPathlibStemEdgeCases covers the file names where
+// PurePath.stem and filepath.Ext disagree.
+//
+// `Path(".md").stem` is ".md" — pathlib treats a leading dot as part of the name
+// — while filepath.Ext(".md") is ".md", so trimming it left an EMPTY skill name.
+// The name is the shadowing identity AND the label `skills list` prints, so the
+// old behavior both printed a blank entry and made every empty-named skill
+// collide. Reachable at teams/<t>/scratchpad/personal-rules/.md.
+func TestListMatchesReferenceCLIOnPathlibStemEdgeCases(t *testing.T) {
+	root := repoRoot(t)
+	src := filepath.Join(root, "examples", "failing-workspace")
+	if _, err := os.Stat(src); err != nil {
+		t.Skipf("fixture absent: %v", err)
+	}
+	ws := copyTree(t, src)
+
+	dir := filepath.Join(ws, "teams", "ghost", "scratchpad", "personal-rules")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{".md", "trailing-dot.", "a.b.md", "plain.md"} {
+		write(t, filepath.Join(dir, name),
+			"---\ntype: personal-rule\n---\n\n1. (default) step\n")
+	}
+
+	want := pythonSkillsList(t, root, ws)
+	if got := listText(t, workspace.New(ws)); got != want {
+		t.Errorf("skills list diverges on a pathlib stem edge case\n%s",
+			firstDiff(got, want))
+	}
+}

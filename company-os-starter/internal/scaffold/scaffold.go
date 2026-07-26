@@ -19,6 +19,23 @@ import (
 
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/model"
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/workspace"
+	"github.com/metuur-ai/uncle-os/company-os-starter/internal/yamlio"
+)
+
+// The PyYAML-safe_dump-compatible emitter lives in internal/yamlio, next to the
+// loader, because internal/governance and internal/federation need it too and
+// must not reach it through a command package. These aliases keep the scaffold
+// dicts below reading as the Python literals they transcribe.
+type (
+	pyStr = yamlio.PyStr
+	pySeq = yamlio.PySeq
+	pyMap = yamlio.PyMap
+)
+
+var (
+	pyDump      = yamlio.PyDump
+	loadPy      = yamlio.PyLoadFile
+	writePyYAML = yamlio.PyWriteFile
 )
 
 // Rebuild re-derives tags and generated aggregates for a workspace and reports
@@ -143,54 +160,54 @@ func strs(items ...string) pySeq {
 func scaffoldCompany(root, company string) error {
 	slug := Slugify(company)
 	err := writeNewYAML(filepath.Join(root, "company-os", "company.yaml"), pyMap{
-		{"schemaVersion", pyStr("1.0")},
-		{"kind", pyStr("Company")},
-		{"metadata", pyMap{{"id", pyStr(slug)}, {"name", pyStr(company)}}},
-		{"tags", strs("kind/company")},
+		{K: "schemaVersion", V: pyStr("1.0")},
+		{K: "kind", V: pyStr("Company")},
+		{K: "metadata", V: pyMap{{K: "id", V: pyStr(slug)}, {K: "name", V: pyStr(company)}}},
+		{K: "tags", V: strs("kind/company")},
 	})
 	if err != nil {
 		return err
 	}
 	return writeNewYAML(
 		filepath.Join(root, "company-os", "standards", "company-baseline.yaml"), pyMap{
-			{"schemaVersion", pyStr("1.0")},
-			{"kind", pyStr("CompanyBaseline")},
-			{"controls", pySeq{pyMap{
-				{"id", pyStr("security-baseline")},
-				{"version", pyStr("1.0")},
-				{"level", pyStr("default")},
-				{"requirement", pyStr("Services authenticate inbound calls and " +
+			{K: "schemaVersion", V: pyStr("1.0")},
+			{K: "kind", V: pyStr("CompanyBaseline")},
+			{K: "controls", V: pySeq{pyMap{
+				{K: "id", V: pyStr("security-baseline")},
+				{K: "version", V: pyStr("1.0")},
+				{K: "level", V: pyStr("default")},
+				{K: "requirement", V: pyStr("Services authenticate inbound calls and " +
 					"encrypt data in transit.")},
 			}}},
-			{"tags", strs("kind/baseline", "scope/company", "tier/mixed")},
+			{K: "tags", V: strs("kind/baseline", "scope/company", "tier/mixed")},
 		})
 }
 
 // scaffoldPlatform is bin/company-os:1846-1858.
 func scaffoldPlatform(root, pid string) error {
 	err := writeNewYAML(filepath.Join(root, "platforms", pid, "platform.yaml"), pyMap{
-		{"schemaVersion", pyStr("1.0")},
-		{"kind", pyStr("Platform")},
-		{"metadata", pyMap{
-			{"id", pyStr(pid)},
-			{"name", pyStr(titleCase(strings.ReplaceAll(pid, "-", " ")))},
+		{K: "schemaVersion", V: pyStr("1.0")},
+		{K: "kind", V: pyStr("Platform")},
+		{K: "metadata", V: pyMap{
+			{K: "id", V: pyStr(pid)},
+			{K: "name", V: pyStr(titleCase(strings.ReplaceAll(pid, "-", " ")))},
 		}},
-		{"conformance", pyMap{
-			{"companyOsVersion", pyStr("2026.2")},
-			{"profile", pyStr("standard")},
+		{K: "conformance", V: pyMap{
+			{K: "companyOsVersion", V: pyStr("2026.2")},
+			{K: "profile", V: pyStr("standard")},
 		}},
-		{"tags", strs("kind/platform", "platform/"+pid)},
+		{K: "tags", V: strs("kind/platform", "platform/"+pid)},
 	})
 	if err != nil {
 		return err
 	}
 	return writeNewYAML(
 		filepath.Join(root, "platforms", pid, "governance", "requirements.yaml"), pyMap{
-			{"schemaVersion", pyStr("1.0")},
-			{"kind", pyStr("PlatformRequirements")},
-			{"platform", pyMap{{"id", pyStr(pid)}}},
-			{"requirements", pySeq{}},
-			{"tags", strs("kind/requirements", "platform/"+pid)},
+			{K: "schemaVersion", V: pyStr("1.0")},
+			{K: "kind", V: pyStr("PlatformRequirements")},
+			{K: "platform", V: pyMap{{K: "id", V: pyStr(pid)}}},
+			{K: "requirements", V: pySeq{}},
+			{K: "tags", V: strs("kind/requirements", "platform/"+pid)},
 		})
 }
 
@@ -198,17 +215,17 @@ func scaffoldPlatform(root, pid string) error {
 func scaffoldTeam(root, tid string) error {
 	tname := titleCase(strings.ReplaceAll(tid, "-", " "))
 	err := writeNewYAML(filepath.Join(root, "teams", tid, "team.yaml"), pyMap{
-		{"schemaVersion", pyStr("1.0")},
-		{"kind", pyStr("Team")},
-		{"metadata", pyMap{{"id", pyStr(tid)}, {"name", pyStr(tname)}}},
-		{"agentSkills", pyMap{
-			{"canonicalPath", pyStr("skills/")},
-			{"personalPath", pyStr("scratchpad/personal-rules/")},
-			{"precedence", pyStr("canonical-mandatory > personal > canonical-default " +
+		{K: "schemaVersion", V: pyStr("1.0")},
+		{K: "kind", V: pyStr("Team")},
+		{K: "metadata", V: pyMap{{K: "id", V: pyStr(tid)}, {K: "name", V: pyStr(tname)}}},
+		{K: "agentSkills", V: pyMap{
+			{K: "canonicalPath", V: pyStr("skills/")},
+			{K: "personalPath", V: pyStr("scratchpad/personal-rules/")},
+			{K: "precedence", V: pyStr("canonical-mandatory > personal > canonical-default " +
 				"> canonical-guidance")},
-			{"onConflict", pyStr("prefer-canonical-and-inform-user")},
+			{K: "onConflict", V: pyStr("prefer-canonical-and-inform-user")},
 		}},
-		{"tags", strs("kind/team", "team/"+tid)},
+		{K: "tags", V: strs("kind/team", "team/"+tid)},
 	})
 	if err != nil {
 		return err
@@ -232,23 +249,23 @@ func scaffoldTeam(root, tid string) error {
 func scaffoldComponent(root, pid, cid string) error {
 	return writeNewYAML(
 		filepath.Join(root, "platforms", pid, "components", cid+".yaml"), pyMap{
-			{"schemaVersion", pyStr("1.0")},
-			{"kind", pyStr("Component")},
-			{"metadata", pyMap{
-				{"id", pyStr(cid)},
-				{"name", pyStr(titleCase(strings.ReplaceAll(cid, "-", " ")))},
-				{"type", pyStr("service")},
-				{"status", pyStr("active")},
+			{K: "schemaVersion", V: pyStr("1.0")},
+			{K: "kind", V: pyStr("Component")},
+			{K: "metadata", V: pyMap{
+				{K: "id", V: pyStr(cid)},
+				{K: "name", V: pyStr(titleCase(strings.ReplaceAll(cid, "-", " ")))},
+				{K: "type", V: pyStr("service")},
+				{K: "status", V: pyStr("active")},
 			}},
-			{"ownership", pyMap{
-				{"accountableTeam", pyStr("team://TODO")},
-				{"repository", pyStr("repo://" + cid)},
+			{K: "ownership", V: pyMap{
+				{K: "accountableTeam", V: pyStr("team://TODO")},
+				{K: "repository", V: pyStr("repo://" + cid)},
 			}},
-			{"platformRelationships", pySeq{pyMap{
-				{"platform", pyStr("platform://" + pid)},
-				{"relationship", pyStr("belongs-to")},
+			{K: "platformRelationships", V: pySeq{pyMap{
+				{K: "platform", V: pyStr("platform://" + pid)},
+				{K: "relationship", V: pyStr("belongs-to")},
 			}}},
-			{"tags", strs("component/"+cid, "kind/component", "platform/"+pid)},
+			{K: "tags", V: strs("component/"+cid, "kind/component", "platform/"+pid)},
 		})
 }
 
@@ -256,51 +273,82 @@ func scaffoldComponent(root, pid, cid string) error {
 // company-ontology/ids/registry.yaml, idempotent per id. The whole file is
 // re-dumped through safe_dump, which is why writePyYAML has to be
 // byte-compatible with it rather than merely well-formed.
+//
+// "Idempotent per id" is stronger here than in the oracle: Python re-dumps the
+// file even when the id was already registered, and this returns without
+// touching it (R-0.7c). See the branch below for why that is a semantic compare
+// rather than a shortcut.
 func registerID(root, canonicalID, definedIn string) error {
 	path := filepath.Join(root, "company-ontology", "ids", "registry.yaml")
 	loaded, err := loadPy(path)
 	if err != nil {
 		return err
 	}
-	data, ok := loaded.(pyMap)
-	if !ok || len(data) == 0 {
-		// `load_yaml(path, None) or {default}` — Python truthiness, so an empty
-		// mapping falls back to the default too (R-1.7a).
-		if loaded != nil && !ok {
+	// `load_yaml(path, None) or {default}` — Python TRUTHINESS, not a nil check.
+	// A registry holding `[]`, `{}`, `0` or `''` falls back to the default and
+	// Python exits 0 having written a valid registry over it (R-1.7a); guarding
+	// only on nil made `printf '[]' > registry.yaml; add platform zzz` fail.
+	var data pyMap
+	if yamlio.PyFalsy(loaded) {
+		data = pyMap{
+			{K: "schemaVersion", V: pyStr("1.0")},
+			{K: "kind", V: pyStr("IdRegistry")},
+			{K: "ids", V: pySeq{}},
+			{K: "tags", V: strs("ontology/registry")},
+		}
+	} else {
+		m, ok := loaded.(pyMap)
+		if !ok {
+			// `data.setdefault(...)` on a non-dict raises AttributeError and the
+			// file is never rewritten. R-0.7a(j): same outcome, exit 4 with a
+			// diagnostic instead of a traceback, and nothing written.
 			return model.Errorf(model.ExitArtifact,
 				"%s: expected a mapping at the document root", path)
 		}
-		data = pyMap{
-			{"schemaVersion", pyStr("1.0")},
-			{"kind", pyStr("IdRegistry")},
-			{"ids", pySeq{}},
-			{"tags", strs("ontology/registry")},
-		}
+		data = m
 	}
 
 	// `data.setdefault("ids", [])` — present-but-absent are the only two shapes
-	// Python survives; anything else raises there, so it is an artifact fault
-	// here rather than a silent divergence.
+	// Python survives; anything else raises there.
 	var ids pySeq
-	switch existing := data.get("ids").(type) {
+	switch existing := data.Get("ids").(type) {
 	case nil:
-		data = data.set("ids", pySeq{})
+		data = data.Set("ids", pySeq{})
 	case pySeq:
 		ids = existing
 	default:
 		return model.Errorf(model.ExitArtifact, "%s: 'ids:' must be a list", path)
 	}
 
+	// `any(e.get("id") == canonical_id for e in ids)` — a generator, so it stops
+	// at the first match and only reaches a malformed entry that precedes none.
+	// `.get` on a non-dict raises AttributeError; skipping the entry instead let
+	// a registry whose `ids:` held a bare string be silently rewritten and
+	// reformatted where Python writes nothing (R-0.7a(j)).
 	for _, e := range ids {
-		if m, ok := e.(pyMap); ok {
-			if id, ok := m.get("id").(pyStr); ok && string(id) == canonicalID {
-				return writePyYAML(path, data)
-			}
+		m, ok := e.(pyMap)
+		if !ok {
+			return model.Errorf(model.ExitArtifact,
+				"%s: every 'ids:' entry must be a mapping", path)
+		}
+		if id, ok := m.Get("id").(pyStr); ok && string(id) == canonicalID {
+			// R-0.7c: skip the write, because the parsed structure is
+			// unchanged. This is the ONE branch where that is true — `data` is
+			// `loaded` itself here (no default was substituted and no
+			// setdefault fired, or the loop could not be running), so a
+			// semantic compare against the file on disk can only say "equal".
+			//
+			// Python rewrites anyway, and that rewrite is not a no-op even
+			// under Python: safe_dump reflows the committed registry's
+			// flow-style entries into block style. Under yaml.v3 it would
+			// reflow them differently again, dirtying a tree that nothing
+			// asked to change and breaking R-0.10.
+			return nil
 		}
 	}
-	data = data.set("ids", append(ids, pyMap{
-		{"id", pyStr(canonicalID)},
-		{"definedIn", pyStr(definedIn)},
+	data = data.Set("ids", append(ids, pyMap{
+		{K: "id", V: pyStr(canonicalID)},
+		{K: "definedIn", V: pyStr(definedIn)},
 	}))
 	return writePyYAML(path, data)
 }

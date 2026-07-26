@@ -38,6 +38,20 @@ commit as the title backfill (3.4) or the harness's double-build check goes red.
 ## Phase 0 — Done-gate date correctness (Unit 0)
 
 - [ ] 0.1 Parse dates in the `prd complete` done-gate (est: ~30m)
+  - PARTIALLY DONE 2026-07-26, in Go only. Task 2.6 of the Go port landed R-0.1,
+    R-0.2 and R-0.3 in `company-os-starter/internal/product/prd.go` (`parseDate`,
+    `CodeDoneRealityDateInvalid`): both values are parsed as ISO-8601 and
+    compared as dates, and a malformed or absent one produces a done-check error
+    naming the file and the offending value. `bin/company-os:679-682` is
+    UNCHANGED — the port's constraints forbid touching it — so the two
+    implementations now differ here by design; the difference is invisible to
+    `examples/differential.py` because no corpus fixture carries a malformed
+    date (measured: 6 reality docs, 6 PRDs, all well-formed ISO). R-0.4's
+    `examples/selftest.py` check is therefore still open, and so is this task
+    until either the Python side is fixed or R-9.3 deletes it. The Go-side
+    coverage is `TestParseDate`, `TestDoneGateNamesAMalformedDate`,
+    `TestDoneGateAcceptsAFreshRealityDoc` and `TestDoneGateStaleRealityRefuses`
+    in `internal/product/product_test.go`.
   - why: Invariant #4 of the whole methodology is "a change is done only when
     reality is updated", and the gate enforcing it compares dates as raw strings
     (`bin/company-os:679-682`) — correct for well-formed ISO dates by lexical

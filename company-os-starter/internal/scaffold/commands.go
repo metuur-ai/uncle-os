@@ -179,11 +179,21 @@ func moveRoots(staging, target string) error {
 	return nil
 }
 
-// move is shutil.move: a rename where the two paths share a filesystem, and a
-// copy-then-remove where they do not. The temporary directory is not guaranteed
-// to be on the same device as the workspace, and a rename that fails with
-// EXDEV must not abort the scaffold.
-func move(src, dst string) error {
+// move is Move, kept as the package-local spelling every caller here already
+// uses.
+func move(src, dst string) error { return Move(src, dst) }
+
+// Move is shutil.move's transfer half: a rename where the two paths share a
+// filesystem, and a copy-then-remove where they do not. The staging directory
+// `init` uses is not guaranteed to be on the same device as the workspace, and a
+// rename that fails with EXDEV must not abort the scaffold.
+//
+// It is exported for internal/product, whose `prd complete` archives a change
+// record through the same shutil.move (bin/company-os:698). What product adds on
+// top is the DESTINATION half — shutil.move nests the source inside dst when dst
+// is an existing directory — which is behaviour no caller here can reach,
+// because every destination `init` and `add` move to is known absent.
+func Move(src, dst string) error {
 	if err := os.Rename(src, dst); err == nil {
 		return nil
 	}
@@ -383,11 +393,11 @@ func componentName(descriptor string) (string, error) {
 	if !ok {
 		return "", nil
 	}
-	meta, ok := desc.get("metadata").(pyMap)
+	meta, ok := desc.Get("metadata").(pyMap)
 	if !ok {
 		return "", nil
 	}
-	name, _ := meta.get("name").(pyStr)
+	name, _ := meta.Get("name").(pyStr)
 	return string(name), nil
 }
 
@@ -452,14 +462,35 @@ func ScratchpadInit(repo string) (*ScratchpadResult, error) {
 	return &ScratchpadResult{Base: base}, nil
 }
 
-// pathJoin is `Path(a) / b` — filepath.Join with pathlib's normalization, which
-// drops a lone "." segment so `--repo .` prints "scratchpad" and not
-// "./scratchpad".
+// pathJoin is `Path(a) / b`, and it is NOT filepath.Join.
+//
+// pathlib normalizes only what it can do without touching the filesystem: it
+// drops "." components and duplicate and trailing separators, and it KEEPS "..",
+// because resolving `a/..` requires knowing whether `a` is a symlink.
+// filepath.Join calls Clean, which resolves ".." lexically — so
+// `scratchpad init --repo "a/.."` printed `initialized scratchpad` where Python
+// prints `initialized a/../scratchpad`.
+//
+// Ruling: match Python. The two create the same files either way, so this is one
+// printed line — but R-0.7 makes any unlisted observable difference a defect,
+// R-0.7a does not list it, and matching costs less than amending the carve-out
+// would. Measured against pathlib: "." → "scratchpad", "a/.." →
+// "a/../scratchpad", "a/./b" → "a/b/scratchpad", "a//b" → "a/b/scratchpad",
+// "a/" → "a/scratchpad", "/" → "/scratchpad".
 func pathJoin(a, b string) string {
-	if a == "." {
-		return b
+	abs := strings.HasPrefix(a, "/")
+	parts := make([]string, 0, 4)
+	for _, seg := range strings.Split(a, "/") {
+		if seg != "" && seg != "." {
+			parts = append(parts, seg)
+		}
 	}
-	return filepath.Join(a, b)
+	parts = append(parts, b)
+	joined := strings.Join(parts, "/")
+	if abs {
+		return "/" + joined
+	}
+	return joined
 }
 
 // relTo is Path.relative_to(root) rendered POSIX-style (R-1.12). It falls back

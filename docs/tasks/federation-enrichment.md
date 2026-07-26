@@ -10,7 +10,11 @@ tags: [kind/tasks, status/draft]
 
 Source of truth: `docs/ears/federation-enrichment.md` (Units 0–7 committed).
 Architecture constraints: `docs/lld/federation-enrichment.md`.
-Target: single-file CLI `company-os-starter/bin/company-os`.
+Target: `company-os-starter/bin/company-os` — the single-file Python CLI, which
+was the implementation at the time this plan ran. That single-file constraint
+was retired 2026-07-26 by
+[Amendment 1](../ears/federation-enrichment.md#amendment-1--r-74-partial-retirement-2026-07-26);
+the CLI is now the Go module at `company-os-starter/cmd/company-os`.
 
 **Global acceptance (must hold after every phase):** `company-os validate`
 exits 0 on `examples/workspace` **and** the new standalone-team fixture, **and**
@@ -210,6 +214,12 @@ by the golden snapshot; tasks reference R-ids, not literal `[n/m]` strings.
   - acceptance: R-7.3 — gates [1/4]–[4/4] identical output (modulo header) vs the
     golden snapshot; R-7.4 — `die/ok/warn/fail`, `frontmatter()`, and the
     next-command guidance chain intact.
+  - AMENDED 2026-07-26: R-7.4's `die/ok/warn/fail` clause was retired by
+    [Amendment 1](../ears/federation-enrichment.md#amendment-1--r-74-partial-retirement-2026-07-26),
+    together with the single-file clause named in this task's `why:` line. The
+    `frontmatter()` and next-command guidance-chain clauses remain **in force**.
+    This task's completed acceptance is unaffected — it was measured against
+    R-7.4 as locked at the time.
   - verify: diff validate output against 0.4 snapshot — only gate-count header
     lines moved; CLI helpers unchanged.
 

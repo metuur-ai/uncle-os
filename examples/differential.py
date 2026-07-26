@@ -23,7 +23,17 @@ Usage:
     examples/differential.py <a> <b> --list
     examples/differential.py <a> <b> -v               # print every PASS line
 
-Exit status: 0 when every invocation is PASS, PARTIAL, or SKIP; 1 on any DIVERGE.
+Exit status: 0 when every invocation is PASS, DECLARED, PARTIAL, or SKIP; 1 on any
+DIVERGE or on any STALE declaration.
+
+DECLARED means the divergence is listed in `examples/declared-divergences.txt`, the
+registry required by R-7.1a. Every entry is keyed by (invocation id, stream) and
+must cite the R-0.7a clause, requirement id, or `.devlocal/go-port/exit-code-map.md`
+line that sanctions it; the harness refuses to load an entry with no citation. Every
+DECLARED entry prints its citation, so the waiver list is auditable from the report
+alone. A declaration whose invocation ran and no longer diverges on that stream is
+reported STALE and fails the run — a stale waiver is how a fixed bug silently
+un-fixes itself later.
 
 PARTIAL means one stream of that invocation is non-deterministic even under a
 SINGLE implementation (today: exactly one — git relays a subprocess's stderr on
@@ -639,6 +649,212 @@ inv("usage/root-flag-nonexistent-dir", W, ["--root", "/nonexistent/xyz", "valida
     note="--root is passed through verbatim by the runner")
 
 
+# ------------------------------------------- declared-divergence registry ---
+#
+# R-7.1a. The data lives in examples/declared-divergences.txt so the waiver list
+# is reviewable in a diff without reading Python; this section is only the
+# loader, the matcher, and the validation that makes an uncited waiver
+# impossible to write.
+
+REGISTRY_PATH = HERE / "declared-divergences.txt"
+
+STREAMS = ("stdout", "stderr", "exit_code", "file_tree")
+
+# A citation must be SHAPED like an authority, not merely non-empty: an R-0.7a
+# sanctioned-difference clause, a requirement id, or a classified die() site in
+# the task-0.5 exit-code map. Anything else fails the load.
+AUTHORITY_RE = re.compile(
+    r"^(?:R-0\.7a\([a-z]\)"
+    r"|R-\d+\.\d+[a-z]?"
+    r"|\.devlocal/go-port/exit-code-map\.md:\d+)$")
+
+EXPECT_RE = re.compile(r"^(-?\d+)\s*->\s*(-?\d+)$")
+
+# The first line of a stderr stream that is a DIAGNOSTIC rather than usage.
+# Everything before it is argparse's wrapped usage block (R-0.7a(i)); the
+# diagnostic itself is never waived (R-1.4a).
+USAGE_ERR_RE = re.compile(r"^company-os[^\n]*?: error: ")
+
+
+class Waiver:
+    def __init__(self, invocation, stream, authority, reason, expect, waive, step, lineno):
+        self.invocation = invocation
+        self.stream = stream
+        self.authority = authority          # list[str]
+        self.reason = reason
+        self.expect = expect                # (ref, cand) for exit_code, else None
+        self.waive = waive                  # "whole-stream" | "usage-block" | None
+        self.step = step                    # int or None (any)
+        self.lineno = lineno
+        self.matched = 0                    # blocks this waiver was consulted for
+        self.resolved = 0                   # blocks it fully waived
+
+    @property
+    def key(self):
+        return (self.invocation, self.stream, self.step)
+
+    @property
+    def cite(self):
+        return ", ".join(self.authority)
+
+    def applies(self, inv_id, stream, step):
+        if self.invocation != inv_id or self.stream != stream:
+            return False
+        return self.step is None or self.step == step
+
+
+class RegistryError(Exception):
+    pass
+
+
+def _parse_records(text):
+    """Blank-line-separated `key: value` records; `#` comments; indented
+    continuation lines append to the previous value."""
+    records, cur, key = [], None, None
+    for n, raw in enumerate(text.splitlines(), 1):
+        if raw.lstrip().startswith("#"):
+            continue
+        if not raw.strip():
+            if cur:
+                records.append(cur)
+            cur, key = None, None
+            continue
+        if raw[:1].isspace() and cur and key:
+            cur[key] = (cur[key] + " " + raw.strip()).strip()
+            continue
+        if ":" not in raw:
+            raise RegistryError(f"{REGISTRY_PATH}:{n}: not a `key: value` line: {raw!r}")
+        k, v = raw.split(":", 1)
+        k, v = k.strip(), v.strip()
+        if cur is None:
+            cur = {"__line__": n}
+        if k in cur:
+            raise RegistryError(f"{REGISTRY_PATH}:{n}: duplicate key '{k}' in one record")
+        cur[k] = v
+        key = k
+    if cur:
+        records.append(cur)
+    return records
+
+
+def load_registry(corpus_ids, path=REGISTRY_PATH):
+    """Parse + validate the declared-divergence registry. Raises RegistryError."""
+    if not path.exists():
+        raise RegistryError(f"declared-divergence registry not found: {path}")
+    waivers, seen = [], {}
+    for rec in _parse_records(path.read_text()):
+        n = rec.pop("__line__")
+        where = f"{path}:{n}"
+
+        for required in ("invocation", "stream", "authority", "reason"):
+            if not rec.get(required):
+                raise RegistryError(f"{where}: '{required}:' is required and must be non-empty")
+
+        inv_id, stream = rec.pop("invocation"), rec.pop("stream")
+        if stream not in STREAMS:
+            raise RegistryError(f"{where}: stream '{stream}' not one of {', '.join(STREAMS)}")
+        if inv_id not in corpus_ids:
+            raise RegistryError(f"{where}: invocation '{inv_id}' is not in the corpus — "
+                                f"a waiver for an id that does not exist can never fire")
+
+        authority = [a.strip() for a in rec.pop("authority").split(",") if a.strip()]
+        if not authority:
+            raise RegistryError(f"{where}: 'authority:' is required and must be non-empty")
+        for a in authority:
+            if not AUTHORITY_RE.match(a):
+                raise RegistryError(
+                    f"{where}: authority '{a}' is not a citation — expected an R-0.7a clause "
+                    f"(e.g. R-0.7a(i)), a requirement id (e.g. R-1.4a), or "
+                    f"`.devlocal/go-port/exit-code-map.md:<line>`")
+
+        reason = rec.pop("reason")
+        expect, waive = None, None
+        if stream == "exit_code":
+            if "waive" in rec:
+                raise RegistryError(f"{where}: 'waive:' is not valid for stream exit_code; "
+                                    f"use 'expect: <reference> -> <candidate>'")
+            m = EXPECT_RE.match(rec.pop("expect", ""))
+            if not m:
+                raise RegistryError(f"{where}: stream exit_code requires "
+                                    f"'expect: <reference> -> <candidate>'")
+            expect = (int(m.group(1)), int(m.group(2)))
+        else:
+            if "expect" in rec:
+                raise RegistryError(f"{where}: 'expect:' is only valid for stream exit_code")
+            waive = rec.pop("waive", "")
+            allowed = ("whole-stream", "usage-block") if stream in ("stdout", "stderr") \
+                else ("whole-stream",)
+            if waive not in allowed:
+                raise RegistryError(f"{where}: stream {stream} requires "
+                                    f"'waive:' one of {', '.join(allowed)}")
+
+        step = rec.pop("step", None)
+        if step is not None:
+            if not step.isdigit() or int(step) < 1:
+                raise RegistryError(f"{where}: 'step:' must be a 1-based integer")
+            step = int(step)
+
+        if rec:
+            raise RegistryError(f"{where}: unknown key(s): {', '.join(sorted(rec))}")
+
+        w = Waiver(inv_id, stream, authority, reason, expect, waive, step, n)
+        if w.key in seen:
+            raise RegistryError(f"{where}: duplicate declaration for "
+                                f"{inv_id} / {stream} / step={step} "
+                                f"(first at {path}:{seen[w.key]})")
+        seen[w.key] = n
+        waivers.append(w)
+    return waivers
+
+
+def strip_usage_block(text):
+    """Drop everything before the first `company-os...: error:` line.
+
+    Waives argparse's COLUMNS-wrapped usage block (R-0.7a(i)) while leaving the
+    diagnostic line itself intact for comparison (R-1.4a). A stream with no
+    diagnostic line is returned unchanged — nothing is silently dropped."""
+    lines = text.splitlines(keepends=True)
+    for i, line in enumerate(lines):
+        if USAGE_ERR_RE.match(line):
+            return "".join(lines[i:])
+    return text
+
+
+def apply_waivers(inv_id, blocks, waivers):
+    """Split compare()'s blocks into (declared, remaining) and record firing."""
+    declared, remaining = [], []
+    for b in blocks:
+        w = next((w for w in waivers if w.applies(inv_id, b["stream"], b["step"])), None)
+        if w is None:
+            remaining.append(b)
+            continue
+        w.matched += 1
+        if b["stream"] == "exit_code":
+            if (b["ref"], b["cand"]) == w.expect:
+                w.resolved += 1
+                declared.append((b, w))
+            else:
+                b["note"] = (f"declared {w.expect[0]} -> {w.expect[1]} "
+                             f"({w.cite}), observed {b['ref']} -> {b['cand']}")
+                remaining.append(b)
+            continue
+        if w.waive == "whole-stream":
+            w.resolved += 1
+            declared.append((b, w))
+            continue
+        # usage-block: waive the block, still compare the diagnostic (R-1.4a).
+        ra, ca = strip_usage_block(b["ref"]), strip_usage_block(b["cand"])
+        if ra == ca:
+            w.resolved += 1
+            declared.append((b, w))
+            continue
+        b["body"] = indent(udiff(ra, ca, b["label"]))
+        b["note"] = (f"usage block waived ({w.cite}); the diagnostic line still "
+                     f"differs and R-1.4a does not waive it")
+        remaining.append(b)
+    return declared, remaining
+
+
 # ------------------------------------------------------ synthetic fixture set
 
 
@@ -864,48 +1080,66 @@ def udiff(a, b, label, la="reference", lb="candidate"):
     return "".join(lines)
 
 
+def _block(stream, step, kind, label, body, ref=None, cand=None):
+    """One divergence, keyed by (stream, step) so the registry can address it."""
+    return {"stream": stream, "step": step, "kind": kind, "label": label,
+            "body": body, "ref": ref, "cand": cand, "note": ""}
+
+
+def render(b):
+    head = f"  {b['kind']:9s}  {b['label']}"
+    if b["note"]:
+        head += f"\n    ! {b['note']}"
+    return head + ("\n" + b["body"].rstrip("\n") if b["body"] else "")
+
+
 def compare(invocation, ref, cand):
-    """Return a list of human-readable divergence blocks (empty == PASS)."""
+    """Return a list of divergence blocks (empty == PASS), each keyed by stream."""
     rsteps, rtree, rtexts = ref
     csteps, ctree, ctexts = cand
     blocks = []
     for i, (rs, cs) in enumerate(zip(rsteps, csteps), 1):
         label = f"step {i}: {' '.join(rs[0]) or '(no args)'}"
         if rs[1] != cs[1]:
-            blocks.append(f"  EXIT CODE  {label}\n"
-                          f"    reference={rs[1]}  candidate={cs[1]}\n")
+            blocks.append(_block("exit_code", i, "EXIT CODE", label,
+                                 f"    reference={rs[1]}  candidate={cs[1]}\n",
+                                 ref=rs[1], cand=cs[1]))
         if rs[2] != cs[2] and invocation.unstable_stream != "stdout":
-            blocks.append(f"  STDOUT     {label}\n"
-                          + indent(udiff(rs[2], cs[2], "stdout")))
+            blocks.append(_block("stdout", i, "STDOUT", label,
+                                 indent(udiff(rs[2], cs[2], "stdout")),
+                                 ref=rs[2], cand=cs[2]))
         if rs[3] != cs[3] and invocation.unstable_stream != "stderr":
-            blocks.append(f"  STDERR     {label}\n"
-                          + indent(udiff(rs[3], cs[3], "stderr")))
+            blocks.append(_block("stderr", i, "STDERR", label,
+                                 indent(udiff(rs[3], cs[3], "stderr")),
+                                 ref=rs[3], cand=cs[3]))
+
+    def tree(kind, label, body):
+        blocks.append(_block("file_tree", None, kind, label, body))
 
     only_ref = sorted(set(rtree) - set(ctree))
     only_cand = sorted(set(ctree) - set(rtree))
     if only_ref:
-        blocks.append("  FILE TREE  present only under reference:\n"
-                      + "".join(f"    - {p}\n" for p in only_ref[:40])
-                      + ("    ...\n" if len(only_ref) > 40 else ""))
+        tree("FILE TREE", "present only under reference:",
+             "".join(f"    - {p}\n" for p in only_ref[:40])
+             + ("    ...\n" if len(only_ref) > 40 else ""))
     if only_cand:
-        blocks.append("  FILE TREE  present only under candidate:\n"
-                      + "".join(f"    + {p}\n" for p in only_cand[:40])
-                      + ("    ...\n" if len(only_cand) > 40 else ""))
+        tree("FILE TREE", "present only under candidate:",
+             "".join(f"    + {p}\n" for p in only_cand[:40])
+             + ("    ...\n" if len(only_cand) > 40 else ""))
     for p in sorted(set(rtree) & set(ctree)):
         rk, rm, rd = rtree[p]
         ck, cm, cd = ctree[p]
         if rk != ck:
-            blocks.append(f"  FILE TREE  {p}: kind {rk} != {ck}\n")
+            tree("FILE TREE", f"{p}: kind {rk} != {ck}", "")
             continue
         if rm != cm:
-            blocks.append(f"  FILE MODE  {p}: {oct(rm)} != {oct(cm)}\n")
+            tree("FILE MODE", f"{p}: {oct(rm)} != {oct(cm)}", "")
         if rd != cd:
             if p in rtexts and p in ctexts:
-                blocks.append(f"  FILE DIFF  {p}\n"
-                              + indent(udiff(rtexts[p], ctexts[p], p)))
+                tree("FILE DIFF", p, indent(udiff(rtexts[p], ctexts[p], p)))
             else:
-                blocks.append(f"  FILE DIFF  {p}: binary content differs "
-                              f"({rd[:12]} != {cd[:12]})\n")
+                tree("FILE DIFF",
+                     f"{p}: binary content differs ({rd[:12]} != {cd[:12]})", "")
     return blocks
 
 
@@ -921,6 +1155,8 @@ class Report:
         self.diverged = []
         self.skipped = []
         self.partial = []
+        self.declared = []      # (invocation id, [(stream, citation, reason)])
+        self.ran = set()        # invocation ids actually executed (not SKIPped)
 
 
 def main():
@@ -934,6 +1170,8 @@ def main():
     ap.add_argument("--list", action="store_true", help="list the corpus and exit")
     ap.add_argument("-v", "--verbose", action="store_true", help="print every PASS line")
     ap.add_argument("--keep", action="store_true", help="keep the temp run dirs")
+    ap.add_argument("--list-waivers", action="store_true",
+                    help="list the declared-divergence registry and exit")
     args = ap.parse_args()
 
     if args.list:
@@ -942,12 +1180,31 @@ def main():
         print(f"\n{len(CORPUS)} invocations")
         return 0
 
+    try:
+        waivers = load_registry({c.id for c in CORPUS})
+    except RegistryError as exc:
+        print(f"error: declared-divergence registry rejected: {exc}", file=sys.stderr)
+        return 2
+
+    if args.list_waivers:
+        print(f"declared-divergence registry ({REGISTRY_PATH}) — {len(waivers)} entries "
+              f"(R-7.1a)")
+        for w in sorted(waivers, key=lambda w: (w.stream, w.invocation)):
+            what = (f"exit {w.expect[0]} -> {w.expect[1]}" if w.expect
+                    else f"waive {w.waive}")
+            step = "" if w.step is None else f" step={w.step}"
+            print(f"  {w.invocation:48s} {w.stream:10s}{step} {what}")
+            print(f"      authority: {w.cite}")
+            print(f"      reason   : {w.reason}")
+        return 0
+
     ref_bin, cand_bin = Path(args.reference).resolve(), Path(args.candidate).resolve()
     for b in (ref_bin, cand_bin):
         if not b.exists():
             print(f"error: binary not found: {b}", file=sys.stderr)
             return 2
 
+    self_check = ref_bin == cand_bin
     report = Report()
     base = Path(tempfile.mkdtemp(prefix="company-os-diff-"))
     started = time.time()
@@ -967,6 +1224,10 @@ def main():
               f"{'' if report.git_available else ' -> ' + report.skip_reason}")
         print("  normalized: <WS> (temp workspace path), <TS> (generated UTC timestamp)")
         print("  tree scope: every path except `.git` internals; mode bits compared")
+        print(f"  waivers   : {len(waivers)} declared divergence(s) from "
+              f"{REGISTRY_PATH.name} (R-7.1a)"
+              + ("  [SELF-CHECK: reference IS candidate, so no waiver can fire "
+                 "and the stale check is not evaluated]" if self_check else ""))
         print("=" * 78)
 
         runs = base / "runs"
@@ -980,15 +1241,25 @@ def main():
             rdir, cdir = runs / f"{idx:04d}-ref", runs / f"{idx:04d}-cand"
             rdir.mkdir(parents=True)
             cdir.mkdir(parents=True)
+            report.ran.add(c.id)
             ref = run_side(ref_bin, c, rdir)
             cand = run_side(cand_bin, c, cdir)
-            blocks = compare(c, ref, cand)
+            declared, blocks = apply_waivers(c.id, compare(c, ref, cand), waivers)
+            if declared:
+                report.declared.append(
+                    (c.id, [(b["stream"], w.cite, w.reason) for b, w in declared]))
             if blocks:
                 report.diverged.append(c.id)
                 print(f"[{idx:3d}/{len(selected)}] DIVERGE  {c.id}"
                       f"{'  — ' + c.note if c.note else ''}")
                 for b in blocks:
-                    print(b.rstrip("\n"))
+                    print(render(b))
+                for b, w in declared:
+                    print(f"  (declared {b['stream']} — {w.cite})")
+            elif declared:
+                print(f"[{idx:3d}/{len(selected)}] DECLARED {c.id}")
+                for b, w in declared:
+                    print(f"  {b['stream']:10s} {w.cite}")
             elif c.unstable:
                 report.partial.append((c.id, c.unstable))
                 codes = ",".join(str(s[1]) for s in ref[0])
@@ -1006,26 +1277,58 @@ def main():
                 shutil.rmtree(cdir, ignore_errors=True)
 
         elapsed = time.time() - started
+        # A declaration is STALE when its invocation ran and no longer diverges
+        # on that stream — the waiver never fired and is now hiding nothing.
+        #
+        # Not evaluated in self-check mode (reference IS candidate): the registry
+        # declares cross-implementation differences, so under one binary NO entry
+        # can fire and every one of them would report stale. Suppressed loudly,
+        # never silently — self_check is printed in the summary either way.
+        stale = ([] if self_check else
+                 [w for w in waivers if w.invocation in report.ran and w.matched == 0])
+
         print("=" * 78)
+        declared_ids = {d[0] for d in report.declared}
         by_group = {}
         for c in selected:
-            by_group.setdefault(c.group, [0, 0, 0])
+            by_group.setdefault(c.group, [0, 0, 0, 0])
             if c.id in report.diverged:
-                by_group[c.group][1] += 1
-            elif any(c.id == s[0] for s in report.skipped):
                 by_group[c.group][2] += 1
+            elif any(c.id == s[0] for s in report.skipped):
+                by_group[c.group][3] += 1
+            elif c.id in declared_ids:
+                by_group[c.group][1] += 1
             else:
                 by_group[c.group][0] += 1
-        print("per-command breakdown (pass+partial / diverge / skip):")
+        print("per-command breakdown (pass+partial / declared / diverge / skip):")
         for g in sorted(by_group):
-            p, d, s = by_group[g]
-            print(f"  {g:20s} {p:4d} / {d:4d} / {s:4d}")
+            p, dc, d, s = by_group[g]
+            print(f"  {g:20s} {p:4d} / {dc:4d} / {d:4d} / {s:4d}")
         print("-" * 78)
         print(f"invocations : {len(selected)}")
         print(f"PASS        : {len(report.passed)}")
+        print(f"DECLARED    : {len(report.declared)}")
         print(f"PARTIAL     : {len(report.partial)}")
         print(f"DIVERGE     : {len(report.diverged)}")
+        print(f"STALE       : {len(stale)}"
+              + ("  (not evaluated: self-check, reference IS candidate)"
+                 if self_check else ""))
         print(f"SKIP        : {len(report.skipped)}")
+        if report.declared:
+            print("DECLARED (sanctioned divergence — each entry cites its authority):")
+            for did, items in report.declared:
+                for stream, cite, reason in items:
+                    print(f"  - {did} [{stream}]")
+                    print(f"      authority: {cite}")
+                    print(f"      reason   : {reason}")
+        if stale:
+            print("STALE (declared but the invocation no longer diverges on that stream —")
+            print("       delete the entry; a stale waiver re-hides the bug when it returns):")
+            for w in stale:
+                what = (f"exit {w.expect[0]} -> {w.expect[1]}" if w.expect
+                        else f"waive {w.waive}")
+                print(f"  - {w.invocation} [{w.stream}] {what}")
+                print(f"      declared at {REGISTRY_PATH}:{w.lineno} ({w.cite})")
         if report.partial:
             print("PARTIAL (one stream excluded — declared, not silently dropped):")
             for pid, why in report.partial:
@@ -1039,7 +1342,12 @@ def main():
         if report.diverged:
             print("RESULT: DIVERGENCE DETECTED — the two implementations are NOT at parity.")
             return 1
-        print("RESULT: ZERO DIVERGENCE across the corpus.")
+        if stale:
+            print("RESULT: STALE DECLARATION(S) — no undeclared divergence, but the registry "
+                  "claims a difference that no longer exists.")
+            return 1
+        print("RESULT: ZERO UNDECLARED DIVERGENCE across the corpus"
+              f"{f' ({len(report.declared)} declared)' if report.declared else ''}.")
         return 0
     finally:
         if args.keep:

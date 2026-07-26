@@ -82,11 +82,11 @@ func TestToday_ArchitectRendersHeaderOnly(t *testing.T) {
 		t.Fatalf("Today: %v", err)
 	}
 	for _, s := range sections {
-		if s.Slug == roles.SlugPlatform || s.Slug == roles.SlugTeam {
+		if s.Slug == model.SlugPlatform || s.Slug == model.SlugTeam {
 			t.Errorf("architect view contains a %q section", s.Slug)
 		}
 	}
-	if len(sections) == 0 || sections[0].Slug != roles.SlugHeader {
+	if len(sections) == 0 || sections[0].Slug != model.SlugHeader {
 		t.Fatalf("first section is not the header: %v", sections)
 	}
 }
@@ -99,7 +99,7 @@ func TestToday_DeveloperCarriesGovernanceCounts(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Today: %v", err)
 	}
-	f := findingByCode(t, sections, roles.CodeComponent)
+	f := findingByCode(t, sections, model.CodeComponent)
 	if got := f.Fields.Str("component"); got != "customer-notification-service" {
 		t.Fatalf("component = %q", got)
 	}
@@ -127,7 +127,7 @@ func TestToday_MissingGovernanceIsAWarning(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Today: %v", err)
 	}
-	f := findingByCode(t, sections, roles.CodeGovernanceMissing)
+	f := findingByCode(t, sections, model.CodeGovernanceMissing)
 	if f.Severity != model.SevWarn {
 		t.Errorf("severity = %v, want warn", f.Severity)
 	}
@@ -147,14 +147,14 @@ func TestToday_ProductOwnerReadsPRDsAndOutcomes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Today: %v", err)
 	}
-	p := findingByCode(t, sections, roles.CodePlatform)
+	p := findingByCode(t, sections, model.CodePlatform)
 	if got := p.Fields.Str("platform"); got != "communications" {
 		t.Errorf("platform = %q", got)
 	}
 	if got := p.Fields.Int("activePRDs"); got != 0 {
 		t.Errorf("activePRDs = %d, want 0", got)
 	}
-	o := findingByCode(t, sections, roles.CodeOutcomeReview)
+	o := findingByCode(t, sections, model.CodeOutcomeReview)
 	if got := o.Fields.Str("prd"); got != "2026-per-channel-quiet-hours" {
 		t.Errorf("prd = %q", got)
 	}

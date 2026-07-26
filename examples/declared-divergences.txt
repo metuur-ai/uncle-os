@@ -1,0 +1,1213 @@
+# Declared-divergence registry for examples/differential.py
+#
+# Task 0.6, acceptance R-7.1a. Read by the harness at startup; nothing here is
+# optional decoration — every entry suppresses a real difference between the
+# Python CLI and the Go port, and every entry must cite the requirement clause
+# or exit-code-map line that sanctions it.
+#
+# ---------------------------------------------------------------- format ----
+#
+# Blank-line-separated records of `key: value`. `#` starts a comment line.
+# A record is keyed by (invocation, stream[, step]); duplicates are rejected.
+#
+#   invocation  exact corpus id (`examples/differential.py <a> <b> --list`).
+#               Globs are deliberately NOT supported: a glob that fires on 7 of
+#               its 8 matches would look healthy while hiding one regression.
+#   stream      stdout | stderr | exit_code | file_tree
+#   step        optional 1-based step index; omitted = any step
+#   authority   REQUIRED, non-empty, and validated against a shape:
+#                 R-0.7a(<a-k>)                          — a sanctioned-difference clause
+#                 R-<n>.<n>[a]                           — a requirement id
+#                 .devlocal/go-port/exit-code-map.md:<n> — a classified die() site
+#               Comma-separate multiple citations. An entry that cites nothing
+#               is a hidden bug, so the harness refuses to load one.
+#   reason      REQUIRED prose: what differs and why that is allowed.
+#   expect      exit_code only, REQUIRED: `<reference> -> <candidate>`. Only that
+#               exact transition is waived; any other pair is a hard DIVERGE.
+#   waive       stdout/stderr/file_tree only, REQUIRED:
+#                 whole-stream  the stream is not compared at all
+#                 usage-block   (stdout/stderr) drop every line BEFORE the first
+#                               `company-os...: error: ` line on both sides, then
+#                               compare the remainder. This waives argparse's
+#                               wrapped usage block per R-0.7a(i) while still
+#                               comparing the diagnostic line R-1.4a requires.
+#
+# The harness fails on an undeclared divergence AND on a stale entry — one whose
+# invocation ran and no longer diverges on that stream. Delete an entry the day
+# its divergence is fixed; a stale waiver is how a fixed bug silently un-fixes
+# itself later.
+#
+# NOT declared here, deliberately: divergences from commands the Go port has not
+# implemented yet — `validate`, `governance`, `deviation`, `exception`, every one
+# of which still dispatches to notImplemented() and exits 2. Those are unfinished
+# work, not sanctioned differences; pre-declaring them would hide real defects
+# when they land. The same rule applies to a multi-STEP invocation whose later
+# step is one of those commands (`graph/build-then-validate`,
+# `workspace/sync-then-validate`, …): waiving the chain would waive the
+# implemented step with it.
+#
+# `prd`, `discover`, and `check` were on that list until task 2.6 landed them.
+# Their sanctioned exit-code divergences are declared below, in the two sections
+# marked "task 2.6". The measurement that produced those entries also answered
+# the question the deliberate omission was there to protect: across the whole
+# three-command cluster the ONLY non-exit-code difference is
+# `discover/new-no-title`'s stderr, and that one is a Python traceback, not a
+# defect in the port. Zero stdout differences, zero file_tree differences.
+
+# ======================================================================
+# exit_code — Python's flat `1` (every die() funnels through sys.exit(1),
+# bin/company-os:43) becomes the Unit 4 contract code. Each entry cites the
+# classified die() site in the task-0.5 exit-code map.
+# ======================================================================
+
+# --- Workspace.require_root (bin/company-os:230) -> 3 ------------------
+
+invocation: validate/not-a-root
+stream: exit_code
+expect: 1 -> 3
+authority: .devlocal/go-port/exit-code-map.md:45, .devlocal/go-port/exit-code-map.md:164
+reason: require_root's die() is classified as workspace error 3; Python exits 1
+  because die() hardcodes sys.exit(1).
+
+invocation: today/not-a-root
+stream: exit_code
+expect: 1 -> 3
+authority: .devlocal/go-port/exit-code-map.md:45, .devlocal/go-port/exit-code-map.md:164
+reason: same require_root site, reached through `today`.
+
+invocation: graph/build-not-a-root
+stream: exit_code
+expect: 1 -> 3
+authority: .devlocal/go-port/exit-code-map.md:45, .devlocal/go-port/exit-code-map.md:164
+reason: same require_root site, reached through `graph build`.
+
+invocation: ids/not-a-root
+stream: exit_code
+expect: 1 -> 3
+authority: .devlocal/go-port/exit-code-map.md:45, .devlocal/go-port/exit-code-map.md:164
+reason: same require_root site, reached through `ids list`.
+
+invocation: skills/not-a-root
+stream: exit_code
+expect: 1 -> 3
+authority: .devlocal/go-port/exit-code-map.md:45, .devlocal/go-port/exit-code-map.md:164
+reason: same require_root site, reached through `skills list`.
+
+invocation: workspace/not-a-root
+stream: exit_code
+expect: 1 -> 3
+authority: .devlocal/go-port/exit-code-map.md:45, .devlocal/go-port/exit-code-map.md:164
+reason: same require_root site, reached through `workspace status`.
+
+invocation: usage/root-flag-nonexistent-dir
+stream: exit_code
+expect: 1 -> 3
+authority: .devlocal/go-port/exit-code-map.md:45, .devlocal/go-port/exit-code-map.md:164
+reason: `--root /nonexistent/xyz validate` reaches the same require_root site;
+  the flag is passed through verbatim by the runner.
+
+# --- _prompt, no TTY (bin/company-os:1961) -> 7 ------------------------
+
+invocation: init/non-interactive-no-flags
+stream: exit_code
+expect: 1 -> 7
+authority: .devlocal/go-port/exit-code-map.md:62
+reason: interactive-mode error. --company/--team/--platform are optional to
+  argparse; the requirement materializes only when stdin is not a TTY, which is
+  what code 7 encodes.
+
+invocation: init/non-interactive-partial-flags
+stream: exit_code
+expect: 1 -> 7
+authority: .devlocal/go-port/exit-code-map.md:62
+reason: same _prompt site; `--company` alone still leaves --team unprompted.
+
+# --- cmd_init refuse-reinit (bin/company-os:1971) -> 8 -----------------
+
+invocation: init/refuse-reinit
+stream: exit_code
+expect: 1 -> 8
+authority: .devlocal/go-port/exit-code-map.md:63
+reason: conflict — target is already a workspace root, refusing to re-init.
+
+invocation: init/refuse-reinit-manifest-only
+stream: exit_code
+expect: 1 -> 8
+authority: .devlocal/go-port/exit-code-map.md:63
+reason: same site; workspace.yaml alone marks a root (GPF-R-6.2).
+
+# --- _write_new overwrite refusal (bin/company-os:1797) -> 8 -----------
+
+invocation: add/duplicate-platform
+stream: exit_code
+expect: 1 -> 8
+authority: .devlocal/go-port/exit-code-map.md:61
+reason: `add platform communications` reaches scaffold_platform -> _write_new,
+  which refuses to overwrite platforms/communications/platform.yaml. Conflict.
+
+# --- cmd_reality already-exists (bin/company-os:2037) -> 8 -------------
+
+invocation: reality/new-conflict
+stream: exit_code
+expect: 1 -> 8
+authority: .devlocal/go-port/exit-code-map.md:65
+reason: conflict — the reality doc exists and is not overwritten.
+
+# --- cmd_add missing --platform (bin/company-os:2021) -> 2 -------------
+
+invocation: add/component-no-platform
+stream: exit_code
+expect: 1 -> 2
+authority: .devlocal/go-port/exit-code-map.md:64
+reason: usage error — a hand-rolled conditional-requirement check that argparse
+  cannot express, so it dies at 1 today instead of argparse's 2.
+
+# --- Workspace.platform_dir not found (bin/company-os:238) -> 3 --------
+
+invocation: add/component-unknown-platform
+stream: exit_code
+expect: 1 -> 3
+authority: .devlocal/go-port/exit-code-map.md:46
+reason: workspace error — a required workspace object (the platform) does not
+  exist.
+
+invocation: reality/new-unknown-platform
+stream: exit_code
+expect: 1 -> 3
+authority: .devlocal/go-port/exit-code-map.md:46
+reason: same platform_dir site, reached through `reality new`.
+
+# --- load_manifest / _repo_slices / repo_pin / slice_rel schema (:2102-:2238)
+#     -> 4 --------------------------------------------------------------
+#
+# 24 synthetic fixtures over 21 distinct die() sites (`missing-pin` and
+# `pin-not-a-mapping` share :2206; `absolute-localdir` and `escaping-localdir`
+# share :2226; `not-a-mapping` and `no-repos-key` share :2102), each driven
+# through both `workspace status` and `workspace sync` because the manifest is
+# loaded before the action is dispatched. Every one of them is a hand-authored
+# artifact failing its schema, which is the definition of code 4.
+
+invocation: workspace/manifest-not-a-mapping
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:67
+reason: artifact error — workspace.yaml is a sequence, so `repos:` is not a list (bin/company-os:2102), reached through `workspace status`.
+
+invocation: workspace/manifest-not-a-mapping-sync
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:67
+reason: artifact error — workspace.yaml is a sequence, so `repos:` is not a list (bin/company-os:2102), reached through `workspace sync`.
+
+invocation: workspace/manifest-no-repos-key
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:67
+reason: artifact error — workspace.yaml has no `repos:` key (bin/company-os:2102), reached through `workspace status`.
+
+invocation: workspace/manifest-no-repos-key-sync
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:67
+reason: artifact error — workspace.yaml has no `repos:` key (bin/company-os:2102), reached through `workspace sync`.
+
+invocation: workspace/manifest-empty-repos
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:68
+reason: artifact error — `repos:` is present but empty (bin/company-os:2105), reached through `workspace status`.
+
+invocation: workspace/manifest-empty-repos-sync
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:68
+reason: artifact error — `repos:` is present but empty (bin/company-os:2105), reached through `workspace sync`.
+
+invocation: workspace/manifest-validate-gate
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:68, R-4.5
+reason: the same `:2105` site, reached through `validate` rather than a
+  `workspace` subcommand — cmd_validate loads the manifest at `:929` to decide
+  the [N/7] versus [N/8] denominator, so a manifest that will not load takes the
+  whole gate run down with it. That is the point of the fixture: a malformed
+  manifest must break `validate` too, not just the federation commands. stdout is
+  the banner alone on BOTH sides, because the oracle prints `:924` before it
+  loads at `:929` and dies there — which is why this invocation needs no stdout
+  waiver while `exception/garbage-expires`, whose oracle dies six lines later,
+  does.
+
+invocation: workspace/manifest-duplicate-name
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:69
+reason: artifact error — two repos share a name (bin/company-os:2112), reached through `workspace status`.
+
+invocation: workspace/manifest-duplicate-name-sync
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:69
+reason: artifact error — two repos share a name (bin/company-os:2112), reached through `workspace sync`.
+
+invocation: workspace/manifest-overlapping-targets
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:70
+reason: artifact error — two slice targets are not disjoint (bin/company-os:2128), reached through `workspace status`.
+
+invocation: workspace/manifest-overlapping-targets-sync
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:70
+reason: artifact error — two slice targets are not disjoint (bin/company-os:2128), reached through `workspace sync`.
+
+invocation: workspace/manifest-empty-paths
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:71
+reason: artifact error — `paths:` is not a non-empty allowlist (bin/company-os:2139), reached through `workspace status`.
+
+invocation: workspace/manifest-empty-paths-sync
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:71
+reason: artifact error — `paths:` is not a non-empty allowlist (bin/company-os:2139), reached through `workspace sync`.
+
+invocation: workspace/manifest-neither-slices-nor-localdir
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:72
+reason: artifact error — the repo sets neither `localDirectory:` nor `slices:` (bin/company-os:2153), reached through `workspace status`.
+
+invocation: workspace/manifest-neither-slices-nor-localdir-sync
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:72
+reason: artifact error — the repo sets neither `localDirectory:` nor `slices:` (bin/company-os:2153), reached through `workspace sync`.
+
+invocation: workspace/manifest-slices-and-localdir
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:73
+reason: artifact error — the repo sets both `slices:` and a top-level `localDirectory:` (bin/company-os:2159), reached through `workspace status`.
+
+invocation: workspace/manifest-slices-and-localdir-sync
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:73
+reason: artifact error — the repo sets both `slices:` and a top-level `localDirectory:` (bin/company-os:2159), reached through `workspace sync`.
+
+invocation: workspace/manifest-slices-not-a-list
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:74
+reason: artifact error — `slices:` is not a non-empty list (bin/company-os:2162), reached through `workspace status`.
+
+invocation: workspace/manifest-slices-not-a-list-sync
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:74
+reason: artifact error — `slices:` is not a non-empty list (bin/company-os:2162), reached through `workspace sync`.
+
+invocation: workspace/manifest-slices-entry-not-mapping
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:75
+reason: artifact error — a `slices:` entry is not a mapping (bin/company-os:2167), reached through `workspace status`.
+
+invocation: workspace/manifest-slices-entry-not-mapping-sync
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:75
+reason: artifact error — a `slices:` entry is not a mapping (bin/company-os:2167), reached through `workspace sync`.
+
+invocation: workspace/manifest-slices-uses-root-key
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:76
+reason: artifact error — a `slices:` entry uses the renamed `root:` key (bin/company-os:2169), reached through `workspace status`.
+
+invocation: workspace/manifest-slices-uses-root-key-sync
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:76
+reason: artifact error — a `slices:` entry uses the renamed `root:` key (bin/company-os:2169), reached through `workspace sync`.
+
+invocation: workspace/manifest-slices-missing-localdir
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:77
+reason: artifact error — a `slices:` entry omits `localDirectory:` (bin/company-os:2172), reached through `workspace status`.
+
+invocation: workspace/manifest-slices-missing-localdir-sync
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:77
+reason: artifact error — a `slices:` entry omits `localDirectory:` (bin/company-os:2172), reached through `workspace sync`.
+
+invocation: workspace/manifest-repo-not-mapping
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:78
+reason: artifact error — a `repos:` entry is not a mapping (bin/company-os:2180), reached through `workspace status`.
+
+invocation: workspace/manifest-repo-not-mapping-sync
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:78
+reason: artifact error — a `repos:` entry is not a mapping (bin/company-os:2180), reached through `workspace sync`.
+
+invocation: workspace/manifest-renamed-root-key
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:79
+reason: artifact error — a repo uses the renamed `root:` key (bin/company-os:2182), reached through `workspace status`.
+
+invocation: workspace/manifest-renamed-root-key-sync
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:79
+reason: artifact error — a repo uses the renamed `root:` key (bin/company-os:2182), reached through `workspace sync`.
+
+invocation: workspace/manifest-missing-url
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:80
+reason: artifact error — a repo omits a required field (bin/company-os:2187), reached through `workspace status`.
+
+invocation: workspace/manifest-missing-url-sync
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:80
+reason: artifact error — a repo omits a required field (bin/company-os:2187), reached through `workspace sync`.
+
+invocation: workspace/manifest-bad-name-chars
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:81
+reason: artifact error — a repo name is not a plain label (bin/company-os:2192), reached through `workspace status`.
+
+invocation: workspace/manifest-bad-name-chars-sync
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:81
+reason: artifact error — a repo name is not a plain label (bin/company-os:2192), reached through `workspace sync`.
+
+invocation: workspace/manifest-missing-pin
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:82
+reason: artifact error — `pin:` is absent (bin/company-os:2206), reached through `workspace status`.
+
+invocation: workspace/manifest-missing-pin-sync
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:82
+reason: artifact error — `pin:` is absent (bin/company-os:2206), reached through `workspace sync`.
+
+invocation: workspace/manifest-pin-not-a-mapping
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:82
+reason: artifact error — `pin:` is not a mapping (bin/company-os:2206), reached through `workspace status`.
+
+invocation: workspace/manifest-pin-not-a-mapping-sync
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:82
+reason: artifact error — `pin:` is not a mapping (bin/company-os:2206), reached through `workspace sync`.
+
+invocation: workspace/manifest-floating-pin-branch
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:83
+reason: artifact error — `pin:` names a floating ref (bin/company-os:2211), reached through `workspace status`.
+
+invocation: workspace/manifest-floating-pin-branch-sync
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:83
+reason: artifact error — `pin:` names a floating ref (bin/company-os:2211), reached through `workspace sync`.
+
+invocation: workspace/manifest-pin-both-commit-and-tag
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:84
+reason: artifact error — `pin:` sets both commit: and tag: (bin/company-os:2215), reached through `workspace status`.
+
+invocation: workspace/manifest-pin-both-commit-and-tag-sync
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:84
+reason: artifact error — `pin:` sets both commit: and tag: (bin/company-os:2215), reached through `workspace sync`.
+
+invocation: workspace/manifest-absolute-localdir
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:85
+reason: artifact error — `localDirectory:` is absolute (bin/company-os:2226), reached through `workspace status`.
+
+invocation: workspace/manifest-absolute-localdir-sync
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:85
+reason: artifact error — `localDirectory:` is absolute (bin/company-os:2226), reached through `workspace sync`.
+
+invocation: workspace/manifest-escaping-localdir
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:85
+reason: artifact error — `localDirectory:` escapes the workspace with `..` (bin/company-os:2226), reached through `workspace status`.
+
+invocation: workspace/manifest-escaping-localdir-sync
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:85
+reason: artifact error — `localDirectory:` escapes the workspace with `..` (bin/company-os:2226), reached through `workspace sync`.
+
+invocation: workspace/manifest-non-canonical-localdir
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:86
+reason: artifact error — `localDirectory:` lands outside the canonical roots (bin/company-os:2230), reached through `workspace status`.
+
+invocation: workspace/manifest-non-canonical-localdir-sync
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:86
+reason: artifact error — `localDirectory:` lands outside the canonical roots (bin/company-os:2230), reached through `workspace sync`.
+
+invocation: workspace/manifest-bare-knowledge-root
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:87
+reason: artifact error — `localDirectory:` names the knowledge/ catalog root itself (bin/company-os:2238), reached through `workspace status`.
+
+invocation: workspace/manifest-bare-knowledge-root-sync
+stream: exit_code
+expect: 1 -> 4
+authority: .devlocal/go-port/exit-code-map.md:87
+reason: artifact error — `localDirectory:` names the knowledge/ catalog root itself (bin/company-os:2238), reached through `workspace sync`.
+
+# --- cmd_workspace, no manifest (bin/company-os:2547) -> 3 -------------
+#
+# Absence, not malformation: workspace.yaml is legal to omit in monorepo mode
+# and only becomes an error once a federation command is invoked. That is a
+# missing workspace object (3), not a schema violation (4).
+
+invocation: workspace/status-no-manifest
+stream: exit_code
+expect: 1 -> 3
+authority: .devlocal/go-port/exit-code-map.md:94, .devlocal/go-port/exit-code-map.md:166
+reason: workspace error — no workspace.yaml at the root, reached through `workspace status`.
+
+invocation: workspace/status-no-manifest-standalone
+stream: exit_code
+expect: 1 -> 3
+authority: .devlocal/go-port/exit-code-map.md:94, .devlocal/go-port/exit-code-map.md:166
+reason: workspace error — no workspace.yaml at the root, reached through `workspace status`.
+
+invocation: workspace/status-failing-workspace
+stream: exit_code
+expect: 1 -> 3
+authority: .devlocal/go-port/exit-code-map.md:94, .devlocal/go-port/exit-code-map.md:166
+reason: workspace error — no workspace.yaml at the root, reached through `workspace status`.
+
+invocation: workspace/sync-no-manifest
+stream: exit_code
+expect: 1 -> 3
+authority: .devlocal/go-port/exit-code-map.md:94, .devlocal/go-port/exit-code-map.md:166
+reason: workspace error — no workspace.yaml at the root, reached through `workspace sync`.
+
+# --- cmd_workspace_sync --only matches nothing (:2561) -> 3 ------------
+#
+# The flag is valid and its value is a well-formed repo label; what is missing
+# is the manifest entry, which is a workspace object. Ruled 3 over 2 at
+# exit-code-map.md:183.
+
+invocation: workspace/only-nomatch
+stream: exit_code
+expect: 1 -> 3
+authority: .devlocal/go-port/exit-code-map.md:95, .devlocal/go-port/exit-code-map.md:183
+reason: workspace error — `--only` names a repo the manifest does not contain.
+
+invocation: workspace/sync-only-unknown
+stream: exit_code
+expect: 1 -> 3
+authority: .devlocal/go-port/exit-code-map.md:95, .devlocal/go-port/exit-code-map.md:183
+reason: workspace error — `--only` names a repo the manifest does not contain.
+
+# --- --frozen lock reconciliation (:2564-:2594) -> 6 -------------------
+#
+# The whole family is held at 6 on CALLER identity rather than fault identity:
+# all five sites are reachable only under --frozen, and an agent branching on
+# them asks one question — "did the frozen restore succeed?". Splitting :2564
+# into 3-or-4 while its siblings stay 6 would force three codes for one
+# condition (exit-code-map.md:189-215).
+
+invocation: workspace/frozen-no-lock
+stream: exit_code
+expect: 1 -> 6
+authority: .devlocal/go-port/exit-code-map.md:96, .devlocal/go-port/exit-code-map.md:197
+reason: external-tool error — --frozen requires workspace.lock.yaml and it is missing or malformed.
+
+invocation: workspace/frozen-failing-nolock
+stream: exit_code
+expect: 1 -> 6
+authority: .devlocal/go-port/exit-code-map.md:96, .devlocal/go-port/exit-code-map.md:197
+reason: external-tool error — --frozen requires workspace.lock.yaml and it is missing or malformed.
+
+invocation: workspace/frozen-federated-no-cache
+stream: exit_code
+expect: 1 -> 6
+authority: .devlocal/go-port/exit-code-map.md:99, .devlocal/go-port/exit-code-map.md:194
+reason: external-tool error — the lock names a repo with no local git cache and --frozen forbids the network.
+
+invocation: workspace/frozen-failing-federated
+stream: exit_code
+expect: 1 -> 6
+authority: .devlocal/go-port/exit-code-map.md:99, .devlocal/go-port/exit-code-map.md:194
+reason: external-tool error — the lock names a repo with no local git cache and --frozen forbids the network.
+
+# --- _run_git failure (bin/company-os:2263) -> 6 -----------------------
+#
+# NOTE, and this corrects a note in the corpus itself: differential.py annotates
+# `workspace/sync-bad-pin` as "short commit pin -> exit 4", i.e. as :2318. It is
+# not. `git fetch origin <abbrev-sha>` fails outright ("couldn't find remote
+# ref"), so BOTH implementations die at :2263 and :2318 is never reached. :2318
+# is correctly classified as 4 in the map; no fixture in this corpus reaches it.
+
+invocation: workspace/sync-bad-pin
+stream: exit_code
+expect: 1 -> 6
+authority: .devlocal/go-port/exit-code-map.md:89
+reason: external-tool error — `git fetch` exits non-zero on an abbreviated commit pin no server will serve.
+
+invocation: workspace/sync-missing-ref
+stream: exit_code
+expect: 1 -> 6
+authority: .devlocal/go-port/exit-code-map.md:89
+reason: external-tool error — `git fetch` exits non-zero on an unreachable commit.
+
+# ======================================================================
+# task 2.6 — the `prd`, `discover`, and `check` clusters.
+#
+# Fourteen classified die()/sys.exit sites, measured (not assumed) by running the
+# harness after 2.6 landed. Every one is exit-code-only: the harness reported no
+# stdout block, no stderr block, and no file_tree block for any of them, so the
+# diagnostics and the filesystem effects are already byte-identical and only the
+# status differs. The fifteenth cluster divergence, `discover/new-no-title`, is
+# not a die() site at all and is declared with the other Python crashes below.
+#
+# Multi-step invocations carry an explicit `step:` rather than relying on the
+# match-any-step default: `discover/new-twice-conflict` step 1 is supposed to
+# SUCCEED, and an unstepped waiver would silently absorb it if it ever stopped.
+# ======================================================================
+
+# --- cmd_discover new, already exists (bin/company-os:417) -> 8 --------
+
+invocation: discover/new-twice-conflict
+stream: exit_code
+step: 2
+expect: 1 -> 8
+authority: .devlocal/go-port/exit-code-map.md:49, .devlocal/go-port/exit-code-map.md:130
+reason: conflict — the second `discover new` with the same title resolves to the
+  same brief id and refuses to overwrite `.../discovery/2026-quiet-hours-v2/brief.md`.
+  Step 1 creates it and must keep exiting 0, which is why this waiver is pinned
+  to step 2.
+
+# --- cmd_prd new, already exists (bin/company-os:610) -> 8 -------------
+
+invocation: prd/new-twice-conflict
+stream: exit_code
+step: 2
+expect: 1 -> 8
+authority: .devlocal/go-port/exit-code-map.md:55, .devlocal/go-port/exit-code-map.md:130
+reason: conflict — the second `prd new --from-discovery` refuses to overwrite the
+  active change record's prd.md. Step 1 creates it and must keep exiting 0.
+
+# --- Workspace.team_dir not found (bin/company-os:244) -> 3 ------------
+
+invocation: discover/new-unknown-team
+stream: exit_code
+expect: 1 -> 3
+authority: .devlocal/go-port/exit-code-map.md:47, .devlocal/go-port/exit-code-map.md:154
+reason: workspace error — a required workspace object (the team named by --team)
+  does not exist. `cmd_discover` looks the team up on its first line, before it
+  branches on the action, so `new` and `validate` reach the same site.
+
+invocation: discover/validate-unknown-team
+stream: exit_code
+expect: 1 -> 3
+authority: .devlocal/go-port/exit-code-map.md:47, .devlocal/go-port/exit-code-map.md:154
+reason: same team_dir site, reached through `discover validate`.
+
+invocation: check/ready-unknown-team
+stream: exit_code
+expect: 1 -> 3
+authority: .devlocal/go-port/exit-code-map.md:47, .devlocal/go-port/exit-code-map.md:154
+reason: same team_dir site, reached through `check ready`. The only divergence
+  the whole `check` cluster produces.
+
+# --- cmd_discover validate, no brief (bin/company-os:430) -> 3 ---------
+
+invocation: discover/validate-missing
+stream: exit_code
+expect: 1 -> 3
+authority: .devlocal/go-port/exit-code-map.md:50, .devlocal/go-port/exit-code-map.md:156
+reason: workspace error — the team exists but `.../discovery/<id>/brief.md` does
+  not. Well-formed invocation, absent object.
+
+# --- cmd_prd new, discovery brief not found (:584) -> 3 ----------------
+
+invocation: prd/new-missing-discovery
+stream: exit_code
+expect: 1 -> 3
+authority: .devlocal/go-port/exit-code-map.md:52, .devlocal/go-port/exit-code-map.md:157
+reason: workspace error — `--from-discovery` names a brief that does not exist.
+  Distinct from the `:587` site below, which is a brief that exists but is not
+  validated: 3 means "it is not there", 5 means "it is there and not ready".
+
+# --- Workspace.platform_dir not found (bin/company-os:238) -> 3 --------
+
+invocation: prd/new-unknown-platform
+stream: exit_code
+expect: 1 -> 3
+authority: .devlocal/go-port/exit-code-map.md:46, .devlocal/go-port/exit-code-map.md:153
+reason: workspace error — a required workspace object (the platform) does not
+  exist, reached through `prd new`.
+
+# --- cmd_prd validate / complete, no active PRD (:636, :676) -> 3 ------
+
+invocation: prd/validate-missing
+stream: exit_code
+expect: 1 -> 3
+authority: .devlocal/go-port/exit-code-map.md:56, .devlocal/go-port/exit-code-map.md:158
+reason: workspace error — no active PRD at `change-records/active/<id>/prd.md`
+  (bin/company-os:636).
+
+invocation: prd/complete-missing
+stream: exit_code
+expect: 1 -> 3
+authority: .devlocal/go-port/exit-code-map.md:58, .devlocal/go-port/exit-code-map.md:159
+reason: workspace error — the same lookup in `complete` (bin/company-os:676).
+  Two distinct die() sites with identical text; both classified 3.
+
+# --- cmd_prd new, discovery not validated (:587) -> 5 ------------------
+
+invocation: prd/new-draft-discovery
+stream: exit_code
+step: 2
+expect: 1 -> 5
+authority: .devlocal/go-port/exit-code-map.md:53, R-4.6
+reason: precondition failed — the brief exists but is `status: draft`, and
+  R-4.6 names an unvalidated discovery brief as a code-5 site. Step 1 creates
+  the draft brief and must keep exiting 0.
+
+# --- cmd_prd complete, done-check refusal (:703) -> 5 ------------------
+#
+# The single most useful discrimination in the contract for an agent driving
+# `prd complete` (exit-code-map.md:277-285): 5 means "go update reality/", where
+# the 1 Python returns is indistinguishable from a malformed artifact. Note this
+# is a `sys.exit(1)` after N fail() lines, not a die() call — the stdout it
+# prints first is byte-identical on both sides, which is why neither of these two
+# invocations produces a stdout block.
+
+invocation: prd/full-lifecycle
+stream: exit_code
+step: 3
+expect: 1 -> 5
+authority: .devlocal/go-port/exit-code-map.md:59, .devlocal/go-port/exit-code-map.md:277
+reason: precondition failed — the done-check refuses because reality/ for
+  customer-notification-service predates the PRD (invariant #4) and six
+  governance checklist items are unchecked. Steps 1 and 2 (`prd new`,
+  `prd validate`) must keep exiting 0, hence the pinned step.
+
+invocation: prd/complete-banking-active
+stream: exit_code
+expect: 1 -> 5
+authority: .devlocal/go-port/exit-code-map.md:59, .devlocal/go-port/exit-code-map.md:277
+reason: precondition failed — same done-check site over the banking-small
+  fixture, refusing on three unchecked governance checklist items.
+
+# --- cmd_prd new, --title required (bin/company-os:601) -> 2 -----------
+
+invocation: prd/new-no-title-no-discovery
+stream: exit_code
+expect: 1 -> 2
+authority: R-0.7a(f), .devlocal/go-port/exit-code-map.md:54, .devlocal/go-port/exit-code-map.md:255
+reason: usage error — `--title required (or --from-discovery)` is a hand-rolled
+  conditional-requirement check argparse cannot express, so it dies at 1 today.
+  R-0.7a(f) sanctions `:601` and `:2021` by name as the two sites where code 2 is
+  new behavior rather than documented behavior; `add/component-no-platform`
+  above is the other one.
+
+
+# ======================================================================
+# task 3.2 — the `governance`, `deviation`, and `exception` cluster.
+#
+# internal/governance landed AFTER task 4.3 wrote the declarations above, so its
+# eleven sanctioned exit-code divergences had no entries and the harness counted
+# them as undeclared. They are declared here on the same terms as the 2.6 block:
+# measured, not assumed — the harness reports no stdout, no stderr, and no
+# file_tree block for any of the ten below, so the diagnostics and the
+# filesystem effects are already byte-identical and only the status differs.
+#
+# The eleventh, `governance/resolve-no-team`, is not a die() site at all: it is a
+# Python TypeError, and it is declared with the other crashes further down.
+# ======================================================================
+
+# --- cmd_governance explain, component not resolved (:367) -> 3 --------
+#
+# `component '{c}' not in any generated governance file`. The exit-code map's
+# ruling § B keeps this at 3 (a named workspace object was not found) over the
+# competing reading of 5, because the `suggest_ids(..., scheme="component")` call
+# immediately above it only makes sense for a genuinely unknown id.
+#
+# Seven fixtures reach the one site. They are declared one per line rather than
+# by glob for the reason the format section gives: a glob that fires on six of
+# seven would look healthy while hiding the seventh.
+
+invocation: governance/explain-failing-workspace
+stream: exit_code
+expect: 1 -> 3
+authority: .devlocal/go-port/exit-code-map.md:48, .devlocal/go-port/exit-code-map.md:155, R-4.4
+reason: workspace error — `explain orphan` against examples/failing-workspace,
+  whose teams have no generated/effective-governance.yaml naming that component.
+
+invocation: governance/explain-banking
+stream: exit_code
+expect: 1 -> 3
+authority: .devlocal/go-port/exit-code-map.md:48, .devlocal/go-port/exit-code-map.md:155, R-4.4
+reason: same :367 site — `banking-app` exists as a component but no team has run
+  `governance resolve`, so no generated file names it.
+
+invocation: governance/explain-unknown-with-suggestions
+stream: exit_code
+expect: 1 -> 3
+authority: .devlocal/go-port/exit-code-map.md:48, .devlocal/go-port/exit-code-map.md:155, R-4.4
+reason: same :367 site, on the difflib near-miss path (GPF-R-2.3). The
+  `did you mean` suggestions are on stdout and already byte-identical — only the
+  status differs.
+
+invocation: governance/explain-unknown-no-suggestions
+stream: exit_code
+expect: 1 -> 3
+authority: .devlocal/go-port/exit-code-map.md:48, .devlocal/go-port/exit-code-map.md:155, R-4.4
+reason: same :367 site with no near match, so `suggest_ids` returns nothing and
+  the message carries no hint. Both halves of the suggestion branch are covered.
+
+invocation: governance/explain-standalone
+stream: exit_code
+expect: 1 -> 3
+authority: .devlocal/go-port/exit-code-map.md:48, .devlocal/go-port/exit-code-map.md:155, R-4.4
+reason: same :367 site in a standalone-team workspace, which has no platforms/
+  root at all.
+
+invocation: governance/explain-no-component
+stream: exit_code
+expect: 1 -> 3
+authority: .devlocal/go-port/exit-code-map.md:48, .devlocal/go-port/exit-code-map.md:155, R-4.4
+reason: same :367 site with the `component` positional omitted. This one is NOT
+  the R-0.7a(l) optional-positional family: argparse's None reaches a real die()
+  rather than a traceback, because every use of it is an f-string, so the oracle
+  renders the four characters `None` and dies normally. The port reproduces that
+  literal (cmd/company-os/governance.go, explainTarget) and the diagnostic is
+  byte-identical; only the status differs.
+
+invocation: governance/explain-after-resolve
+stream: exit_code
+step: 2
+expect: 1 -> 3
+authority: .devlocal/go-port/exit-code-map.md:48, .devlocal/go-port/exit-code-map.md:155, R-4.4
+reason: same :367 site AFTER a successful resolve, which is the case that proves
+  the die() is about the component id and not about the generated file being
+  absent. Step 1 resolves and must keep exiting 0, which is why this waiver is
+  pinned to step 2.
+
+# --- Workspace.team_dir not found (bin/company-os:244) -> 3 ------------
+#
+# The same site already declared for the `discover` and `check` cluster above,
+# reached through the three governance-cluster commands. All three resolve the
+# team before they do anything else.
+
+invocation: governance/resolve-unknown-team
+stream: exit_code
+expect: 1 -> 3
+authority: .devlocal/go-port/exit-code-map.md:47, .devlocal/go-port/exit-code-map.md:154, R-4.4
+reason: same team_dir site, reached through `governance resolve --team nope`.
+  Nothing is written on either side: resolve_team_governance looks the team up
+  (`:271`) before it composes anything.
+
+invocation: deviation/declare-unknown-team
+stream: exit_code
+expect: 1 -> 3
+authority: .devlocal/go-port/exit-code-map.md:47, .devlocal/go-port/exit-code-map.md:154, R-4.4
+reason: same team_dir site, reached through `deviation declare`. `cmd_deviation`
+  validates nothing else, so the unknown team is its only failure mode.
+
+invocation: exception/request-unknown-team
+stream: exit_code
+expect: 1 -> 3
+authority: .devlocal/go-port/exit-code-map.md:47, .devlocal/go-port/exit-code-map.md:154, R-4.4
+reason: same team_dir site, reached through `exception request`.
+
+# ======================================================================
+# The cases where the Python reference CRASHES rather than dies.
+#
+# None is a die() site, so none is in the exit-code map — the map classifies the
+# 56 paths that reach sys.exit deliberately, and these reach it through an
+# unhandled exception. They are declared here because R-0.7a already sanctions
+# exactly this shape of difference, and because the fixtures that trigger them
+# are load-bearing for OTHER gates and must not be "fixed".
+# ======================================================================
+
+# --- malformed workspace.yaml: traceback -> exit 4 (R-0.7a(e)) --------
+#
+# load_yaml (bin/company-os:58) calls yaml.safe_load with no try, so a manifest
+# that does not scan raises yaml.ScannerError, prints a traceback on stderr and
+# exits 1 through the interpreter. Code 4's headline case — "malformed YAML" —
+# therefore has ZERO exit sites in Python; R-0.7a(e) requires the Go port to ADD
+# them. Two entries per invocation: the exit code, and the stderr stream, whose
+# reference side is an 11-line Python traceback naming absolute paths inside the
+# reference binary and can only be waived whole.
+
+invocation: workspace/manifest-malformed-yaml
+stream: exit_code
+expect: 1 -> 4
+authority: R-0.7a(e), R-4.5
+reason: malformed YAML in workspace.yaml. Python raises an uncaught
+  yaml.ScannerError out of yaml.safe_load and exits 1 via the interpreter's
+  unhandled-exception path; the Go port returns a yamlio.SyntaxError carrying
+  exit code 4, which is the site R-0.7a(e) requires it to add.
+
+invocation: workspace/manifest-malformed-yaml
+stream: stderr
+waive: whole-stream
+authority: R-0.7a(e)
+reason: reference stderr is a Python traceback (11 lines, absolute paths into
+  bin/company-os, a PyYAML frame); candidate stderr is the one-line diagnostic
+  R-0.7a(e) sanctions. There is no shared prefix to compare, so the stream is
+  waived whole rather than pretending a line-level diff means anything.
+
+invocation: workspace/manifest-malformed-yaml-sync
+stream: exit_code
+expect: 1 -> 4
+authority: R-0.7a(e), R-4.5
+reason: same site, reached through `workspace sync` — the manifest is loaded
+  before the action is dispatched.
+
+invocation: workspace/manifest-malformed-yaml-sync
+stream: stderr
+waive: whole-stream
+authority: R-0.7a(e)
+reason: same traceback-versus-diagnostic difference, through `workspace sync`.
+
+# --- workspace status on failing-federated: Python CRASHES ------------
+#
+# examples/failing-federated/workspace.lock.yaml carries `resolvedCommit:` as an
+# UNQUOTED 40-digit value. PyYAML's YAML-1.1 resolver reads that as an int, and
+# cmd_workspace_status (bin/company-os:2651) then evaluates `sha[:12]` on it:
+#
+#     TypeError: 'int' object is not subscriptable
+#
+# The reference prints its header, raises, and exits 1 with stdout truncated
+# after two lines. The Go port renders the same value through the PyRepr layer,
+# which applies Python's str() and produces the digits, so `workspace status`
+# completes normally and exits 0.
+#
+# THE FIXTURE IS NOT A BUG AND MUST NOT BE "FIXED". Its unquoted scalar is a
+# golden input: gate [8/8] and examples/failing-federated-golden-validate.txt
+# both depend on this lock exactly as committed, and quoting the value to make
+# the reference stop crashing would silently re-baseline them.
+#
+# R-0.7a(j) is the governing clause — a WELL-FORMED YAML document whose value is
+# of the wrong type, where Python raises an uncaught TypeError and exits 1
+# through a traceback. The clause's stated remedy is "exit 4 with a diagnostic",
+# and that is deliberately NOT what happens here: the Go port's Python-semantics
+# rendering layer never reaches a type error, because str(1111...) is exactly
+# what Python itself would have produced had :2651 called str() first. The
+# difference is confined to the traceback and the exit status, which is what (j)
+# carves out; the FILESYSTEM EFFECT is unchanged — `workspace status` is
+# read-only and neither side writes anything.
+
+invocation: workspace/status-failing-federated
+stream: exit_code
+expect: 1 -> 0
+authority: R-0.7a(j)
+reason: the reference crashes on `sha[:12]` where PyYAML resolved resolvedCommit
+  to an int (bin/company-os:2651); the candidate renders it via Python's str()
+  and completes. Python's exit 1 here is an interpreter traceback, not a
+  classified die() site, so no exit-code-map line applies.
+
+invocation: workspace/status-failing-federated
+stream: stdout
+waive: whole-stream
+authority: R-0.7a(j)
+reason: reference stdout stops after the two header lines because the crash
+  happens mid-loop; candidate stdout carries the full two-repo status plus the
+  next-step line. The reference side is a truncation artifact of the crash, so
+  there is no correct byte comparison to make.
+
+invocation: workspace/status-failing-federated
+stream: stderr
+waive: whole-stream
+authority: R-0.7a(j)
+reason: reference stderr is the Python traceback for the TypeError; candidate
+  stderr is empty because the candidate does not fail.
+
+# --- task 2.6: `discover new` with no title: traceback -> exit 2 -------
+#
+# `d.add_argument("title", nargs="?")` (bin/company-os:2688) makes the title
+# OPTIONAL to argparse, so argparse never enforces it and `cmd_discover` runs
+# with `args.title is None`. `:412` then calls `slugify(None)` and `:73` calls
+# `.lower()` on it:
+#
+#     AttributeError: 'NoneType' object has no attribute 'lower'
+#
+# The reference prints a 15-line traceback and exits 1 through the interpreter.
+# R-4.3 requires a missing required argument to exit 2, so the Go port enforces
+# the argument and emits a diagnostic instead. Nothing is written on either side.
+#
+# The exact same shape as R-0.7a(j) — a Python AttributeError reaching sys.exit
+# through an unhandled-exception path, replaced by a diagnostic plus a contract
+# code — except that (j)'s stated subject is a well-formed YAML document of the
+# wrong shape and this is a CLI argument.
+#
+# THE SPEC HAS SINCE GAINED THE CLAUSE this block asked for: R-0.7a(l) names this
+# case literally, `bin/company-os:2688` and all. It is cited in prose rather than
+# in `authority:` for one mechanical reason — differential.py's AUTHORITY_RE
+# accepts `R-0.7a([a-k])` and stops one letter short of (l), and the harness is
+# not this file's to edit. (j) remains a truthful citation for the SHAPE, and
+# R-4.3 is what mandates the 2; widening that character class to `[a-l]` is a
+# follow-up for whoever owns the harness.
+
+invocation: discover/new-no-title
+stream: exit_code
+expect: 1 -> 2
+authority: R-4.3, R-0.7a(j)
+reason: usage error — the Go port enforces `title` as a required argument for
+  `discover new`, which R-4.3 mandates exit 2 for and which R-0.7a(l) now names
+  by line. Python's argparse declares it nargs="?" and the command crashes at
+  slugify(None); its exit 1 is an interpreter traceback, not a classified die()
+  site, so no exit-code-map line applies. NOT the `:601` site — that one is
+  `cmd_prd`, and it is a real die() covered by R-0.7a(f).
+
+invocation: discover/new-no-title
+stream: stderr
+waive: whole-stream
+authority: R-0.7a(j), R-1.4a
+reason: reference stderr is the 15-line AttributeError traceback, naming absolute
+  paths inside the reference binary and carrying no diagnostic line at all;
+  candidate stderr is the argparse-shaped pair R-1.4a requires — the `discover`
+  sub-parser's usage line, then
+  `company-os discover: error: the following arguments are required: title`.
+  `waive: usage-block` is STILL not usable, and the fix did not change that: the
+  stripper drops up to the first `company-os...: error: ` line on BOTH sides, and
+  the reference side is a traceback that has no such line, so stripping is a
+  no-op there and the comparison becomes traceback-versus-diagnostic — a hard
+  DIVERGE. usage-block only has teeth where both sides are argparse. Waived
+  whole; the diagnostic is pinned instead by
+  TestConditionalRequirementsAreArgparseShaped, which asserts the two-line shape
+  and the greppable selector directly.
+
+# --- governance resolve with no --team: traceback -> exit 2 -----------
+#
+# `g.add_argument("--team")` (bin/company-os:2698) does NOT mark the flag
+# required, so argparse accepts `governance resolve` with no team and
+# `resolve_team_governance` calls `ws.team_dir(None)` at `:271`, which evaluates
+# `self.teams / None` at `:242`:
+#
+#     TypeError: unsupported operand type(s) for /: 'PosixPath' and 'NoneType'
+#
+# 15-line traceback, exit 1, nothing written. Same family as
+# `discover/new-no-title` and governed by the same R-0.7a(l) reasoning — an
+# argument of the wrong shape reaching command code — with the flag standing in
+# for the optional positional. R-4.3 mandates the 2.
+#
+# THE FILESYSTEM EFFECT IS NOT CARVED OUT and this is the site that proves the
+# guard has to exist rather than being cosmetic: without it Go resolves `teams/`
+# ITSELF as the team directory and writes teams/generated/effective-governance.yaml,
+# a file the oracle never creates. The harness compares file_tree and reports no
+# block for this invocation, which is the evidence that both sides write nothing.
+
+invocation: governance/resolve-no-team
+stream: exit_code
+expect: 1 -> 2
+authority: R-4.3, R-0.7a(j)
+reason: usage error — `--team` is a conditional requirement argparse cannot
+  express, so the port enforces it at the seam and exits 2. Python's exit 1 is an
+  interpreter traceback, not a classified die() site, so no exit-code-map line
+  applies. R-0.7a(l) is the clause that sanctions the substitution; see the
+  AUTHORITY_RE note above for why it is cited in prose.
+
+invocation: governance/resolve-no-team
+stream: stderr
+waive: whole-stream
+authority: R-0.7a(j), R-1.4a
+reason: reference stderr is the 15-line TypeError traceback with absolute paths
+  into the reference binary and no diagnostic line; candidate stderr is
+  `usage: company-os governance [-h] [--team TEAM] {resolve,explain} [component]`
+  followed by
+  `company-os governance: error: the following arguments are required: --team`.
+  `waive: usage-block` cannot be used for the same reason as
+  `discover/new-no-title`: the reference has no `company-os...: error: ` line for
+  the stripper to anchor on. Waived whole.
+
+# --- exception request --expires not-a-date, then validate ------------
+#
+# `exception request` succeeds on both sides — neither validates the date, and
+# the harness confirms the two workspaces are byte-identical afterwards. Step 2
+# is where they part. `cmd_validate:970` calls
+# `dt.date.fromisoformat(str(ex))` inside gate 2's loop with no try:
+#
+#     ValueError: Invalid isoformat string: 'not-a-date'
+#
+# The oracle has by then printed the banner, all of gate 1, and three of gate 2's
+# four lines; it dies mid-gate and exits 1. The port detects the unparseable date
+# in internal/governance and aborts with a one-line diagnostic, also exit 1 — so
+# there is NO exit-code divergence here and none is declared.
+#
+# STDOUT IS NO LONGER WAIVED. It used to be, and this note is the audit trail for
+# why it stopped being. The port dropped the six [ok] lines the oracle printed,
+# because internal/validate derived the `[N/M]` denominator from the length of
+# the gate LIST and a truncated list renders `[1/2]`/`[2/2]` where the oracle
+# wrote `[1/7]`/`[2/7]`. That was a genuine R-0.8-versus-R-2.6 collision and it
+# was recorded here as the thinnest-justified waiver in this file. R-2.6a ruled
+# on it: the count is decided at `:930` from manifest presence, before any gate
+# runs, so carrying it costs nothing and satisfies both requirements. The port
+# now returns the completed gates and the aborting gate's partial findings under
+# the carried denominator, and the two stdouts are byte-identical.
+#
+# Only stderr is still waived, and only because Python's is a traceback.
+
+invocation: exception/garbage-expires
+stream: stderr
+step: 2
+waive: whole-stream
+authority: R-0.7a(j)
+reason: reference stderr is the 9-line ValueError traceback; candidate stderr is
+  the one-line diagnostic naming the file, the field, and the offending value.
+  No shared structure and no `company-os...: error: ` line on the reference side,
+  so the stream is waived whole rather than compared line by line.
+
+# ======================================================================
+# stderr — argparse's usage BLOCK only.
+#
+# R-0.7a(i) waives argparse's wrapping: argparse wraps usage to $COLUMNS, so a
+# golden captured from it is a golden of an environment variable. It does NOT
+# waive the content. Every entry below uses `waive: usage-block`, which drops
+# only the lines BEFORE the first `company-os...: error:` line; the diagnostic
+# itself is still compared byte-for-byte, which is what R-1.4a requires (task
+# 1.1a makes the Go line name the subcommand, argument, value, and choices).
+# ======================================================================
+
+invocation: usage/no-args
+stream: stderr
+waive: usage-block
+authority: R-0.7a(i), R-1.4a
+reason: bare invocation; argparse's top-level usage block wraps to COLUMNS.
+
+invocation: usage/unknown-subcommand
+stream: stderr
+waive: usage-block
+authority: R-0.7a(i), R-1.4a
+reason: unknown subcommand; top-level usage block.
+
+invocation: usage/bad-flag
+stream: stderr
+waive: usage-block
+authority: R-0.7a(i), R-1.4a
+reason: unrecognized argument; top-level usage block.
+
+invocation: today/bad-role
+stream: stderr
+waive: usage-block
+authority: R-0.7a(i), R-1.4a
+reason: invalid --role choice; `today` sub-parser usage block.
+
+invocation: add/bad-kind
+stream: stderr
+waive: usage-block
+authority: R-0.7a(i), R-1.4a
+reason: invalid positional choice; `add` sub-parser usage block.
+
+invocation: deviation/bad-action
+stream: stderr
+waive: usage-block
+authority: R-0.7a(i), R-1.4a
+reason: invalid action choice; `deviation` sub-parser usage block.
+
+invocation: ids/bad-action
+stream: stderr
+waive: usage-block
+authority: R-0.7a(i), R-1.4a
+reason: invalid action choice; `ids` sub-parser usage block.
+
+invocation: prd/new-missing-platform-flag
+stream: stderr
+waive: usage-block
+authority: R-0.7a(i), R-1.4a
+reason: missing required --platform; `prd` sub-parser usage block.
+
+invocation: exception/missing-expires
+stream: stderr
+waive: usage-block
+authority: R-0.7a(i), R-1.4a
+reason: missing required --expires; `exception` sub-parser usage block.
+
+invocation: exception/missing-component
+stream: stderr
+waive: usage-block
+authority: R-0.7a(i), R-1.4a
+reason: missing required --component; `exception` sub-parser usage block.
+
+# ======================================================================
+# stdout — `--help`, and only the usage line's wrapping.
+#
+# R-0.7a(i) was widened to cover stdout as well as stderr because argparse writes
+# `--help` to stdout. The clause waives argparse's COLUMNS-dependent WRAPPING and
+# says the top-level usage line "legitimately differs in content because Go
+# carries --json and --version flags Python does not have". It does not waive
+# answering a different question, and this is worth stating because the port used
+# to: every `company-os <sub> --help` printed the ROOT help, dropping the
+# subcommand's own flags. That was a defect, not a divergence, and it was fixed
+# rather than declared — `help(scope)` in cmd/company-os/main.go now renders the
+# named sub-parser, reproducing argparse's section order, its metavars, its
+# `help=` strings verbatim, and its `min(longest + 4, 24)` gutter.
+#
+# Measured after that fix, across all sixteen sub-parsers: eight are now
+# BYTE-IDENTICAL to the oracle (validate, discover, governance, check, reality,
+# scratchpad, graph, skills) and the other eight differ in the usage line's wrap
+# and in nothing else. `usage/validate-help` therefore needs no entry at all —
+# it PASSES — and only two invocations remain declared here.
+#
+# Both use `waive: whole-stream`, which is weaker than the `usage-block` mode the
+# stderr entries above use, and the weakness is structural rather than a choice:
+# usage-block anchors on the first `company-os...: error: ` line, and help output
+# is not an error and has no such line, so the stripper would be a no-op on both
+# sides and the comparison would be unchanged. Help stdout has no narrower mode.
+# ======================================================================
+
+invocation: usage/help
+stream: stdout
+waive: whole-stream
+authority: R-0.7a(i)
+reason: the TOP-LEVEL help, the one case (i) carves out by content and not only
+  by layout — Go's root parser carries --json and --version, which the oracle has
+  no equivalent for, so its usage line and its options block cannot match and the
+  subcommand table is reformatted around them. Nothing here is a subcommand's
+  own help; those are handled by help(scope) and eight of them are byte-identical.
+
+invocation: usage/prd-help
+stream: stdout
+waive: whole-stream
+authority: R-0.7a(i)
+reason: `prd --help` differs from the oracle on ONE thing: argparse wraps
+  `usage: company-os prd [-h] [--team TEAM] --platform PLATFORM …` across four
+  lines at COLUMNS=80 and the port emits it on one. Everything below it — the
+  `positional arguments:` and `options:` sections, their metavars, the
+  `-h, --help  show this help message and exit` line and its 24-column gutter —
+  is byte-identical. That single wrapped line is the exact difference (i) names,
+  and it is unreproducible by design: a golden captured from it is a golden of
+  $COLUMNS, which is not stable across CI runners.

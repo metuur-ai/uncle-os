@@ -8,10 +8,17 @@ tags: [kind/lld, status/locked]
 
 # Federation Enrichment — Low-Level Design
 
-All changes are confined to `company-os-starter/`. The CLI stays a single
-self-contained file (`bin/company-os`) with the `die/ok/warn/fail` helpers and
-the `^---\n...\n---\n` `frontmatter()` parser preserved. Every mutating command
-keeps printing the next command in the workflow.
+All changes are confined to `company-os-starter/`. The `^---\n...\n---\n`
+`frontmatter()` parser contract is preserved, and every mutating command keeps
+printing the next command in the workflow.
+
+> **Amended 2026-07-26.** This section originally also required the CLI to stay
+> "a single self-contained file (`bin/company-os`) with the `die/ok/warn/fail`
+> helpers". Both clauses were retired by
+> [Amendment 1](../ears/federation-enrichment.md#amendment-1--r-74-partial-retirement-2026-07-26);
+> the CLI is now a Go module compiled to one static binary, and output is
+> produced by renderers over the record types. The frontmatter and
+> guidance-chain clauses above remain in force.
 
 Committed scope: #2 feature-index, #8 pointers, #1 CLAUDE.md nodes, #5 identity,
 #6 onboarding. Deferred (demand-driven): #7 data-catalog, #4 customer/call,
@@ -192,10 +199,13 @@ committed as a ~10-line acceptance script (Phase 0).
 
 ## Constraints
 
-- Single-file CLI, no framework; preserve `die/ok/warn/fail` and the exact
-  `frontmatter()` regex (used only for real frontmatter, never for CLAUDE.md
-  blocks).
-- Python 3.9+, PyYAML only; no new dependencies.
+- Preserve the exact `frontmatter()` regex (used only for real frontmatter,
+  never for CLAUDE.md blocks). *(The "single-file CLI, no framework" and
+  `die/ok/warn/fail` clauses that stood here were retired 2026-07-26 —
+  [Amendment 1](../ears/federation-enrichment.md#amendment-1--r-74-partial-retirement-2026-07-26).)*
+- No runtime dependency on the user's machine. *(Originally "Python 3.9+,
+  PyYAML only; no new dependencies" — the policy scopes runtime prerequisites,
+  not build-time Go modules linked into the static binary.)*
 - Generated files land under `generated/` or inside marker blocks; `graph build`
   is the only writer; regenerate-only-when-changed to avoid PR churn.
 - Templates are examples, not contracts; adding to them must not turn body

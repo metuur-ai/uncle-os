@@ -2,17 +2,26 @@ package frontmatter
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"os"
 	"regexp"
 	"unicode/utf8"
+
+	"github.com/metuur-ai/uncle-os/company-os-starter/internal/model"
 )
 
 // ErrInvalidUTF8 is the Go stand-in for the UnicodeDecodeError that
 // Path.read_text() raises inside the Python frontmatter() before its regex ever
 // runs. Python never returns a value in that case; neither do we.
-var ErrInvalidUTF8 = errors.New("frontmatter: not valid UTF-8")
+//
+// It carries exit code 4: an undecodable artifact is a malformed artifact
+// (R-4.5), and R-0.7a(e) sanctions replacing Python's traceback-and-exit-1 with
+// a diagnostic. errors.Is still matches it — the sentinel is compared by
+// identity, and being a *model.Error changes only what CodeOf reads off it.
+var ErrInvalidUTF8 error = &model.Error{
+	Code: model.ExitArtifact,
+	Msg:  "frontmatter: not valid UTF-8",
+}
 
 // fence mirrors bin/company-os:76 — re.match(r"^---\n(.*?)\n---\n(.*)$", text,
 // re.DOTALL) — clause for clause:

@@ -4,9 +4,9 @@ title: company-os CLI reference
 
 # `company-os` CLI reference
 
-Extracted directly from `bin/company-os`'s argument parser — every
-subcommand, flag, and default listed here is what the CLI actually accepts,
-not an aspiration. Examples use the Moonbeam Bakery workspace from
+Extracted directly from the CLI's argument parser — every subcommand, flag,
+and default listed here is what the CLI actually accepts, not an aspiration.
+Examples use the Moonbeam Bakery workspace from
 [tutorials/01](../tutorials/01-first-day-with-company-os.md) (team `web`,
 platform `ordering`, component `online-ordering-app`).
 
@@ -21,6 +21,123 @@ directory. Every command except `init` and `scratchpad` requires running
 inside (or pointed at, via `--root`) an existing workspace root — one where
 at least one of `company-os/`, `platforms/`, `teams/`, `company-ontology/`,
 `knowledge/` exists (or a `workspace.yaml` manifest, before the first sync).
+
+---
+
+## Exit codes
+
+Every command exits with one of eight codes. This is a contract: the meaning
+of a code will not change, and a reworded error message will not move an
+invocation from one code to another. Scripts and agents should branch on the
+code and never parse stdout.
+
+| Code | Meaning | You get this when |
+|---|---|---|
+| `0` | success | the command did what you asked |
+| `1` | validation failed | a `validate` gate reported `[FAIL]`, or `discover validate` / `prd validate` refused an artifact |
+| `2` | usage error | unknown subcommand, bad flag, missing or invalid argument, or `company-os` with no subcommand at all |
+| `3` | workspace error | you are not in a workspace root, or a platform, team, component, brief, PRD or manifest repo you named does not exist |
+| `4` | artifact error | a YAML file or frontmatter block is malformed, or a `workspace.yaml` breaks its schema |
+| `5` | precondition failed | a gate refused: `prd complete` before `reality/` was updated, or `prd new --from-discovery` against a brief that is not `validated` |
+| `6` | external tool error | git is missing or older than 2.27, a clone or sparse-checkout failed, or `workspace sync --frozen` could not reconstruct a slice from the lock and the cache |
+| `7` | interactive-mode error | a prompt was required and no terminal is attached — `company-os init` in CI without `--company/--team/--platform` |
+| `8` | conflict | the destination already exists and the command refuses to overwrite it — `init` in a workspace root, a duplicate `add`, an existing `reality new` doc |
+
+Two distinctions are worth learning, because they are the ones that change
+what you do next:
+
+- **`1` versus `5`.** `1` means an artifact is wrong. `5` means the artifact
+  is fine and you have not done the work yet — most often, `prd complete`
+  telling you to go update `reality/components/<id>.md`.
+- **`3` versus `4`.** `3` means something is missing. `4` means something is
+  there and unreadable. A `workspace.yaml` that does not exist is `3` (legal
+  in monorepo mode); one that exists and breaks its schema is `4`.
+
+Every failure code is non-zero, so a script that only tests success against
+failure keeps working unchanged.
+
+```bash
+company-os validate
+case $? in
+  0) echo "clean" ;;
+  1) echo "governance findings — read the [FAIL] lines" ;;
+  5) echo "gate refused — finish the work, then retry" ;;
+  *) echo "the run could not be completed; see stderr" ;;
+esac
+```
+
+Diagnostics go to **stderr**; findings, listings and next-step guidance go to
+**stdout**. A non-zero exit with empty stderr does not happen.
+
+---
+
+## `--json`
+
+Every subcommand accepts `--json` (before the subcommand, like `--root`). It
+replaces the human text on stdout with one envelope — the same records the
+text renderer prints, encoded rather than reformatted, so the two can never
+disagree about what was found.
+
+```text
+company-os --json <command> ...
+```
+
+```jsonc
+{
+  "schemaVersion": 1,                     // bumped only on a removal or repurpose
+  "build": {"version": "...", "commit": "...", "goVersion": "...", "platform": "..."},
+  "command": "discover",
+  "action": "new",                        // omitted for commands with no action verb
+  "root": "/abs/path/to/workspace",
+  "exitCode": 0,                          // same code the process exits with
+  "sections": [
+    {
+      "ordinal": 1,
+      "slug": "discover-new",             // stable; the section's machine name
+      "title": "2026-faster-checkout",
+      "findings": [
+        {
+          "severity": "ok",               // "ok" | "warn" | "fail"
+          "code": "discovery.created",     // stable; branch on this, not on message
+          "subject": "...",               // present when the finding is about a named thing
+          "path": "teams/web/product/discovery/2026-faster-checkout/brief.md",
+          "message": "created teams/web/...",
+          "fields": {"team": "web", "brief": "2026-faster-checkout"}
+        }
+      ]
+    }
+  ],
+  "guidance": ["company-os discover validate --team web 2026-faster-checkout"],
+  "error": "..."                          // present only when the command failed
+}
+```
+
+What is safe to rely on:
+
+- **`exitCode` and `severity`/`code`** are the contract. Codes are stable
+  across message rewordings; messages are not. Never grep `message`.
+- **`guidance`** is the next-command chain, always an array — empty, never
+  absent. `guidance[0]` is the command to run next.
+- **`fields`** carries typed values (counts are numbers, lists keep their
+  authored order), so a consumer never has to re-parse a sentence.
+- **`sections` and `findings` are always arrays.** A gate that ran and found
+  nothing is `"findings": []` — not the same fact as a gate that did not run.
+- Adding a field is **not** a schema break. Only a removal or a repurpose
+  bumps `schemaVersion`.
+
+The envelope is written even on failure, with `exitCode` and `error` set; the
+same diagnostic still goes to stderr. So a failing run is machine-readable
+without a second invocation:
+
+```bash
+out=$(company-os --json prd complete "$id" --platform "$p"); rc=$?
+case $rc in
+  0) jq -r '.guidance[]' <<<"$out" ;;                       # what to do next
+  5) jq -r '.sections[].findings[]
+            | select(.severity=="fail") | .code' <<<"$out" ;;  # what is blocking
+  *) jq -r '.error' <<<"$out" >&2; exit $rc ;;
+esac
+```
 
 ---
 

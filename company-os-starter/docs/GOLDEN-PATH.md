@@ -7,7 +7,7 @@ tags: [doc/company-os-starter, kind/golden-path]
 
 This is the shortest route through `company-os`, start to finish, on a workspace
 **you** scaffold — no example repo required. Every command below was executed
-against the reference CLI in `bin/company-os`; the `next:` lines are quoted
+against the `company-os` CLI; the `next:` lines are quoted
 verbatim from what the CLI prints, so you can follow the tool instead of this
 page once you are moving.
 
@@ -23,15 +23,37 @@ Already know the shape and want the fully-populated example instead? Read
 
 ## 0. Environment prerequisites (this is where first runs fail)
 
-The CLI is one self-contained Python file. It needs Python 3.9+ and PyYAML —
-nothing else.
+The CLI is one static binary. It has **no runtime prerequisites at all** — no
+interpreter, no libraries, no package manager. Download it, make it
+executable, put it on your `PATH`:
 
 ```bash
-python3 --version            # 3.9 or newer
-pip install pyyaml           # the only dependency
-export PATH="$PWD/company-os-starter/bin:$PATH"   # so `company-os` is on PATH
-company-os --help            # sanity check
+curl -fsSLo company-os <release-url>/company-os_<version>_<os>_<arch>
+chmod +x company-os
+mkdir -p ~/.local/bin && mv company-os ~/.local/bin/
+export PATH="$HOME/.local/bin:$PATH"   # so `company-os` is on PATH
+company-os --help                      # sanity check
 ```
+
+<!-- INSTALL-CAVEATS: macOS Gatekeeper / quarantine guidance is owned by task
+     5.2 and lands in tutorials/01-first-day-with-company-os.md. Link, don't
+     duplicate. -->
+
+**On macOS, a downloaded binary needs one extra step** before it will run —
+releases are not yet notarized, so Gatekeeper blocks the first exec and the
+process simply hangs with nothing printed. Run
+`xattr -d com.apple.quarantine ~/.local/bin/company-os` once. Full explanation:
+[user-guide/tutorials/01-first-day-with-company-os.md](user-guide/tutorials/01-first-day-with-company-os.md#macos-the-first-run-will-be-blocked).
+
+Building from source instead? From `company-os-starter/`: `make install`
+(builds and copies to `~/.local/bin`; `PREFIX=` overrides the destination).
+The Go toolchain is needed to *build* the binary and by nothing that *runs*
+it — the dependency policy this project has always held governs runtime
+prerequisites on your machine, and a statically linked binary has none.
+
+**Federation only:** `company-os workspace sync` and `workspace status` shell
+out to `git` and need version 2.27 or newer. Nothing else in the CLI does, and
+monorepo workspaces never need git installed at all.
 
 **Workspace-root resolution.** Every command except `init` and `scratchpad`
 operates on a *workspace root* and will fail fast if pointed at the wrong

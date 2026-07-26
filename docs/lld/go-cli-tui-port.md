@@ -38,6 +38,17 @@ reproduce the golden: `examples/golden-validate.txt:11-12` is gate 3's header
 followed by zero findings, and a renderer driven only by findings cannot know
 gate 3 ran at all.
 
+**`GateResult` is the section carrier for every command, not just `validate`.**
+`ids list`, `skills list`, and `today` are all modeled as `[]GateResult`, and each
+has a renderer in `internal/render` taking that type. This was not planned and it
+is the right outcome — it makes R-7.7's text/JSON tuple-equality true by
+construction. Two consequences: the JSON envelope names the array `sections`
+rather than `gates` (R-3.4a), because `gates` reads wrong for three of sixteen
+commands and R-3.4 freezes the name on first publish; and every stable `Code`
+constant belongs in `internal/model`, not in a per-producer const block, because
+the codes *are* the JSON contract and `internal/render` would otherwise import
+every cluster to reach them.
+
 ```go
 type Severity int // SevOK, SevWarn, SevFail
 
@@ -291,11 +302,15 @@ Four structural rulings the naive port gets wrong:
   while `internal/federation/` needs `internal/workspace/` for path resolution.
   Putting the constant in `federation` produces an import cycle that will not
   compile. `is_root` needs the constant, not `load_manifest`.
-- **`rebuild_generated` (`:1803`, 6 call sites) lives in `internal/graph/`**, with
-  a one-way `scaffold → graph` dependency. It is the mandatory bridge between the
-  write path and the derive path, and research §4c flags it as the one function
-  that resists any split. Placing it in `scaffold` — the natural wrong guess —
-  creates a cycle.
+- **`rebuild_generated` (`:1803`, 6 call sites) lives in `internal/graph/`**, but
+  **`scaffold → graph` is not an import edge.** It is injected: `internal/scaffold`
+  declares `type Rebuild func(*workspace.Workspace) ([]string, error)` and
+  `cmd/company-os` wires `graph.RebuildGenerated` into it. That was decided during
+  task 2.1 to unblock scaffolding from `internal/graph`, and it stands — but it
+  means the real edge is `cmd → {scaffold, graph}`, and task 2.3 must satisfy an
+  existing function type at six call sites rather than being imported. It returns
+  `[]string` because the output *order* is load-bearing: rebuild's lines precede
+  `added platform 'x'`, and only `cmd/` may write.
 - **`ids` and `today` are two packages, not one, and neither is named after its
   command.** *(Added by task 2.8; the layout above listed neither.)* The Python
   groups both under one comment banner (`:1208`, "ID registry & role views"),
@@ -554,6 +569,12 @@ No document states why. This change retires the single-file and helper clauses
 explicitly and **keeps** the frontmatter and guidance-chain clauses. A project
 whose product *is* the methodology must retire its own locked requirement with
 the same ceremony it demands of adopters.
+
+*Executed 2026-07-26 by task 6.2 →
+[Amendment 1](../ears/federation-enrichment.md#amendment-1--r-74-partial-retirement-2026-07-26).
+Two documents beyond the four listed above also repeated the constraint and were
+updated: `docs/lld/golden-path-flavor-federation.md:11` and
+`docs/lld/federation-enrichment.md:195`.*
 
 **C5 — Windows is not a target.** The POSIX separator normalization at `:1747-1748`
 is ported; nothing else about Windows is claimed or tested.

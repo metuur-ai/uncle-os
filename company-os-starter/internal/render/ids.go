@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/metuur-ai/uncle-os/company-os-starter/internal/ids"
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/model"
-	"github.com/metuur-ai/uncle-os/company-os-starter/internal/roles"
 )
 
 // IDs writes `ids list` as the Python CLI writes it (bin/company-os:1275-1302).
@@ -17,7 +15,7 @@ import (
 // "  ->  " separator between an ID and its defining file.
 func IDs(w io.Writer, sections []model.GateResult) error {
 	for _, s := range sections {
-		if s.Slug == roles.SlugGlossary {
+		if s.Slug == model.SlugGlossary {
 			if err := glossary(w, s); err != nil {
 				return err
 			}
@@ -26,15 +24,15 @@ func IDs(w io.Writer, sections []model.GateResult) error {
 		for _, f := range s.Findings {
 			var err error
 			switch f.Code {
-			case ids.CodeRegistryEmpty:
+			case model.CodeRegistryEmpty:
 				_, err = fmt.Fprintf(w,
 					"no canonical IDs found — %s is missing or empty "+
 						"(seed it with: company-os init / add)\n", f.Fields.Str("registry"))
-			case ids.CodeListingHeader:
+			case model.CodeListingHeader:
 				_, err = fmt.Fprintf(w, "canonical IDs (%s):\n", f.Fields.Str("registry"))
-			case ids.CodeEntry:
+			case model.CodeEntry:
 				err = idEntry(w, f)
-			case ids.CodeCount:
+			case model.CodeCount:
 				err = idCount(w, f)
 			default:
 				err = fmt.Errorf("render: ids: no rule for finding code %q", f.Code)

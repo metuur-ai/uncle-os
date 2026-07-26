@@ -127,11 +127,21 @@ type GateResult struct {
 // the oracle's first line is "validating workspace <root>" (`:924`), and Root is
 // the one piece of the golden that cannot be derived from the gates.
 //
-// Everything else stays derived rather than stored. The [N/M] denominator is
-// len(Gates) — gate 8 exists only in federated mode (`:930`), so the gate list
-// already carries it. The trailer count is Problems().
+// Total is the [N/M] denominator and is CARRIED, not derived from len(Gates)
+// (R-2.6a). The oracle decides 7-versus-8 from manifest presence at `:930`,
+// before gate 1 runs, and then prints every header against that number — so on a
+// run that aborts mid-gate the gates that already printed still belong under the
+// original denominator. Deriving it would render `[1/2]`/`[2/2]` where the
+// oracle wrote `[1/7]`/`[2/7]`, which is a false claim about how much of the
+// workspace was checked; the alternative the port took before this field existed
+// was to drop the completed gates entirely, which removes human-facing lines
+// R-0.8 forbids removing. The count is knowable before any gate runs, so neither
+// lie is necessary.
+//
+// The trailer count stays derived: it is Problems().
 type Report struct {
 	Root  string
+	Total int
 	Gates []GateResult
 }
 
@@ -158,62 +168,6 @@ func (r Report) ExitCode() ExitCode {
 	}
 	return ExitOK
 }
-
-// Finding codes — one per render site in cmd_validate (bin/company-os:922-1107),
-// stable across message rewordings (R-2.4). The `fail(c)` and `fail(pr)` sites
-// at `:1078` and `:1100` pass through pre-composed prose from skill_conflicts
-// and federated_slice_problems; R-2.12 requires decomposing those, so each
-// distinct sentence they produce gets its own code here rather than one code per
-// call site.
-const (
-	// Gate 1 — ownership reconciliation (:941, :946, :951).
-	CodeOwnershipDescriptorMissing   = "ownership.descriptor-missing"
-	CodeOwnershipAccountableMismatch = "ownership.accountable-mismatch"
-	CodeOwnershipAgrees              = "ownership.agrees"
-
-	// Gate 2 — deviation and exception expiry (:960, :963, :968, :971, :974).
-	CodeDeviationExpired  = "expiry.deviation-expired"
-	CodeDeviationCurrent  = "expiry.deviation-current"
-	CodeExceptionNoExpiry = "expiry.exception-no-expiry"
-	CodeExceptionExpired  = "expiry.exception-expired"
-	CodeExceptionValid    = "expiry.exception-valid"
-
-	// Gate 3 — active PRD contracts (:990, :993).
-	CodePRDFrontmatterMissing = "prd.frontmatter-missing"
-	CodePRDContractPresent    = "prd.contract-present"
-
-	// Gate 4 — frontmatter core and tag derivation (:1002, :1006, :1010, :1013).
-	CodeFrontmatterCoreField = "frontmatter.core-field"
-	CodeTagsDrift            = "frontmatter.tags-drift"
-	CodeFrontmatterInSync    = "frontmatter.in-sync"
-	CodePointerGuidance      = "frontmatter.pointer-guidance"
-
-	// Gate 5 — CLAUDE.md context node drift (:1025, :1029, :1033, :1037, :1041).
-	CodeNodeIdentity  = "node.identity"
-	CodeNodeAbsent    = "node.absent"
-	CodeNodeHandOwned = "node.hand-owned"
-	CodeNodeDrift     = "node.drift"
-	CodeNodeInSync    = "node.in-sync"
-
-	// Gate 6 — feature-index drift (:1050, :1055, :1062, :1066).
-	CodeFeatureIndexAbsent     = "feature-index.absent"
-	CodeFeatureIndexDrift      = "feature-index.drift"
-	CodeFeatureIndexUnresolved = "feature-index.unresolved-reference"
-	CodeFeatureIndexInSync     = "feature-index.in-sync"
-
-	// Gate 7 — custom skills layering (:1078 decomposed, :1087).
-	CodeSkillShadowing       = "skills.shadowing"
-	CodeSkillDanglingExtends = "skills.dangling-extends"
-	CodeSkillsClean          = "skills.clean"
-
-	// Gate 8 — federated slice integrity (:1100 decomposed, :1103).
-	CodeSliceLockMissing      = "federation.lock-missing"
-	CodeRepoNotLocked         = "federation.repo-not-locked"
-	CodeSliceSetDrift         = "federation.slice-set-drift"
-	CodeSliceFileMissing      = "federation.slice-file-missing"
-	CodeSliceHandEdited       = "federation.slice-hand-edited"
-	CodeFederationSlicesMatch = "federation.slices-match"
-)
 
 // ExitCode is the process exit status. The eight codes are the contract agents
 // branch on; see docs/lld/go-cli-tui-port.md § "Exit codes" and the full
@@ -254,21 +208,45 @@ type Error struct {
 
 func (e *Error) Error() string { return e.Msg }
 
+// ExitCode makes *Error an ExitCoder. It is the reason CodeOf needs exactly one
+// lookup rather than one per error type.
+func (e *Error) ExitCode() ExitCode { return e.Code }
+
+// ExitCoder is an error that knows which of the eight codes it maps to.
+//
+// Most producers return *Error and get this for free. A package that already has
+// a typed error its own callers match on — internal/yamlio's SyntaxError is the
+// case that forced this — implements the method instead of wrapping, so the type
+// keeps working with errors.As on both sides of the seam.
+//
+// This interface is what lets cmd/company-os classify without string matching,
+// which R-4.1..R-4.9 require: a message reworded upstream must never move an
+// exit code.
+type ExitCoder interface {
+	error
+	ExitCode() ExitCode
+}
+
 // Errorf builds an *Error with the given code.
 func Errorf(code ExitCode, format string, a ...any) error {
 	return &Error{Code: code, Msg: fmt.Sprintf(format, a...)}
 }
 
-// CodeOf reports the exit code an error should produce. An error that carries no
-// code resolves to ExitValidation (1), matching today's Python behavior, where an
-// uncaught exception exits 1 through a traceback.
+// CodeOf reports the exit code an error should produce.
+//
+// The lookup walks the %w chain and stops at the OUTERMOST ExitCoder, so a
+// caller that re-classifies an inner error by wrapping it wins — which is what
+// makes `fmt.Errorf("...: %w", err)` safe everywhere else in the tree.
+//
+// An error that carries no code resolves to ExitValidation (1), matching today's
+// Python behavior, where an uncaught exception exits 1 through a traceback.
 func CodeOf(err error) ExitCode {
 	if err == nil {
 		return ExitOK
 	}
-	var e *Error
-	if errors.As(err, &e) {
-		return e.Code
+	var c ExitCoder
+	if errors.As(err, &c) {
+		return c.ExitCode()
 	}
 	return ExitValidation
 }
@@ -284,4 +262,78 @@ func HasFailure(results []GateResult) bool {
 		}
 	}
 	return false
+}
+
+// QuietError is an error whose diagnostic has ALREADY been written to the
+// command's own output stream, so the dispatcher must not print it again.
+//
+// Exactly one site needs it: `prd complete`'s done-gate refusal
+// (bin/company-os:699-707) prints its whole block — a banner, one `[FAIL]` line
+// per problem, one `fix:` pointer per missing reality doc — to STDOUT and then
+// exits 5 with nothing on stderr. Without this the port would either lose the
+// block (records are dropped on the error path) or gain an `error: …` line the
+// oracle never writes.
+//
+// It is a wrapper rather than a flag on *Error so that CodeOf keeps working
+// unchanged: the wrapped error is still the outermost ExitCoder.
+type QuietError struct{ Err error }
+
+func (q *QuietError) Error() string { return q.Err.Error() }
+
+func (q *QuietError) Unwrap() error { return q.Err }
+
+// ExitCode forwards the wrapped error's code, keeping *QuietError an ExitCoder
+// so CodeOf stops at it rather than falling through to the default.
+func (q *QuietError) ExitCode() ExitCode { return CodeOf(q.Err) }
+
+// Quiet marks an error as already-reported. Quiet(nil) is nil.
+func Quiet(err error) error {
+	if err == nil {
+		return nil
+	}
+	return &QuietError{Err: err}
+}
+
+// IsQuiet reports whether the error's diagnostic has already been emitted.
+func IsQuiet(err error) bool {
+	var q *QuietError
+	return errors.As(err, &q)
+}
+
+// UsageError marks an error as an argparse-shaped ARGUMENT error scoped to one
+// sub-parser, so the dispatcher renders it the way argparse renders the errors
+// it catches itself: the sub-parser's `usage:` line, then
+// `company-os <scope>: error: <msg>` (R-1.4a).
+//
+// The parser in cmd/company-os produces these for everything argparse can
+// express. This type exists for the requirements argparse CANNOT express — a
+// positional declared `nargs="?"` because it is required for one action and
+// meaningless for another, or a flag required only in the presence of another
+// flag. Those checks can only run in command code, below cmd/, where the
+// parser's own usageError type is out of reach; without a marker their
+// diagnostic came out as a bare `error: …` line with no usage block and no
+// `company-os ` prefix, which is the one stderr shape four shipped agent skills
+// cannot grep for. R-0.7a(l) is the clause that sanctions replacing the oracle's
+// traceback on these paths.
+//
+// Scope is the SUBCOMMAND, never the action: argparse interpolates its own
+// `prog` before `: error:`, and a sub-parser's prog is `company-os <sub>`.
+//
+// Like QuietError this is a wrapper rather than a field on *Error, so CodeOf
+// still stops at the outermost ExitCoder.
+type UsageError struct {
+	Scope string
+	Err   error
+}
+
+func (u *UsageError) Error() string { return u.Err.Error() }
+
+func (u *UsageError) Unwrap() error { return u.Err }
+
+// ExitCode forwards the wrapped error's code, keeping *UsageError an ExitCoder.
+func (u *UsageError) ExitCode() ExitCode { return CodeOf(u.Err) }
+
+// Usagef builds an ExitUsage error scoped to the named subcommand.
+func Usagef(scope, format string, a ...any) error {
+	return &UsageError{Scope: scope, Err: Errorf(ExitUsage, format, a...)}
 }

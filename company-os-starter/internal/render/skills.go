@@ -29,51 +29,51 @@ func Skills(w io.Writer, sections []model.GateResult) error {
 
 func skillLine(w io.Writer, f model.Finding) error {
 	switch f.Code {
-	case skills.CodeBanner:
+	case model.CodeBanner:
 		// The banner's own trailing blank line is print("...\n") at `:871`.
 		return writeLines(w, "== agent skills (merged view across 4 layers) ==", "")
 
-	case skills.CodeLayersHeader:
+	case model.CodeLayersHeader:
 		return writeLines(w, "layers (origin-labeled):")
 
-	case skills.CodeLayerEmpty:
+	case model.CodeLayerEmpty:
 		return writeLines(w, fmt.Sprintf("  [%s] <none>", f.Fields.Str("layer")))
 
-	case skills.CodeLayerEntry:
+	case model.CodeLayerEntry:
 		return writeLines(w, layerEntry(f))
 
-	case skills.CodeMergedHeader:
+	case model.CodeMergedHeader:
 		return writeLines(w, "",
 			"merged guidance (canonical steps first; personal rules last, non-overriding):")
 
-	case skills.CodeSkillHeader:
+	case model.CodeSkillHeader:
 		return writeLines(w, "", fmt.Sprintf("  %s [%s%s, authority=%s]",
 			f.Fields.Str("name"), f.Fields.Str("layer"),
 			scopeSuffix(f.Fields.Str("scope")), f.Fields.Str("authority")))
 
-	case skills.CodeBaseHeader:
+	case model.CodeBaseHeader:
 		return writeLines(w, fmt.Sprintf("    layered on base %s:", f.Fields.Str("extends")))
 
-	case skills.CodeBaseStep:
+	case model.CodeBaseStep:
 		return writeLines(w, "      [base] "+f.Fields.Str("step"))
 
-	case skills.CodeDanglingExtendsWarning:
+	case model.CodeDanglingExtendsWarning:
 		return writeLines(w, fmt.Sprintf(
 			"    [warn] extends %s does not resolve (dangling — validate will fail)",
 			f.Fields.Str("extends")))
 
-	case skills.CodeStep:
+	case model.CodeStep:
 		return writeLines(w, "      "+f.Fields.Str("step"))
 
-	case skills.CodePersonalHeader:
+	case model.CodePersonalHeader:
 		return writeLines(w, "",
 			"  personal rules (non-overriding — canonical mandatory steps always win):")
 
-	case skills.CodePersonalEntry:
+	case model.CodePersonalEntry:
 		return writeLines(w, fmt.Sprintf("    [personal:%s] %s",
 			f.Fields.Str("team"), f.Fields.Str("name")))
 
-	case skills.CodeSummary:
+	case model.CodeSummary:
 		return writeLines(w, "", fmt.Sprintf("%d skill(s) across %d populated layer(s).",
 			f.Fields.Int("skills"), f.Fields.Int("layers")))
 	}

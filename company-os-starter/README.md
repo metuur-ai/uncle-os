@@ -12,7 +12,8 @@ a guiding CLI, validation gates, and a fully worked example.
 ## Contents
 
 ```text
-bin/company-os        Reference CLI (Python 3.9+, needs: pip install pyyaml)
+cmd/company-os        CLI entry point (Go); `internal/` holds the packages
+Makefile              make build | install | release | check
 templates/            Example artifact formats — not contracts (see
                       templates/README.md); discovery, PRD, ADR, outcome,
                       reality doc, deviations, exceptions, SKILL template
@@ -29,9 +30,14 @@ docs/TUTORIAL.md      End-to-end walkthrough with real command outputs
 
 ## Quick start
 
+The CLI is a single static binary with no runtime dependency — download a
+release artifact, `chmod +x`, and put it on your `PATH`. From a source
+checkout, `make install` does the same thing (`PREFIX=` to change where it
+lands); the Go toolchain is a build-time requirement only.
+
 ```bash
-pip install pyyaml
-export PATH="$PWD/bin:$PATH"
+make install                 # -> ~/.local/bin/company-os
+export PATH="$HOME/.local/bin:$PATH"
 cd ../examples/workspace
 company-os governance resolve --team customer-engagement
 company-os today --role product-owner

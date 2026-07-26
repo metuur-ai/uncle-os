@@ -25,7 +25,7 @@ Company OS today is strict on artifacts and flexible on process, but the user jo
 
 When this ships, the following are observable:
 
-1. A new user can go from environment prerequisites (Python, pyyaml, PATH) to a validated first PRD following **one document** and the CLI's printed next-command guidance, without prior knowledge of canonical IDs or OS terminology — including the reality-update step, which is scaffolded (`reality new`), never hand-created from scratch.
+1. A new user can go from environment prerequisites (download the binary, PATH) to a validated first PRD following **one document** and the CLI's printed next-command guidance, without prior knowledge of canonical IDs or OS terminology — including the reality-update step, which is scaffolded (`reality new`), never hand-created from scratch.
 2. `company-os init` interactively scaffolds a workspace (company baseline, first team, first platform) and prints the first golden-path command.
 3. Canonical IDs are discoverable from the CLI (lookup/list from `company-ontology/ids/registry.yaml`), and unknown-ID errors suggest close matches.
 4. Role-aware views (`--role`) render plain-language labels alongside canonical terms — display-only; artifacts keep canonical vocabulary.
@@ -51,6 +51,28 @@ Explicitly out of scope (decided):
 - **Templatable YAML row seeds** for `deviations.yaml` / `exceptions.yaml` — stay built-in (deferred until a real need).
 - **Localized heading aliases** — required section headings remain English even in localized-flavor templates (deferred).
 - Web/GUI surfaces; renaming canonical terminology inside artifacts; any new runtime dependency beyond `pyyaml` + git.
+
+> **Scoping note, 2026-07-26 (R-8.6, R-8.7).** The last bullet above has been
+> read as forbidding two things it does not forbid. Recorded here rather than
+> rewritten, so the original decision stays legible:
+>
+> - **"Web/GUI surfaces" does not cover a terminal UI shipped inside the
+>   binary.** The rejected class is a surface with a *runtime* of its own — a
+>   browser, a server, a windowing toolkit, a separate thing to install, run,
+>   and keep alive. `company-os tui` renders into the terminal the user already
+>   invoked the CLI from, is compiled into the same static binary, adds no
+>   runtime dependency, and reaches no capability the flags do not. It is a
+>   second renderer over the same records, alongside text and `--json` — not a
+>   second surface. It remains subject to every other invariant above: no TUI
+>   action writes anything the equivalent flag invocation would not, and each
+>   one is previewed as a reproducible command line.
+> - **"Any new runtime dependency beyond `pyyaml` + git" governs the user's
+>   machine.** Build-time Go modules linked into a static binary are not
+>   runtime prerequisites. The Go binary satisfies this bullet's intent more
+>   completely than the implementation it was written against: `pyyaml` and the
+>   interpreter it needs are both gone, and git is still required only for
+>   federation. See
+>   [Amendment 1](../ears/federation-enrichment.md#amendment-1--r-74-partial-retirement-2026-07-26).
 
 ## Success Criteria
 

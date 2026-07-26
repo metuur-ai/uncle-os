@@ -201,9 +201,19 @@ makes an `archive/prds/<id>/` index worth generating.
 
 ## Constraints
 
-- **Python 3.9+, stdlib + PyYAML only.** `bin/company-os` is one self-contained
-  file. Preserve the `die`/`ok`/`warn`/`fail` helpers and `frontmatter()`'s exact
-  `^---\n...\n---\n` contract.
+- **No runtime dependency on the user's machine.** Preserve `frontmatter()`'s
+  exact `^---\n...\n---\n` contract.
+
+  > **Amended 2026-07-26.** This constraint originally read "**Python 3.9+,
+  > stdlib + PyYAML only.** `bin/company-os` is one self-contained file.
+  > Preserve the `die`/`ok`/`warn`/`fail` helpers and …". The single-file and
+  > output-helper clauses were retired by
+  > [Amendment 1](../ears/federation-enrichment.md#amendment-1--r-74-partial-retirement-2026-07-26).
+  > The dependency policy survives but is scoped: it governs **runtime**
+  > prerequisites on the user's machine, and build-time Go modules linked into
+  > a static binary do not violate it. The Go binary satisfies it more
+  > completely than the Python CLI did — the interpreter and the vendored
+  > PyYAML are both gone.
 - **Gate 1–7 numbering and printed strings are frozen** (I5, `:915-918`). This
   change adds no gate and changes no gate output.
 - **The golden snapshots must not move.** `examples/acceptance.sh` is the oracle;

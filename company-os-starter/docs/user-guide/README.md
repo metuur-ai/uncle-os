@@ -43,6 +43,7 @@ Jump to a how-to:
 | Understand why `company-os validate` failed, or wire it into CI | [how-to/run-the-validation-gate.md](how-to/run-the-validation-gate.md) |
 | Pull a repo's docs into the knowledge catalog, without its source code | [how-to/sync-a-knowledge-catalog.md](how-to/sync-a-knowledge-catalog.md) |
 | Keep Local Search's index fresh and scoped correctly | [how-to/keep-search-fresh.md](how-to/keep-search-fresh.md) |
+| Upgrade my CLI, or find out whether my teammate's older build is a problem | [how-to/release-and-upgrade.md](how-to/release-and-upgrade.md) |
 
 ## I want the bigger picture
 
@@ -57,6 +58,6 @@ each pointing to the page that goes deeper.
 
 ## I need the exact facts
 
-- **[reference/company-os-cli.md](reference/company-os-cli.md)** — every `company-os` subcommand, its flags, and defaults.
+- **[reference/company-os-cli.md](reference/company-os-cli.md)** — every `company-os` subcommand, its flags, and defaults, plus the [exit-code contract](reference/company-os-cli.md#exit-codes) scripts and agents should branch on.
 - **[reference/configuration.md](reference/configuration.md)** — every config file and env var either tool actually reads.
 - **[reference/troubleshooting.md](reference/troubleshooting.md)** — symptom → cause → fix, for both tools.

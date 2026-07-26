@@ -35,26 +35,6 @@ import (
 // verbatim inside the listing header, so it is data, not a derived string.
 const RegistryPath = "company-ontology/ids/registry.yaml"
 
-// Finding codes for `ids list`. Stable across message rewordings (R-2.4).
-const (
-	// CodeRegistryEmpty is the whole output when the registry is missing,
-	// empty, or malformed (`bin/company-os:1280-1283`).
-	CodeRegistryEmpty = "ids.registry-empty"
-	// CodeListingHeader names the registry the listing was read from (`:1298`).
-	CodeListingHeader = "ids.listing-header"
-	// CodeEntry is one registered ID (`:1300`).
-	CodeEntry = "ids.entry"
-	// CodeCount is the trailing tally, with its "of N" suffix (`:1301-1302`).
-	CodeCount = "ids.count"
-)
-
-// Section slugs. `ids list` has no gate headers, so GateResult.Ordinal and
-// GateResult.Title are unused by the text renderer and exist for --json and the
-// TUI; Slug is what both renderers switch on.
-// SlugRegistry names the listing section. The --role legend that may precede it
-// is roles.SlugGlossary, shared verbatim with `today`.
-const SlugRegistry = "registry"
-
 // Entry is one row of the registry's `ids:` sequence, already reduced to the
 // two strings `cmd_ids` reads (`:1286-1287`). Both are the Python str() of the
 // authored value, so an unquoted date or an int id renders as PyYAML renders it.
@@ -149,11 +129,11 @@ func List(ws *workspace.Workspace, role string, filter Filter) ([]model.GateResu
 		return nil, err
 	}
 
-	registry := model.GateResult{Ordinal: len(sections) + 1, Slug: SlugRegistry}
+	registry := model.GateResult{Ordinal: len(sections) + 1, Slug: model.SlugRegistry}
 	if len(entries) == 0 {
 		registry.Findings = append(registry.Findings, model.Finding{
 			Severity: model.SevOK,
-			Code:     CodeRegistryEmpty,
+			Code:     model.CodeRegistryEmpty,
 			Path:     RegistryPath,
 			Fields:   model.Fields{"registry": RegistryPath},
 		})
@@ -162,7 +142,7 @@ func List(ws *workspace.Workspace, role string, filter Filter) ([]model.GateResu
 
 	registry.Findings = append(registry.Findings, model.Finding{
 		Severity: model.SevOK,
-		Code:     CodeListingHeader,
+		Code:     model.CodeListingHeader,
 		Path:     RegistryPath,
 		Fields:   model.Fields{"registry": RegistryPath},
 	})
@@ -183,7 +163,7 @@ func List(ws *workspace.Workspace, role string, filter Filter) ([]model.GateResu
 		}
 		registry.Findings = append(registry.Findings, model.Finding{
 			Severity: model.SevOK,
-			Code:     CodeEntry,
+			Code:     model.CodeEntry,
 			Subject:  e.ID,
 			Path:     e.DefinedIn,
 			Fields:   fields,
@@ -202,7 +182,7 @@ func List(ws *workspace.Workspace, role string, filter Filter) ([]model.GateResu
 	}
 	registry.Findings = append(registry.Findings, model.Finding{
 		Severity: model.SevOK,
-		Code:     CodeCount,
+		Code:     model.CodeCount,
 		Fields:   count,
 	})
 	return append(sections, registry), nil

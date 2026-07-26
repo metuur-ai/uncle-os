@@ -5,7 +5,6 @@ import (
 	"io"
 
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/model"
-	"github.com/metuur-ai/uncle-os/company-os-starter/internal/roles"
 )
 
 // glossaryIntro is the legend's first line (bin/company-os:1268-1269), wrapped
@@ -26,7 +25,7 @@ func glossary(w io.Writer, s model.GateResult) error {
 		return err
 	}
 	for _, f := range s.Findings {
-		if f.Code != roles.CodeGlossaryTerm {
+		if f.Code != model.CodeGlossaryTerm {
 			return fmt.Errorf("render: glossary: no rule for finding code %q", f.Code)
 		}
 		// The quotes are literal, not %q: Python's f-string interpolates the

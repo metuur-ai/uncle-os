@@ -20,3 +20,5 @@ scratchpad/
 # Go build output (the CLI source lives in company-os-starter/cmd/company-os)
 /company-os-starter/company-os
 /company-os-starter/cmd/company-os/company-os
+/company-os-starter/dist/
+/company-os-starter/coverage.out

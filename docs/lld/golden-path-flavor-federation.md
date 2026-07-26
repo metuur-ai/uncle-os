@@ -8,7 +8,9 @@ Related spec: `docs/{hld,lld,ears}/federation-enrichment.md` builds on subsystem
 
 ## Architecture
 
-All changes live in the single self-contained CLI (`company-os-starter/bin/company-os`) plus workspace files. Four subsystems, layered so each is independently shippable:
+All changes live in the CLI plus workspace files. Four subsystems, layered so each is independently shippable:
+
+> **Amended 2026-07-26.** This line originally read "the single self-contained CLI (`company-os-starter/bin/company-os`)". The single-file constraint was retired by [Amendment 1](../ears/federation-enrichment.md#amendment-1--r-74-partial-retirement-2026-07-26); the CLI is now the Go module at `company-os-starter/cmd/company-os` over `internal/`. Read every `bin/company-os` reference below as naming the CLI, not a file.
 
 ### A. Golden path & UX layer (umbrella)
 
@@ -16,7 +18,7 @@ All changes live in the single self-contained CLI (`company-os-starter/bin/compa
 - **`company-os add platform|team|component`** — grows an existing workspace from the same scaffolding templates `init` uses; refuses to overwrite anything existing. Closes friction F2 (hand-copying YAML for the second team/platform/component).
 - **`company-os reality new --platform <p> <component-id>`** — scaffolds `reality/components/<id>.md` from `templates/reality-component.md`; `prd new` prints it as the next command when a target component's reality doc is missing, keeping the guidance chain unbroken through `prd complete` (friction F3).
 - **Fail-fast root check & parser consistency** — workspace-scoped commands fail fast outside a workspace root, naming the resolution order (`--root` → `$COMPANY_OS_WORKSPACE_ROOT` → cwd) instead of succeeding silently (F8); all frontmatter parsing goes through the single `frontmatter()` contract (F11).
-- **Golden-path document** — one doc (extends `docs/GETTING-STARTED.md`) covering environment prerequisites (Python, pyyaml, PATH) → setup → discovery → PRD → reality update → completion; every step matches the CLI's printed guidance chain. The existing "every mutating command prints the next command" convention is the backbone and must be preserved and extended to the new commands.
+- **Golden-path document** — one doc (extends `docs/GETTING-STARTED.md`) covering environment prerequisites (download the binary, PATH) → setup → discovery → PRD → reality update → completion; every step matches the CLI's printed guidance chain. The existing "every mutating command prints the next command" convention is the backbone and must be preserved and extended to the new commands.
 - **ID lookup** — new `company-os ids list [--team|--platform|--prefix]` reading `company-ontology/ids/registry.yaml` (the canonical source; never a parallel index). Unknown-ID failures in existing commands gain closest-match suggestions (stdlib `difflib`; no new dependency).
 - **Role views & terminology** — extend the existing `today --role` mechanism: a static translation table in the CLI maps canonical terms → plain-language labels per role (e.g. product-owner sees "promise with an expiry date" next to *exception*). Display-only: artifacts, IDs, tags, and validators always use canonical vocabulary.
 
@@ -45,8 +47,8 @@ All changes live in the single self-contained CLI (`company-os-starter/bin/compa
 
 ## Constraints
 
-- Python 3.9+, `pyyaml` only; git CLI required for federation (guarded — federation commands fail with a clear message if git is absent; monorepo mode never needs it).
-- `bin/company-os` stays one self-contained file; preserve `die`/`ok`/`warn`/`fail` helpers and the `frontmatter()` parser contract (`^---\n...\n---\n`).
+- No runtime dependency on the user's machine; git CLI required for federation (guarded — federation commands fail with a clear message if git is absent; monorepo mode never needs it). *(Written against the Python reference as "Python 3.9+, `pyyaml` only"; restated after the Go port. The policy governs runtime prerequisites, not build-time modules — see [Amendment 1](../ears/federation-enrichment.md#amendment-1--r-74-partial-retirement-2026-07-26).)*
+- Preserve the `frontmatter()` parser contract (`^---\n...\n---\n`). *(The "one self-contained file" and `die`/`ok`/`warn`/`fail`-helper constraints were retired by that same amendment; the frontmatter contract was not.)*
 - Templates in `templates/` and `*_TEMPLATE` strings must stay in sync with the headings `validate` greps for.
 - No behavior change without `workspace.yaml`; no full-repo content ever fetched (privacy/size requirement that drove Option B).
 - `workspace.lock.yaml` and materialized slices are machine-owned (never hand-edited), like `generated/`.

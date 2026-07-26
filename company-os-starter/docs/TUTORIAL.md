@@ -6,7 +6,7 @@ tags: [doc/company-os-starter, kind/tutorial]
 # Tutorial: From Idea to Archived PRD with `company-os`
 
 This walkthrough uses the populated example in `../examples/workspace/` and the
-reference CLI in `bin/company-os`. Every command and output below was executed
+`company-os` CLI. Every command and output below was executed
 against this kit — you can reproduce the whole session.
 
 **The principle behind everything:** strict on artifacts, flexible on process.
@@ -19,8 +19,9 @@ directory to a completed change on a fresh workspace you scaffold yourself.
 ## 0. Setup
 
 ```bash
-# requirements: python3 + pyyaml  (pip install pyyaml)
-export PATH="$PWD/bin:$PATH"
+# requirements: the `company-os` binary on your PATH — nothing else.
+# Download a release artifact and `chmod +x` it, or build from source:
+#   make install        (from company-os-starter/; puts it in ~/.local/bin)
 cd ../examples/workspace     # or: export COMPANY_OS_WORKSPACE_ROOT=$PWD/../examples/workspace
 ```
 
@@ -152,7 +153,7 @@ workspaces:
 
 ### Kit status
 
-The reference `bin/company-os` in this kit implements layers **1, 2, and 6**
+The CLI implements layers **1, 2, and 6**
 today: `--root`, `$COMPANY_OS_WORKSPACE_ROOT`, and cwd fallback — enough to
 point it at any path on your machine. Layers 3–5 (`.company-os.local.yaml`
 merging, `~/.company-os/config.yaml`, and a `workspace sync` that clones repos
@@ -377,9 +378,14 @@ generated `CLAUDE.md` context node is stale, or a platform's derived
 
 ```yaml
 # .github/workflows/os-validate.yml (any OS repo)
-- run: pip install pyyaml
-- run: bin/company-os --root . validate
-- run: bin/company-os governance resolve --team <team> && git diff --exit-code teams/*/generated/
+- name: install company-os        # one static binary, no runtime dependency
+  env: {COMPANY_OS_VERSION: v1.0.0}
+  run: |
+    curl -fsSLo /usr/local/bin/company-os \
+      <release-url>/$COMPANY_OS_VERSION/company-os_${COMPANY_OS_VERSION}_linux_amd64
+    chmod +x /usr/local/bin/company-os
+- run: company-os --root . validate
+- run: company-os governance resolve --team <team> && git diff --exit-code teams/*/generated/
 ```
 
 The second check ensures `effective-governance.yaml` is truly derived — if

@@ -10,6 +10,7 @@ package main
 import (
 	"io"
 
+	"github.com/metuur-ai/uncle-os/company-os-starter/internal/graph"
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/ids"
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/model"
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/roles"
@@ -28,4 +29,10 @@ func cmdIDs(ws *workspace.Workspace, args *Args, _ io.Writer) ([]model.GateResul
 // cmdToday is cmd_today (bin/company-os:1168-1203).
 func cmdToday(ws *workspace.Workspace, args *Args, _ io.Writer) ([]model.GateResult, error) {
 	return roles.Today(ws, args.Role)
+}
+
+// cmdGraph is cmd_graph (bin/company-os:1787-1797). `build` is the only action
+// the parser accepts, so there is nothing to switch on here.
+func cmdGraph(ws *workspace.Workspace, _ *Args, _ io.Writer) ([]model.GateResult, error) {
+	return graph.Build(ws)
 }

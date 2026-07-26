@@ -146,8 +146,57 @@ must not break existing adopters, and the standalone-team promise must be tested
 | R-7.1 | THE SYSTEM SHALL keep `company-os validate` exiting 0 on `examples/workspace` after each phase. |
 | R-7.2 | THE SYSTEM SHALL extend `examples/workspace` with fixtures exercising each committed unit (index, pointers, nodes, identity, onboarding) and SHALL commit the regenerated nodes + index. |
 | R-7.3 | THE SYSTEM SHALL preserve the semantics of existing gates [1/4]–[4/4], renumbered under a 6-gate run, verified against a golden stdout snapshot, with no behavior change. |
-| R-7.4 | THE SYSTEM SHALL keep the single-file CLI, the `die/ok/warn/fail` helpers, the `frontmatter()` parser, and the next-command guidance chain intact. |
+| R-7.4 | **Amended 2026-07-26 — see [Amendment 1](#amendment-1--r-74-partial-retirement-2026-07-26).** THE SYSTEM SHALL keep the `frontmatter()` parser and the next-command guidance chain intact. The single-file-CLI and `die/ok/warn/fail` helper clauses of the original statement are retired. |
 | R-7.5 | WHERE any doc (root `CLAUDE.md`, `TUTORIAL.md`, `docs/01`) states validate has 3 steps, THE SYSTEM SHALL correct it to the actual gate count in the same change. |
+
+### Amendment 1 — R-7.4 partial retirement (2026-07-26)
+
+**Authority:** `docs/ears/go-cli-tui-port.md` Unit 8 (R-8.1–R-8.7), specified and
+approved as part of the Go CLI + TUI port. Executed by task 6.2 of
+`docs/tasks/go-cli-tui-port.md`.
+
+**Statement as originally locked:**
+
+> R-7.4 | THE SYSTEM SHALL keep the single-file CLI, the `die/ok/warn/fail`
+> helpers, the `frontmatter()` parser, and the next-command guidance chain
+> intact.
+
+R-7.4 bundled four independent clauses under one ID. They are separated here so
+that each is individually citable, and so that the two which survive cannot be
+lost inside a retirement aimed at the other two.
+
+| Clause | Status | Disposition |
+| --- | --- | --- |
+| C1 — single-file CLI | **RETIRED** 2026-07-26 (R-8.1) | Superseded by the Go module at `company-os-starter/` — one `cmd/` entry point over versioned `internal/` packages, compiled to a single static binary. |
+| C2 — `die`/`ok`/`warn`/`fail` output helpers | **RETIRED** 2026-07-26 (R-8.2) | Superseded by the record-and-renderer architecture (`docs/ears/go-cli-tui-port.md` Unit 2): commands return `[]model.GateResult`, and text, `--json`, and TUI renderers are the only writers. |
+| C3 — the `frontmatter()` parser | **IN FORCE — not retired** | Its `^---\n...\n---\n` contract is unchanged and is now additionally enforced by R-1.5, which requires a differential test against the original Python regex. |
+| C4 — the next-command guidance chain | **IN FORCE — not retired** | Every mutating command still prints the next command in the workflow. Now additionally enforced by R-1.8, and carried into machine output by R-3.6 (`guidance` in every `--json` payload). |
+
+**Why C1 and C2 were retired rather than honoured.** Neither clause states a
+reason anywhere in the corpus. `00-original-proposal.md` (1467 lines) never
+mentions "single file", "self-contained", or "monolith". Both clauses are
+descriptions of the Python reference implementation that were promoted to
+locked requirements without an accompanying rationale, and both block the
+outcome R-7.4 was really protecting — a CLI an adopter can run. Retiring them
+is a deliberate amendment with a named authority and a date, not a silent
+override: the requirement this project's own methodology places on adopters.
+
+**Why C3 and C4 were not retired.** Both are outcome clauses, not
+implementation clauses, and both survive the port unchanged. C3 governs how
+every artifact in the workspace is read; a change to it silently reinterprets
+112 committed documents. C4 is the property that makes the workflow
+self-teaching, and it is the single mechanism the four shipped agent skills and
+the TUI both depend on. Retiring either by accident — as a side effect of
+retiring C1 and C2 — would have been strictly worse than retiring nothing.
+
+**Scope note (R-8.7).** The dependency policy stated alongside C1 in several
+documents ("Python 3.9+, PyYAML only; no new dependencies") governs **runtime
+prerequisites on the user's machine**. Build-time Go modules linked into a
+static binary are not runtime prerequisites and do not violate it. The port
+satisfies that policy's intent more completely than the status quo did: the
+Python CLI required an interpreter plus a vendored PyYAML on the user's
+machine; the Go binary requires nothing (git remains required for federation
+only, unchanged).
 
 ---
 

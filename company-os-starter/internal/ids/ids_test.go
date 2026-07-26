@@ -149,7 +149,7 @@ func TestList_FilterCombinationsAreConjunctive(t *testing.T) {
 			if err != nil {
 				t.Fatalf("List: %v", err)
 			}
-			count := findingByCode(t, sections, ids.CodeCount)
+			count := findingByCode(t, sections, model.CodeCount)
 			if got := count.Fields.Int("matched"); got != tc.matched {
 				t.Errorf("matched = %d, want %d", got, tc.matched)
 			}
@@ -168,7 +168,7 @@ func TestList_EntryCarriesSchemeAndLocalName(t *testing.T) {
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
-	e := findingByCode(t, sections, ids.CodeEntry)
+	e := findingByCode(t, sections, model.CodeEntry)
 	if got := e.Fields.Str("scheme"); got != "component" {
 		t.Errorf("scheme = %q, want component", got)
 	}
@@ -190,8 +190,8 @@ func TestList_NoRegistryEmitsTheEmptyRecord(t *testing.T) {
 	if len(sections) != 1 || len(sections[0].Findings) != 1 {
 		t.Fatalf("got %d section(s), want one section with one finding", len(sections))
 	}
-	if code := sections[0].Findings[0].Code; code != ids.CodeRegistryEmpty {
-		t.Errorf("code = %q, want %q", code, ids.CodeRegistryEmpty)
+	if code := sections[0].Findings[0].Code; code != model.CodeRegistryEmpty {
+		t.Errorf("code = %q, want %q", code, model.CodeRegistryEmpty)
 	}
 }
 

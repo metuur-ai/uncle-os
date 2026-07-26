@@ -80,6 +80,23 @@ is Python's strongest suit; Go is estimated at 4500–6000 lines against today's
 binding constraint. The Go codebase needs a named owner before Phase 1 starts —
 there is no Go precedent in this repository.
 
+**Go codebase owner (R-9.9):** `TBD — must be filled before cutover`
+
+> This field is deliberately unfilled and is a **blocking** item, not a
+> formality. Task 6.5 deletes the Python reference implementation; after that
+> point 4500–6000 lines of Go are the only implementation, and a defect found
+> later has no runnable oracle to generate a golden from. `local-search` being
+> written in Go is precedent for the ecosystem, not evidence that anyone here
+> has committed to maintaining this. Naming a person is a human decision and
+> cannot be inferred from the repository — it requires someone to accept the
+> responsibility, not an agent to record a plausible name.
+>
+> The named owner is accountable for: reviewing changes to
+> `company-os-starter/internal/**` and `cmd/**`, keeping the toolchain pin in
+> `go.mod` current, and owning the parity-loss risk that begins the moment
+> `bin/company-os` is deleted. Replace the placeholder above with a name before
+> task 6.4's parity gate is declared green.
+
 ## Goals
 
 1. **A user copies one binary and starts working.** No interpreter, no
@@ -166,3 +183,51 @@ there is no Go precedent in this repository.
     and changes nothing.
 11. Every TUI screen is enumerated in the spec and asserted by test. "Reaches all
     16 commands" is not a measurement and is not used as one.
+
+## Accepted Costs
+
+### macOS first run requires `xattr -d com.apple.quarantine`
+
+R-6.3 asks for Developer-ID-signed, notarized darwin artifacts and provides a
+fallback if notarization is not performed. **The fallback is in force.**
+Notarization requires an Apple Developer account and App Store Connect
+credentials that this project does not have, so darwin releases ship
+un-notarized and the workaround is documented in
+`company-os-starter/docs/user-guide/tutorials/01-first-day-with-company-os.md`.
+This section is the record R-6.3 requires.
+
+What was measured, on macOS 15 / arm64, rather than assumed:
+
+- A **downloaded** (quarantined) artifact does not fail loudly on first exec —
+  it **hangs indefinitely and prints nothing**. The process never starts.
+  Gatekeeper's verdict arrives through a GUI consent dialog; from a terminal
+  there is no error, no exit code, and no output to search for. That is a worse
+  first impression than the "cannot be opened because the developer cannot be
+  verified" alert a Finder launch produces.
+- `xattr -d com.apple.quarantine <binary>` recovers it completely: same binary,
+  exit 0, correct output.
+- **Signing alone does not fix it.** A binary signed with a real Developer ID
+  Application certificate, hardened runtime and secure timestamp, is still
+  rejected — `spctl` reports `source=Unnotarized Developer ID` — and still
+  hangs when quarantined. Signing without notarization buys nothing a user can
+  perceive, so `make sign` is not a partial mitigation and is not presented as
+  one.
+
+The cost this accepts, honestly stated: **the headline justification for the
+port inverts on macOS for downloaded artifacts.** The change was argued on "a
+user copies a binary into `~/.local/bin` and starts working," measured against
+`pip install pyyaml`. One undocumented `xattr` invocation against a silent hang
+is worse than one `pip install` that prints what it is doing. The cost is
+accepted on three conditions, all met:
+
+1. The step is documented at the exact point of failure in the install
+   tutorial, not in a troubleshooting appendix.
+2. The failure mode — a hang, not an error — is named explicitly, because a
+   user who does not know that will look everywhere except Gatekeeper.
+3. `make sign` and `make notarize` exist and fail loudly without credentials,
+   so the day an Apple account exists the remaining work is credentials, not
+   engineering.
+
+This cost is retired the moment task 5.2's notarization half is unblocked. It
+does not apply to Linux, to `make install` from source, or to a binary fetched
+with `curl` rather than a browser.

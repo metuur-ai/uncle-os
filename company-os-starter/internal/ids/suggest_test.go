@@ -43,7 +43,12 @@ type difflibOracle struct {
 
 func loadOracle(t *testing.T) difflibOracle {
 	t.Helper()
-	data, err := os.ReadFile(filepath.Join("testdata", "difflib-oracle.json"))
+	return loadOracleFile(t, "difflib-oracle.json")
+}
+
+func loadOracleFile(t *testing.T, name string) difflibOracle {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join("testdata", name))
 	if err != nil {
 		t.Fatalf("reading oracle: %v", err)
 	}
@@ -110,6 +115,48 @@ func TestLocalNameTakesTheLastSegment(t *testing.T) {
 	for in, want := range cases {
 		if got := localName(in); got != want {
 			t.Errorf("localName(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+// TestAutojunkMatchesCPython is the autojunk half, kept in its own oracle
+// because the first one holds only short inputs and cannot exercise it.
+//
+// SequenceMatcher's autojunk measures seq2, and get_close_matches sets seq2 to
+// the WORD — the unknown id a user typed, which is unbounded. Above 200 runes,
+// a character occupying more than 1% of it is dropped from the b2j index, which
+// collapses most ratios below the 0.3 cutoff and makes get_close_matches return
+// nothing. Regenerate with
+//
+//	python3 - > internal/ids/testdata/difflib-autojunk-oracle.json <<'PY'
+//	import difflib, json, random
+//	random.seed(21); alph = "abcdefg-"
+//	pool = [...]; cases = [...]   # words straddling 200 runes
+//	ratios = [{"a": x, "b": w, "ratio": difflib.SequenceMatcher(None, x, w).ratio()}
+//	          for w in cases for x in pool + [w[:len(w)//2], w + "zz"]]
+//	matches = [{"word": w, "want": difflib.get_close_matches(w, pool, n=3, cutoff=0.3)}
+//	           for w in cases]
+//	print(json.dumps({"pool": pool, "matches": matches, "ratios": ratios}, indent=1))
+//	PY
+func TestAutojunkMatchesCPython(t *testing.T) {
+	o := loadOracleFile(t, "difflib-autojunk-oracle.json")
+	for _, c := range o.Ratios {
+		if got := ratio([]rune(c.A), []rune(c.B)); !closeEnough(got, c.Ratio) {
+			t.Errorf("ratio(len %d, len %d) = %v, want %v",
+				len(c.A), len(c.B), got, c.Ratio)
+		}
+	}
+	for _, c := range o.Matches {
+		got := closeMatches(c.Word, o.Pool, 3, 0.3)
+		if len(got) != len(c.Want) {
+			t.Errorf("closeMatches(<%d runes>) = %v, want %v", len(c.Word), got, c.Want)
+			continue
+		}
+		for i := range got {
+			if got[i] != c.Want[i] {
+				t.Errorf("closeMatches(<%d runes>) = %v, want %v", len(c.Word), got, c.Want)
+				break
+			}
 		}
 	}
 }

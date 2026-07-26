@@ -20,8 +20,8 @@ what's implemented today versus specified-but-not-wired.
 6. Built-in default      current working directory
 ```
 
-The reference `bin/company-os` in this kit **only implements layers 1, 2,
-and 6** — `--root`, `$COMPANY_OS_WORKSPACE_ROOT`, and the cwd fallback.
+The CLI **only implements layers 1, 2, and 6** — `--root`,
+`$COMPANY_OS_WORKSPACE_ROOT`, and the cwd fallback.
 Layers 3–5 (`.company-os.local.yaml` merging, `~/.company-os/config.yaml`,
 and a `workspace sync` that clones repos into relative directories from a
 committed `config/repositories.yaml`) are specified in the design but not
@@ -63,21 +63,41 @@ other.
 catalog specifically:
 [how-to/sync-a-knowledge-catalog.md](../how-to/sync-a-knowledge-catalog.md).
 
-## `install.sh`: the one env var
+## Installation: nothing to configure
+
+`company-os` is a single static binary. It reads no installation config,
+resolves nothing relative to itself, and has no kit root — the templates it
+scaffolds from are compiled in. Installing it is: download the artifact for
+your platform, `chmod +x`, move it onto your `PATH`. Uninstalling it is
+deleting that one file.
+
+Building from source instead? `make install` from `company-os-starter/` honors
+one variable:
 
 ```bash
-COMPANY_OS_PREFIX=/some/where ./install.sh
+PREFIX=/some/where make install      # defaults to $HOME/.local
 ```
 
-Defaults to `$HOME/.local`. Determines where the kit and launcher land:
+which puts the binary at `$PREFIX/bin/company-os` and nothing anywhere else.
+`make uninstall` removes it.
 
-```text
-$COMPANY_OS_PREFIX/share/company-os/        # kit root (bin, templates, skills, vendor/yaml)
-$COMPANY_OS_PREFIX/bin/company-os           # launcher on your PATH
-```
-
-`./install.sh --uninstall` removes both, honoring the same
-`COMPANY_OS_PREFIX` if set.
+> **Migrating from the Python kit.** The old `install.sh` wrote a bash
+> launcher at `$COMPANY_OS_PREFIX/bin/company-os` that `exec`'d a kit root
+> under `$COMPANY_OS_PREFIX/share/company-os/`. Both are gone. Delete the
+> stranded launcher and the kit directory, then install the binary:
+>
+> ```bash
+> rm -f  ~/.local/bin/company-os          # or $COMPANY_OS_PREFIX/bin/company-os
+> rm -rf ~/.local/share/company-os        # the old kit root
+> ```
+>
+> `COMPANY_OS_PREFIX` is no longer read by anything.
+>
+> Do not skip this because the old command still works — it will. The kit was
+> installed as a self-contained copy, so a leftover launcher keeps running the
+> Python CLI forever and can silently shadow the binary on your `PATH`. Full
+> procedure and how to verify it took:
+> [how-to/release-and-upgrade.md](../how-to/release-and-upgrade.md#migrating-off-the-python-kit).
 
 ## Local Search: two different scope files
 

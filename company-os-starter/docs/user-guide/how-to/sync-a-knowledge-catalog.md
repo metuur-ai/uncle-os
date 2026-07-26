@@ -111,8 +111,13 @@ The committed slices and lock are already on disk after checkout, and gate
 nothing more than:
 
 ```yaml
-- run: pip install pyyaml
-- run: bin/company-os --root . validate
+- name: install company-os        # one static binary, no runtime dependency
+  env: {COMPANY_OS_VERSION: v1.0.0}
+  run: |
+    curl -fsSLo /usr/local/bin/company-os \
+      <release-url>/$COMPANY_OS_VERSION/company-os_${COMPANY_OS_VERSION}_linux_amd64
+    chmod +x /usr/local/bin/company-os
+- run: company-os --root . validate
 ```
 
 `sync --frozen` rebuilds from the local `.company-os/` cache, which is

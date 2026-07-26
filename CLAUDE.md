@@ -4,19 +4,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-`company-os-starter/` is the reference implementation of a **Federated Company / Platform / Team Operating System**: a Git-based methodology for running governance, product, and engineering work as validated markdown + YAML artifacts. It is not an application — the only executable is one Python CLI (`bin/company-os`); everything else is templates, canonical skills, schemas, docs, and a fully worked example workspace.
+`company-os-starter/` is the reference implementation of a **Federated Company / Platform / Team Operating System**: a Git-based methodology for running governance, product, and engineering work as validated markdown + YAML artifacts. It is not an application — the only executable is one Go CLI (`cmd/company-os`, compiled to a single static binary); everything else is templates, canonical skills, schemas, docs, and a fully worked example workspace.
 
 The design intent, encoded throughout: **strict on artifacts, flexible on process.** Validators check outputs (schemas, links, ownership reconciliation, expiries) and never the method used to produce them.
 
 ## Commands
 
-The CLI has no build step. Setup and use:
+The CLI is a Go module at `company-os-starter/`, compiled to a static binary
+with no runtime dependency. Setup and use:
 
 ```bash
-pip install pyyaml                              # only dependency; Python 3.9+
-export PATH="$PWD/company-os-starter/bin:$PATH"
-cd examples/workspace                           # the CLI operates on a workspace root
+cd company-os-starter && make install           # -> ~/.local/bin/company-os
+export PATH="$HOME/.local/bin:$PATH"
+cd ../examples/workspace                        # the CLI operates on a workspace root
 ```
+
+`make` targets: `build`, `install`, `test`, `check` (lint + test + acceptance),
+`release` (cross-compiled artifacts + checksums). `make help` lists them all.
 
 Workspace root resolution order: `--root` flag → `$COMPANY_OS_WORKSPACE_ROOT` → current directory.
 
@@ -55,7 +59,7 @@ allowlist with `paths:`. A repo contributing several areas uses a `slices:` list
 `{paths, localDirectory}` instead — one clone, one cache, N destinations. Targets
 must be disjoint across the manifest.
 
-There is no test suite. To exercise changes, run the CLI against `examples/workspace` and confirm `company-os validate` still exits 0. `docs/TUTORIAL.md` is an end-to-end walkthrough with real command output — use it as the acceptance path after changing CLI behavior.
+`make check` (gofmt + vet + `go test ./...` + `examples/acceptance.sh`) is the gate. Beyond it, run the CLI against `examples/workspace` and confirm `company-os validate` still exits 0. `docs/TUTORIAL.md` is an end-to-end walkthrough with real command output — use it as the acceptance path after changing CLI behavior.
 
 ## Architecture
 
@@ -95,11 +99,11 @@ Discovery is team-private (`teams/<t>/product/discovery/`, status draft→valida
 - **Aboutness:** faceted nested tags (`#kind/prd`, `#platform/...`, `#tier/mandatory`) derived from frontmatter by `graph build`.
 - **Satisfaction:** platform requirements carry numbered EARS clauses (`R1…Rn`); code and tests bind to them with grep-able `@spec req://.../<id>@<version>#<clause>` markers. A mandatory clause with zero test-side `@spec` sites is meant to block completion.
 
-Bounded contexts declare a `ubiquitousLanguage` and `forbiddenTerms`; canonical docs are vocabulary-linted against their context. Note: `docs/ONTOLOGY-GUIDE.md` describes several validation/trace subcommands (`validate --ontology`, `spec trace`) as the target design — the current `bin/company-os` implements `graph build` and the core `validate` gate but not those; treat the guide as the roadmap, the CLI source as ground truth for what exists today.
+Bounded contexts declare a `ubiquitousLanguage` and `forbiddenTerms`; canonical docs are vocabulary-linted against their context. Note: `docs/ONTOLOGY-GUIDE.md` describes several validation/trace subcommands (`validate --ontology`, `spec trace`) as the target design — the CLI implements `graph build` and the core `validate` gate but not those; treat the guide as the roadmap, the CLI source as ground truth for what exists today.
 
 ## Conventions when editing
 
-- **Editing the CLI (`bin/company-os`):** it is a single self-contained file with no framework. Preserve the `die`/`ok`/`warn`/`fail` output helpers and the `frontmatter()` parser (expects `^---\n...\n---\n` exactly). Every mutating command prints the next command in the workflow — keep that guidance chain intact.
+- **Editing the CLI (`company-os-starter/cmd/company-os` + `internal/`):** it is a Go module compiled to a single static binary with no runtime dependency. Commands return `[]model.GateResult` records; only the renderers under `internal/render/` (and `cmd/`) write output — nothing below `cmd/` may call `os.Exit` or print. Two conventions from the Python CLI are still in force and are not negotiable: the `frontmatter()` parser contract (expects `^---\n...\n---\n` exactly), and the guidance chain — every mutating command prints the next command in the workflow. The single-file and `die`/`ok`/`warn`/`fail`-helper constraints were formally retired; see [Amendment 1](docs/ears/federation-enrichment.md#amendment-1--r-74-partial-retirement-2026-07-26).
 - **Artifacts carry YAML frontmatter** with a `type:` and `tags:`. Never hand-write `tags:` — set the source fields and run `graph build`. Never hand-edit anything under `generated/`.
-- **Templates** in `templates/` are the contract surface; the `*_TEMPLATE` strings in `bin/company-os` must stay in sync with the section names the corresponding `validate` command greps for (e.g. changing a PRD `## Success metrics` heading requires updating both the template and `cmd_prd`).
+- **Templates** in `templates/` are the contract surface; the built-in template strings in `internal/scaffold/template.go` (plus the embedded files under `templates/`) must stay in sync with the section names the corresponding `validate` command greps for (e.g. changing a PRD `## Success metrics` heading requires updating both the template and `internal/product`).
 - **Skills** (`skills/*/SKILL.md`) tag each step `(mandatory)` / `(default)` / `(guidance)`. On conflict, canonical mandatory steps win over personal rules in `scratchpad/personal-rules/` — and the agent should say so.

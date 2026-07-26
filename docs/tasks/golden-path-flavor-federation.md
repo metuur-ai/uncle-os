@@ -10,7 +10,11 @@ tags: [kind/tasks, status/draft]
 
 Source of truth: `docs/ears/golden-path-flavor-federation.md` (Units 1–8, 37 statements).
 Architecture constraints: `docs/lld/golden-path-flavor-federation.md`.
-Target: single-file CLI `company-os-starter/bin/company-os`.
+Target: `company-os-starter/bin/company-os` — the single-file Python CLI, which
+was the implementation at the time this plan ran. That single-file constraint
+was retired 2026-07-26 by
+[Amendment 1](../ears/federation-enrichment.md#amendment-1--r-74-partial-retirement-2026-07-26);
+the CLI is now the Go module at `company-os-starter/cmd/company-os`.
 
 **Global acceptance (must hold after every phase):** `company-os validate`
 exits 0 on `examples/workspace` **and** `examples/standalone-team`, the
@@ -275,6 +279,10 @@ gate strings.
 - [x] 5.2 Freeze existing gates + CLI conventions (deps: all phases, est: ~30m)
   - why: New surface must not perturb existing gates, the `die/ok/warn/fail`
     helpers, or the guidance chain adopters depend on.
+  - AMENDED 2026-07-26: the `die/ok/warn/fail` half of that `why:` was retired by
+    [Amendment 1](../ears/federation-enrichment.md#amendment-1--r-74-partial-retirement-2026-07-26).
+    The `frontmatter()` and next-command guidance-chain conventions named in this
+    task's acceptance remain **in force**.
   - acceptance: existing gate output identical (modulo gate-count headers) vs
     the golden snapshot; `frontmatter()` (0.1) and next-command guidance
     conventions intact; docs mentioning command counts/flows corrected in this

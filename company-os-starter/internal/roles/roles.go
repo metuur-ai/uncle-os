@@ -17,12 +17,6 @@ package roles
 
 import "github.com/metuur-ai/uncle-os/company-os-starter/internal/model"
 
-// SlugGlossary names the legend section, shared by `today` and `ids list`.
-const SlugGlossary = "glossary"
-
-// CodeGlossaryTerm is one canonical term paired with its plain-language label.
-const CodeGlossaryTerm = "role.glossary-term"
-
 // Term is one row of the legend. Both halves stay separate all the way to the
 // renderer: the canonical term is the thing that must never change in artifacts,
 // and the plain label is the thing that must never leak into one.
@@ -69,11 +63,11 @@ func GlossarySection(role string, ordinal int) (model.GateResult, bool) {
 	if len(t) == 0 {
 		return model.GateResult{}, false
 	}
-	g := model.GateResult{Ordinal: ordinal, Slug: SlugGlossary}
+	g := model.GateResult{Ordinal: ordinal, Slug: model.SlugGlossary}
 	for _, term := range t {
 		g.Findings = append(g.Findings, model.Finding{
 			Severity: model.SevOK,
-			Code:     CodeGlossaryTerm,
+			Code:     model.CodeGlossaryTerm,
 			Subject:  term.Canonical,
 			Fields: model.Fields{
 				"canonical": term.Canonical,

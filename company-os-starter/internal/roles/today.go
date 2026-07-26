@@ -11,41 +11,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Section slugs for `today`. The command prints no gate headers, so Ordinal and
-// Title exist for --json and the TUI; Slug is what the renderers switch on.
-const (
-	// SlugHeader is the "== today (<role>) ==" banner.
-	SlugHeader = "header"
-	// SlugPlatform is one platform's active-PRD and outcome-review block.
-	SlugPlatform = "platform"
-	// SlugTeam is one team's governance block, or its missing-governance warning.
-	SlugTeam = "team"
-	// SlugOnboarding is the trailing pointer to a matching onboarding guide.
-	SlugOnboarding = "onboarding"
-)
-
-// Finding codes for `today` — one per print site in cmd_today
-// (bin/company-os:1168-1203).
-const (
-	// CodeHeader is `:1169`.
-	CodeHeader = "today.header"
-	// CodePlatform is `:1177`, the per-platform line carrying the active count.
-	CodePlatform = "today.platform"
-	// CodeActivePRD is `:1180`.
-	CodeActivePRD = "today.active-prd"
-	// CodeOutcomeReview is `:1187`, emitted only for a pending outcome.
-	CodeOutcomeReview = "today.outcome-review"
-	// CodeGovernanceMissing is the warn at `:1192`. It is the only non-ok
-	// severity `today` can produce, and it does not make the command fail.
-	CodeGovernanceMissing = "today.governance-missing"
-	// CodeTeam is `:1194`.
-	CodeTeam = "today.team"
-	// CodeComponent is `:1197`.
-	CodeComponent = "today.component"
-	// CodeOnboarding is `:1203`.
-	CodeOnboarding = "today.onboarding"
-)
-
 // productRoles and engineeringRoles are the two role sets cmd_today branches on
 // (`:1173`, `:1188`). `architect` is in neither, which is why it renders the
 // banner and nothing else.
@@ -58,10 +23,10 @@ var (
 func Today(ws *workspace.Workspace, role string) ([]model.GateResult, error) {
 	sections := []model.GateResult{{
 		Ordinal: 1,
-		Slug:    SlugHeader,
+		Slug:    model.SlugHeader,
 		Findings: []model.Finding{{
 			Severity: model.SevOK,
-			Code:     CodeHeader,
+			Code:     model.CodeHeader,
 			Fields:   model.Fields{"role": role},
 		}},
 	}}
@@ -91,10 +56,10 @@ func Today(ws *workspace.Workspace, role string) ([]model.GateResult, error) {
 	if guide, ok := OnboardingGuide(ws, role); ok {
 		sections = append(sections, model.GateResult{
 			Ordinal: len(sections) + 1,
-			Slug:    SlugOnboarding,
+			Slug:    model.SlugOnboarding,
 			Findings: []model.Finding{{
 				Severity: model.SevOK,
-				Code:     CodeOnboarding,
+				Code:     model.CodeOnboarding,
 				Path:     guide,
 				Fields:   model.Fields{"guide": guide, "role": role},
 			}},
@@ -126,10 +91,10 @@ func platformSection(ws *workspace.Workspace, pdir string, ordinal int) (model.G
 	// file yields a row with no frontmatter and therefore '?' for both fields.
 	prds := entries(active)
 
-	s := model.GateResult{Ordinal: ordinal, Slug: SlugPlatform, Title: name}
+	s := model.GateResult{Ordinal: ordinal, Slug: model.SlugPlatform, Title: name}
 	s.Findings = append(s.Findings, model.Finding{
 		Severity: model.SevOK,
-		Code:     CodePlatform,
+		Code:     model.CodePlatform,
 		Subject:  name,
 		Path:     relTo(ws.Root, pdir),
 		Fields:   model.Fields{"platform": name, "activePRDs": len(prds)},
@@ -154,7 +119,7 @@ func platformSection(ws *workspace.Workspace, pdir string, ordinal int) (model.G
 		}
 		s.Findings = append(s.Findings, model.Finding{
 			Severity: model.SevOK,
-			Code:     CodeActivePRD,
+			Code:     model.CodeActivePRD,
 			Subject:  d,
 			Path:     relTo(ws.Root, prdPath),
 			Fields:   fields,
@@ -176,14 +141,17 @@ func platformSection(ws *workspace.Workspace, pdir string, ordinal int) (model.G
 		}
 		s.Findings = append(s.Findings, model.Finding{
 			Severity: model.SevOK,
-			Code:     CodeOutcomeReview,
+			Code:     model.CodeOutcomeReview,
 			Subject:  d,
 			Path:     relTo(ws.Root, outcomePath),
 			Fields: model.Fields{
 				"prd":      d,
 				"platform": name,
-				"due":      mapStr(meta, "due", ""),
-				"status":   "pending",
+				// `{m.get('due')}` with no default — an absent key f-strings as
+				// "None", so `outcome review due None: old-1` is the line
+				// Python prints, not one with a hole in it.
+				"due":    mapStr(meta, "due", "None"),
+				"status": "pending",
 			},
 		})
 	}
@@ -199,13 +167,13 @@ func teamSection(ws *workspace.Workspace, tdir string, ordinal int) (model.GateR
 		return model.GateResult{}, err
 	}
 
-	s := model.GateResult{Ordinal: ordinal, Slug: SlugTeam, Title: name}
+	s := model.GateResult{Ordinal: ordinal, Slug: model.SlugTeam, Title: name}
 	// `if not eff` is truthiness, so an empty or null document warns exactly as
 	// an absent one does.
 	if eff == nil || eff.IsFalsy() {
 		s.Findings = append(s.Findings, model.Finding{
 			Severity: model.SevWarn,
-			Code:     CodeGovernanceMissing,
+			Code:     model.CodeGovernanceMissing,
 			Subject:  name,
 			Path:     relTo(ws.Root, effPath),
 			Fields:   model.Fields{"team": name},
@@ -216,7 +184,7 @@ func teamSection(ws *workspace.Workspace, tdir string, ordinal int) (model.GateR
 	root := yamlio.Deref(eff.Root())
 	s.Findings = append(s.Findings, model.Finding{
 		Severity: model.SevOK,
-		Code:     CodeTeam,
+		Code:     model.CodeTeam,
 		Subject:  name,
 		Path:     relTo(ws.Root, effPath),
 		Fields: model.Fields{
@@ -227,33 +195,64 @@ func teamSection(ws *workspace.Workspace, tdir string, ordinal int) (model.GateR
 		},
 	})
 
+	// `eff.get("components", {}).items()` — an ABSENT key yields {} and the loop
+	// does not run, but a present key of any non-mapping shape (null, a list, a
+	// scalar) raises AttributeError before a single component line is printed.
+	// R-0.7a(j): exit 4 with a diagnostic, never exit 0 with the components
+	// silently skipped.
 	components := yamlio.Deref(yamlio.MapGet(root, "components"))
-	if components == nil || components.Kind != yaml.MappingNode {
+	if components == nil {
 		return s, nil
+	}
+	if components.Kind != yaml.MappingNode {
+		return model.GateResult{}, model.Errorf(model.ExitArtifact,
+			"%s: 'components:' must be a mapping", effPath)
 	}
 	for _, cid := range yamlio.MapKeys(components) {
 		e := yamlio.Deref(yamlio.MapGet(components, cid))
-		reqs := yamlio.Deref(yamlio.MapGet(e, "requirements"))
-		platform := yamlio.Deref(yamlio.MapGet(reqs, "platform"))
-		company := yamlio.Deref(yamlio.MapGet(reqs, "company"))
+		// `e["requirements"]["platform"]` and `["company"]` are INDEXED, not
+		// .get() — a missing key is a KeyError and a non-mapping `e` is a
+		// TypeError, both of which stop the command.
+		reqs, err := requireMapping(effPath, cid, e, "requirements")
+		if err != nil {
+			return model.GateResult{}, err
+		}
+		platform, err := requireMapping(effPath, cid, reqs, "platform")
+		if err != nil {
+			return model.GateResult{}, err
+		}
 
 		// sum(len(v) for v in requirements['platform'].values()), plus the
 		// per-platform split the sentence throws away — the one thing a
 		// component view needs that this line cannot show.
+		//
+		// len() is not "length of a sequence": a mapping-valued platform counts
+		// its keys and a string-valued one counts its characters, so
+		// `platform: {p1: abcd}` is 4 under Python. Narrowing to sequences
+		// reported 0 on a path that exits 0 either way — a silently wrong
+		// number, which is worse than a refusal.
 		total := 0
-		var byPlatform []string
-		if platform != nil && platform.Kind == yaml.MappingNode {
-			for _, pid := range yamlio.MapKeys(platform) {
-				byPlatform = append(byPlatform, pid)
-				if v := yamlio.Deref(yamlio.MapGet(platform, pid)); v != nil &&
-					v.Kind == yaml.SequenceNode {
-					total += len(v.Content)
-				}
+		byPlatform := make([]string, 0, len(platform.Content)/2)
+		for _, pid := range yamlio.MapKeys(platform) {
+			byPlatform = append(byPlatform, pid)
+			n, ok := yamlio.PyLen(yamlio.MapGet(platform, pid))
+			if !ok {
+				return model.GateResult{}, model.Errorf(model.ExitArtifact,
+					"%s: components.%s.requirements.platform.%s has no length",
+					effPath, cid, pid)
 			}
+			total += n
 		}
-		controls := 0
-		if company != nil && company.Kind == yaml.SequenceNode {
-			controls = len(company.Content)
+
+		company := yamlio.MapGet(reqs, "company")
+		if company == nil {
+			return model.GateResult{}, model.Errorf(model.ExitArtifact,
+				"%s: components.%s.requirements has no 'company' key", effPath, cid)
+		}
+		controls, ok := yamlio.PyLen(company)
+		if !ok {
+			return model.GateResult{}, model.Errorf(model.ExitArtifact,
+				"%s: components.%s.requirements.company has no length", effPath, cid)
 		}
 
 		fields := model.Fields{
@@ -267,12 +266,34 @@ func teamSection(ws *workspace.Workspace, tdir string, ordinal int) (model.GateR
 		}
 		s.Findings = append(s.Findings, model.Finding{
 			Severity: model.SevOK,
-			Code:     CodeComponent,
+			Code:     model.CodeComponent,
 			Subject:  cid,
 			Fields:   fields,
 		})
 	}
 	return s, nil
+}
+
+// requireMapping is `container[key]` where the result is then subscripted or
+// iterated: a missing key raises KeyError, a non-mapping container raises
+// TypeError, and a non-mapping result raises on the next access. All three stop
+// cmd_today before it prints the component line, so all three are refusals here
+// (R-0.7a(j)).
+func requireMapping(path, cid string, container *yaml.Node, key string) (*yaml.Node, error) {
+	if container == nil || container.Kind != yaml.MappingNode {
+		return nil, model.Errorf(model.ExitArtifact,
+			"%s: components.%s is not a mapping", path, cid)
+	}
+	v := yamlio.Deref(yamlio.MapGet(container, key))
+	if v == nil {
+		return nil, model.Errorf(model.ExitArtifact,
+			"%s: components.%s has no '%s' key", path, cid, key)
+	}
+	if v.Kind != yaml.MappingNode {
+		return nil, model.Errorf(model.ExitArtifact,
+			"%s: components.%s '%s' must be a mapping", path, cid, key)
+	}
+	return v, nil
 }
 
 // entries is sorted(dir.iterdir()) by name, or nothing when dir is absent.
@@ -347,17 +368,13 @@ func loadYAMLFile(path string) (*yamlio.Document, error) {
 // rendering of the value — which is what makes an unquoted `due: 2026-10-16`
 // print as a date rather than as a Go timestamp.
 //
-// A container value falls back to def rather than to Python's repr of a dict or
-// list. Every key read through here is a scalar in every fixture, and
-// reproducing repr() for a shape no artifact has is not worth the code.
+// A container value goes through Python's repr rather than falling back to def:
+// `status: {a: 1}` prints `[{'a': 1}]` under Python, and printing `[?]` instead
+// is a plausible-looking line that says something untrue about the artifact.
 func mapStr(m *yaml.Node, key, def string) string {
 	v := yamlio.Deref(yamlio.MapGet(m, key))
-	if v == nil || v.Kind != yaml.ScalarNode {
+	if v == nil {
 		return def
 	}
-	s, err := yamlio.Resolve(v)
-	if err != nil {
-		return v.Value
-	}
-	return s.String()
+	return yamlio.PyText(v)
 }
