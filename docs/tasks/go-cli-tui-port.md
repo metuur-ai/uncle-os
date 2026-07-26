@@ -1811,7 +1811,7 @@ Ordered by the coupling map in research §4c: most self-contained first.
     condition is actually evaluated.
   - acceptance: R-7.9, R-9.1
 
-- [ ] 6.5 Delete the Python implementation (deps: 6.4, mutex: cutover, est: ~60m)
+- [x] 6.5 Delete the Python implementation (deps: 6.4, mutex: cutover, est: ~60m)
   - why: two implementations in parity is a maintenance tax with no expiry date.
     The port is worth doing only if it ends with one binary.
   - acceptance: R-9.3, R-9.5
