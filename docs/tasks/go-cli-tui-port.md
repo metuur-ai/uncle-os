@@ -289,7 +289,37 @@ binary as a separate change). Phase 0 of OKF is in scope, at task 3.9.
   - verify: round-trip test on a frontmatter block with unknown keys, non-alpha
     key order, and mixed quote styles returns byte-identical output.
 
-- [ ] 1.4 `internal/yamlio` — deterministic map ordering (deps: 1.3, est: ~90m)
+- [x] 1.4 `internal/yamlio` — deterministic map ordering (deps: 1.3, est: ~90m)
+  - DONE 2026-07-26. **The headline finding is that the required order is NOT
+    sorted** — R-0.11's verb and the LLD's "explicitly sorted" prescription were
+    both wrong for two of the three sites, and implementing them as written
+    breaks a committed golden. Measured, not reasoned: rebuilding
+    `examples/federated/workspace.lock.yaml`'s `files:` map through the REAL
+    `hash_tree`/`_materialize_all` (loaded with `SourceFileLoader`, vendored
+    PyYAML on `sys.path`) reproduces the committed key order exactly, and
+    `sorted()` over the same keys does not — the lock records `governance/…`
+    before `components/…` because that is the manifest's `paths:` list order.
+    Gate 8 then iterates `safe_load` of that lock, so its `[FAIL]` order is the
+    lock's DOCUMENT order; confirmed against the live CLI by swapping the two
+    `files:` lines in a scratch copy of `examples/failing-federated`, which
+    swapped the two `[FAIL]` lines. Only gate 6 is sorted, and incidentally —
+    `build_feature_index` (`:1440`) iterates `cids = sorted(...)`, so the loop
+    inherits sorted order rather than imposing it. **Two orders live in one key
+    set:** emission uses walk order while `aggregate_hash` (`:2436`) uses
+    `sorted(files)`, a plain string sort — hence `Keys` and `SortedKeys` are
+    separate methods, not an argument. A third order sits underneath: CPython's
+    `sorted(Path)` compares **component-wise**, not as raw strings, so
+    `sdd/adr/a.md` precedes `sdd/adr-x.md` where `sort.Strings` reverses them;
+    `PathLess` reproduces it and agrees with CPython 3.12.11 on 208/208 groups
+    (8 frozen + 200 randomized) via `testdata/pathorder_oracle.py`, which skips
+    rather than passes when Python is unavailable. Primitives: `MapPairs`
+    (ordered node iteration — the ergonomic path, so no Go map is involved at
+    all), `OrderedMap` (insertion-ordered builder with `dict` assignment and
+    `dict.update` semantics; its internal index is a Go map that is never ranged
+    over), and `PathLess`/`SortPaths`. Test teeth proven by mutation: degrading
+    `PathLess` to `sort.Strings`, or sorting `OrderedMap.Keys`, or sorting
+    `MapPairs` — i.e. implementing the LLD as written — each fails the suite
+    against the real fixture or the real golden.
   - why: two map-driven loops reach byte-frozen stdout. Gate 8 renders `[FAIL]`
     line order from `(lr.get("files") or {}).items()` (`:2521`), and
     `workspace.lock.yaml` (`:2614`) embeds a `files:` map that would re-emit in
@@ -449,7 +479,43 @@ binary as a separate change). Phase 0 of OKF is in scope, at task 3.9.
 
 Ordered by the coupling map in research §4c: most self-contained first.
 
-- [ ] 2.1 `internal/scaffold` — init, add, reality, scratchpad (deps: 1.6, 1.8, est: ~5h)
+- [x] 2.1 `internal/scaffold` — init, add, reality, scratchpad (deps: 1.6, 1.8, est: ~5h)
+  - DONE 2026-07-26. Differential over the 35 invocations these four commands
+    own: **18 PASS / 18 DIVERGE**, and **every divergence is accounted for, none
+    is in this port**. Measured twice — once against `bin/company-os`, once
+    against a reference that loads it unmodified and replaces exactly one module
+    attribute, `rebuild_generated = lambda ws: None`. The second run has **zero
+    FILE DIFF and zero FILE TREE divergence across the whole corpus**, and the
+    only diverging steps are failure paths and `validate`. Residual 18: 9 exit
+    codes (all exactly as `.devlocal/go-port/exit-code-map.md` assigns — 7×2 for
+    `_prompt` non-TTY, 8×4 for the conflict sites, 3×2 via `PlatformDir`, 2×1
+    for `add component` without `--platform`), 4 argparse usage stderr (task
+    1.1's declared deferral), 5 whose diverging step is `validate` (task 3.1).
+    The other 10 are `rebuild_generated` alone. **The dominant finding was that
+    a real PyYAML-compatible emitter is not optional here**: `register_id`
+    (`:1815`) re-dumps the WHOLE `ids/registry.yaml` through `safe_dump`, so one
+    `add` rewrites seven flow-style entries into block style on
+    `examples/workspace` — arbitrary authored content flowing out through an
+    emitter whose bytes the harness compares. `internal/scaffold/pyemit.go`
+    transliterates `analyze_scalar` and the five writer primitives from
+    `vendor/yaml/emitter.py`; a "wrap at 80" approximation is wrong on
+    `team.yaml`, whose 85-column `precedence:` line PyYAML does NOT fold because
+    no space on it sits past column 80. Proven by a live oracle over 12
+    documents plus the 7 artifacts `init`/`add` actually write, with teeth shown
+    by three mutants (width 80→60, indentless off, implicit-resolution quoting
+    off) — each caught. **The one real defect found and fixed was TTY
+    detection**: `os.Stdin.Stat()` + `os.ModeCharDevice` reports TRUE for
+    `/dev/null`, so CI would have been treated as interactive; `cmd/company-os/
+    tty.go` does the termios ioctl instead. Second measured surprise: the
+    printed root is `Path.resolve()`d, so `init` prints `/private/var/...` on
+    macOS. **Seam:** `scaffold.Rebuild func(*workspace.Workspace) ([]string,
+    error)` — a parameter, not an import, because the LLD's one-way
+    `scaffold → graph` edge would otherwise block this task on 2.3. It returns
+    LINES because the order is load-bearing (rebuild's `  wrote index …` /
+    `  node …` precede `added platform 'x'`) and only `cmd/` may print. **The
+    dispatch seam changed**: `Command` now takes an `io.Writer`, since every
+    mutating command prints prose rather than findings. `scratchpad init` still
+    prints one line and no next step (R-1.9 over R-1.8), pinned by test.
   - why: pure leaf from the callee side, and it establishes the template and
     write paths every later cluster reuses. `init`'s atomic staging-directory
     behavior (`:1982`) is the only transactional write in the system and must
@@ -458,7 +524,31 @@ Ordered by the coupling map in research §4c: most self-contained first.
   - verify: differential harness reports zero divergence for `init`, `add`,
     `reality new`, `scratchpad init`; aborted `init` leaves nothing behind.
 
-- [ ] 2.2 `internal/skills` — four-layer merge, shadowing, extends (deps: 1.6, est: ~3h)
+- [x] 2.2 `internal/skills` — four-layer merge, shadowing, extends (deps: 1.6, est: ~3h)
+  - DONE 2026-07-26. `skills list` is **10/12 PASS** on the differential; the two
+    DIVERGE entries are `skills/bad-action` (argparse error text) and
+    `skills/not-a-root` (exit 1 -> 3, the sanctioned `require_root` change in the
+    exit-code map) — both are dispatch-layer shapes that diverge identically for
+    the already-landed `ids` and `today`, and neither is reachable from this
+    cluster. Because those two are the only harness-visible holes, the
+    comparison was ALSO made at the library seam: `oracle_test.go` diffs the Go
+    output against `bin/company-os` over all 9 committed fixtures plus two
+    shapes the corpus reaches only through another cluster's command (a
+    populated personal-rules layer, and a RESOLVED `extends` — no committed
+    fixture has one, only a dangling one). `gate_oracle_test.go` does the same
+    for gate 7 through Python's own `validate` over 13 synthesized workspaces,
+    which is what covers `skill_conflicts` shapes no fixture reaches: id reuse
+    under a different file name, one offender shadowing two canonical skills, a
+    canonical TEAM skill (counts as canonical, cannot be shadowed), an id-less
+    pair, and a non-canonical company skill. Three subtleties the merge hid:
+    (a) `n_can` (`:1085`) filters by **authority, not layer**, while the
+    shadowing target list (`:842`) additionally requires company/platform — a
+    canonical team skill is counted but not protected; (b) `s["id"] and ...`
+    (`:852`) is load-bearing, since without it every id-less team skill would
+    shadow every id-less canonical one via `None == None`; (c) `parse_skill_steps`
+    uses Python's Unicode `\s`/`\d` and `str.splitlines()`, so Go's `regexp`,
+    `strings.Split` and `TrimSpace` all under-match — measured against CPython
+    and reproduced in `pysem.go`.
   - why: 169 lines, exactly 2 external call sites (both in gate 7). Cleanest cut
     after federation and a good early proof that the record model works — its
     `[ok]` line carries counts (`2 canonical, 0 team`) that must reach the text
@@ -488,7 +578,26 @@ Ordered by the coupling map in research §4c: most self-contained first.
     files untouched; `git status` clean after `graph build` and `governance
     resolve`.
 
-- [ ] 2.5 `internal/governance` — resolve, explain, deviations, exceptions (deps: 1.3, 2.3, est: ~5h)
+- [ ] 2.4a Relocate the PyYAML emitter to `internal/yamlio`; guard `register_id` (deps: 2.1, 2.8, est: ~90m)
+  - why: task 2.1 found that a PyYAML-compatible emitter is **mandatory**, reversing
+    this plan's earlier rejection of one — `register_id` (`:1815`) re-dumps the
+    whole `ids/registry.yaml` through `safe_dump`, so a single `add` on
+    `examples/workspace` rewrites seven flow-style entries into block style, and
+    the differential harness compares those bytes. An approximation fails:
+    `team.yaml`'s 85-column `precedence:` line is one PyYAML does *not* fold,
+    because there is no space past column 80. It landed in
+    `internal/scaffold/pyemit.go` only because `internal/yamlio` was under
+    concurrent edit; `internal/governance` (2.5) and `internal/federation` (2.7)
+    both need it and must not import `internal/scaffold` to get it. Task 2.8 also
+    left `register_id`'s unconditional rewrite unguarded to avoid colliding with
+    2.1 — R-0.7c requires it.
+  - acceptance: R-0.7c (registry half)
+  - verify: `internal/governance` and `internal/federation` reach the emitter
+    without importing `internal/scaffold`; `add` on an already-registered id
+    leaves `ids/registry.yaml` byte-unchanged; differential harness clean for
+    `add` and `init`.
+
+- [ ] 2.5 `internal/governance` — resolve, explain, deviations, exceptions (deps: 1.3, 2.3, 2.4a, est: ~5h)
   - why: `deviation declare` and `exception request` are the two read-modify-write
     paths on hand-authored YAML, where `yaml.Node` fidelity is load-bearing. This
     is also where comment preservation inverts behavior — PyYAML destroys comments
@@ -516,7 +625,33 @@ Ordered by the coupling map in research §4c: most self-contained first.
   - verify: `--frozen` sync from lock with no network reproduces the committed
     slice tree with `0444`/`0555` modes; lock emission byte-stable across runs.
 
-- [ ] 2.8 `internal/ids` and `today` (deps: 1.6, est: ~2h)
+- [x] 2.8 `internal/ids` and `today` (deps: 1.6, est: ~2h)
+  - DONE 2026-07-26. Landed as **two** packages, `internal/ids` and
+    `internal/roles` — not `internal/ids` + `internal/today` as this entry and
+    the task-0.4 inventory assumed. `role_glossary_lines` (`:1260`) has two
+    callers, `cmd_today` (`:1171`) and `cmd_ids` (`:1277`), so a package named
+    for the `today` command cannot hold it without `internal/ids` importing
+    `internal/today`; naming the second package for the *role* concept gives a
+    one-way `ids -> roles` edge. The LLD's "Package layout" section, which
+    listed neither package, is amended with both and with the ruling.
+    Differential: **42 of 47 PASS** (`ids` 24/26, `today` 18/21). The five
+    remaining divergences are all out of slice and identical for every
+    subcommand: `ids/not-a-root` and `today/not-a-root` (Python `die()` exits 1,
+    Go exits 3 — the R-4.x contract that `.devlocal/go-port/exit-code-map.md:45`
+    already assigns to `:230`, landing at task 4.3); `ids/bad-action` and
+    `today/bad-role` (argparse's per-subparser usage block on stderr vs the Go
+    `usage()` shipped by task 1.1); and `today/after-resolve`, whose step 1 is
+    `governance resolve` (task 2.5, still a stub) so `today` correctly warns
+    about the `effective-governance.yaml` that step never wrote. Selftest
+    ST-026–ST-029 and ST-036–ST-037 ported and marked off in the inventory;
+    `suggest_ids`' difflib dependency is transliterated and pinned against
+    CPython on 200 random ratio pairs plus 15 `get_close_matches` queries
+    (`internal/ids/testdata/difflib-oracle.json`). **Follow-up, deliberately not
+    taken:** `register_id` (`:1813`) writes `ids/registry.yaml` unguarded and
+    R-0.7c now requires a semantic-compare guard; its only callers are `init`
+    and `add`, which task 2.1 was landing concurrently, so it is left for
+    whoever lands it — it belongs in `internal/ids` on the same reasoning that
+    puts `rebuild_generated` in `internal/graph`.
   - why: both flatten rich structures to prose today and are the two commands
     where `--json` has the most obvious immediate value.
   - acceptance: R-1.1 (`ids list`, `today`)

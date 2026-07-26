@@ -1,0 +1,1528 @@
+{
+ "pool": [
+  "customer-notification-service",
+  "communications",
+  "customer-engagement",
+  "communications/message-delivery",
+  "communications/delivery-reliability",
+  "communications/message-schema",
+  "banking-app",
+  "core",
+  "product",
+  "product/release-safety",
+  "a",
+  "abc",
+  "abcabc",
+  "xyz",
+  ""
+ ],
+ "matches": [
+  {
+   "word": "customer-notifcation-servce",
+   "want": [
+    "customer-notification-service",
+    "communications",
+    "communications/message-schema"
+   ]
+  },
+  {
+   "word": "comunications",
+   "want": [
+    "communications",
+    "communications/message-schema",
+    "communications/message-delivery"
+   ]
+  },
+  {
+   "word": "custmer",
+   "want": [
+    "customer-engagement",
+    "customer-notification-service",
+    "core"
+   ]
+  },
+  {
+   "word": "zzzz",
+   "want": []
+  },
+  {
+   "word": "",
+   "want": [
+    ""
+   ]
+  },
+  {
+   "word": "communications/message",
+   "want": [
+    "communications/message-schema",
+    "communications/message-delivery",
+    "communications"
+   ]
+  },
+  {
+   "word": "abcabcabc",
+   "want": [
+    "abcabc",
+    "abc",
+    "banking-app"
+   ]
+  },
+  {
+   "word": "ab",
+   "want": [
+    "abc",
+    "a",
+    "abcabc"
+   ]
+  },
+  {
+   "word": "product/release",
+   "want": [
+    "product/release-safety",
+    "product",
+    "core"
+   ]
+  },
+  {
+   "word": "core",
+   "want": [
+    "core"
+   ]
+  },
+  {
+   "word": "banking",
+   "want": [
+    "banking-app"
+   ]
+  },
+  {
+   "word": "engagement",
+   "want": [
+    "customer-engagement"
+   ]
+  },
+  {
+   "word": "message-delivery",
+   "want": [
+    "communications/message-delivery",
+    "communications/message-schema",
+    "communications/delivery-reliability"
+   ]
+  },
+  {
+   "word": "reliability",
+   "want": [
+    "communications/delivery-reliability",
+    "product/release-safety"
+   ]
+  },
+  {
+   "word": "x",
+   "want": [
+    "xyz"
+   ]
+  }
+ ],
+ "ratios": [
+  {
+   "a": "cgabb",
+   "b": "adabg",
+   "ratio": 0.4,
+   "quick": 0.6,
+   "real": 1.0
+  },
+  {
+   "a": "bdbgab",
+   "b": "aga",
+   "ratio": 0.4444444444444444,
+   "quick": 0.4444444444444444,
+   "real": 0.6666666666666666
+  },
+  {
+   "a": "ace",
+   "b": "cbecbd",
+   "ratio": 0.4444444444444444,
+   "quick": 0.4444444444444444,
+   "real": 0.6666666666666666
+  },
+  {
+   "a": "bbad-",
+   "b": "gf--fedcdb",
+   "ratio": 0.13333333333333333,
+   "quick": 0.4,
+   "real": 0.6666666666666666
+  },
+  {
+   "a": "e-f-ebbgc",
+   "b": "fc-gabfff--b",
+   "ratio": 0.38095238095238093,
+   "quick": 0.6666666666666666,
+   "real": 0.8571428571428571
+  },
+  {
+   "a": "be-bae-egfa-f",
+   "b": "b-",
+   "ratio": 0.26666666666666666,
+   "quick": 0.26666666666666666,
+   "real": 0.26666666666666666
+  },
+  {
+   "a": "",
+   "b": "ecd",
+   "ratio": 0.0,
+   "quick": 0.0,
+   "real": 0.0
+  },
+  {
+   "a": "g-bc-g",
+   "b": "ecgegfgd",
+   "ratio": 0.2857142857142857,
+   "quick": 0.42857142857142855,
+   "real": 0.8571428571428571
+  },
+  {
+   "a": "bc",
+   "b": "dd",
+   "ratio": 0.0,
+   "quick": 0.0,
+   "real": 1.0
+  },
+  {
+   "a": "",
+   "b": "ceeacgf",
+   "ratio": 0.0,
+   "quick": 0.0,
+   "real": 0.0
+  },
+  {
+   "a": "fca-ggggb",
+   "b": "gadbd-c",
+   "ratio": 0.125,
+   "quick": 0.625,
+   "real": 0.875
+  },
+  {
+   "a": "f",
+   "b": "abacbfabd",
+   "ratio": 0.2,
+   "quick": 0.2,
+   "real": 0.2
+  },
+  {
+   "a": "gceff-bb-",
+   "b": "--ebcbf",
+   "ratio": 0.25,
+   "quick": 0.875,
+   "real": 0.875
+  },
+  {
+   "a": "e-cadfcaebe",
+   "b": "fcfdfddd",
+   "ratio": 0.3157894736842105,
+   "quick": 0.3157894736842105,
+   "real": 0.8421052631578947
+  },
+  {
+   "a": "gdd-faae-edf-",
+   "b": "ffbdbd-dfd-a",
+   "ratio": 0.48,
+   "quick": 0.64,
+   "real": 0.96
+  },
+  {
+   "a": "fbbgd-c",
+   "b": "fbg-gb",
+   "ratio": 0.46153846153846156,
+   "quick": 0.7692307692307693,
+   "real": 0.9230769230769231
+  },
+  {
+   "a": "cccac-c-fcc",
+   "b": "",
+   "ratio": 0.0,
+   "quick": 0.0,
+   "real": 0.0
+  },
+  {
+   "a": "",
+   "b": "bcgddaededfe",
+   "ratio": 0.0,
+   "quick": 0.0,
+   "real": 0.0
+  },
+  {
+   "a": "gcaf-gcc",
+   "b": "a-caccc-",
+   "ratio": 0.5,
+   "quick": 0.625,
+   "real": 1.0
+  },
+  {
+   "a": "baf-badde",
+   "b": "",
+   "ratio": 0.0,
+   "quick": 0.0,
+   "real": 0.0
+  },
+  {
+   "a": "b-ab-fde--de",
+   "b": "d-cgbg-fbdgbde",
+   "ratio": 0.38461538461538464,
+   "quick": 0.6153846153846154,
+   "real": 0.9230769230769231
+  },
+  {
+   "a": "bcfcec-dbg-c",
+   "b": "dcggfgdffb",
+   "ratio": 0.09090909090909091,
+   "quick": 0.45454545454545453,
+   "real": 0.9090909090909091
+  },
+  {
+   "a": "faf--agfebb",
+   "b": "dbbeeacecgegc-",
+   "ratio": 0.16,
+   "quick": 0.48,
+   "real": 0.88
+  },
+  {
+   "a": "fbeacgbeabe",
+   "b": "d",
+   "ratio": 0.0,
+   "quick": 0.0,
+   "real": 0.16666666666666666
+  },
+  {
+   "a": "e",
+   "b": "b-afgecadbcea",
+   "ratio": 0.14285714285714285,
+   "quick": 0.14285714285714285,
+   "real": 0.14285714285714285
+  },
+  {
+   "a": "de",
+   "b": "ede-cefaea",
+   "ratio": 0.3333333333333333,
+   "quick": 0.3333333333333333,
+   "real": 0.3333333333333333
+  },
+  {
+   "a": "",
+   "b": "",
+   "ratio": 1.0,
+   "quick": 1.0,
+   "real": 1.0
+  },
+  {
+   "a": "d-d-bg-gedd",
+   "b": "dcgfa",
+   "ratio": 0.25,
+   "quick": 0.25,
+   "real": 0.625
+  },
+  {
+   "a": "cabegcabgedea",
+   "b": "cce-aef",
+   "ratio": 0.3,
+   "quick": 0.5,
+   "real": 0.7
+  },
+  {
+   "a": "fdaed",
+   "b": "cafgb",
+   "ratio": 0.2,
+   "quick": 0.4,
+   "real": 1.0
+  },
+  {
+   "a": "eddabeb",
+   "b": "ga",
+   "ratio": 0.2222222222222222,
+   "quick": 0.2222222222222222,
+   "real": 0.4444444444444444
+  },
+  {
+   "a": "aeedbc",
+   "b": "gf-cecagca",
+   "ratio": 0.25,
+   "quick": 0.375,
+   "real": 0.75
+  },
+  {
+   "a": "dbaacfbg-aad-",
+   "b": "a-bb",
+   "ratio": 0.23529411764705882,
+   "quick": 0.47058823529411764,
+   "real": 0.47058823529411764
+  },
+  {
+   "a": "b-ebeddd--",
+   "b": "gb-eadbcfeeca",
+   "ratio": 0.43478260869565216,
+   "quick": 0.5217391304347826,
+   "real": 0.8695652173913043
+  },
+  {
+   "a": "a-ebd-e",
+   "b": "e---bdeb-ae",
+   "ratio": 0.5555555555555556,
+   "quick": 0.7777777777777778,
+   "real": 0.7777777777777778
+  },
+  {
+   "a": "b-egddb",
+   "b": "bcefcebfd",
+   "ratio": 0.375,
+   "quick": 0.5,
+   "real": 0.875
+  },
+  {
+   "a": "-gaca--",
+   "b": "ecgfgf",
+   "ratio": 0.15384615384615385,
+   "quick": 0.3076923076923077,
+   "real": 0.9230769230769231
+  },
+  {
+   "a": "f",
+   "b": "",
+   "ratio": 0.0,
+   "quick": 0.0,
+   "real": 0.0
+  },
+  {
+   "a": "fgbda",
+   "b": "eefbggbfgeaeba",
+   "ratio": 0.42105263157894735,
+   "quick": 0.42105263157894735,
+   "real": 0.5263157894736842
+  },
+  {
+   "a": "ecdegfdfgagdb",
+   "b": "",
+   "ratio": 0.0,
+   "quick": 0.0,
+   "real": 0.0
+  },
+  {
+   "a": "g-ce-acc-gfeee",
+   "b": "egde-gbccbd",
+   "ratio": 0.4,
+   "quick": 0.56,
+   "real": 0.88
+  },
+  {
+   "a": "-d-f-gcd",
+   "b": "bcf",
+   "ratio": 0.18181818181818182,
+   "quick": 0.36363636363636365,
+   "real": 0.5454545454545454
+  },
+  {
+   "a": "bfdfedag",
+   "b": "gdgefa",
+   "ratio": 0.2857142857142857,
+   "quick": 0.7142857142857143,
+   "real": 0.8571428571428571
+  },
+  {
+   "a": "efcdbed",
+   "b": "g-geac",
+   "ratio": 0.3076923076923077,
+   "quick": 0.3076923076923077,
+   "real": 0.9230769230769231
+  },
+  {
+   "a": "",
+   "b": "--abg-",
+   "ratio": 0.0,
+   "quick": 0.0,
+   "real": 0.0
+  },
+  {
+   "a": "dbdccb-",
+   "b": "a",
+   "ratio": 0.0,
+   "quick": 0.0,
+   "real": 0.25
+  },
+  {
+   "a": "",
+   "b": "cdaecegbbbed",
+   "ratio": 0.0,
+   "quick": 0.0,
+   "real": 0.0
+  },
+  {
+   "a": "edaae-",
+   "b": "fd-d",
+   "ratio": 0.4,
+   "quick": 0.4,
+   "real": 0.8
+  },
+  {
+   "a": "dageaad-",
+   "b": "gbedgfd-afgfgd",
+   "ratio": 0.36363636363636365,
+   "quick": 0.5454545454545454,
+   "real": 0.7272727272727273
+  },
+  {
+   "a": "",
+   "b": "ebd-dedd-dee",
+   "ratio": 0.0,
+   "quick": 0.0,
+   "real": 0.0
+  },
+  {
+   "a": "-",
+   "b": "cd-gacgad",
+   "ratio": 0.2,
+   "quick": 0.2,
+   "real": 0.2
+  },
+  {
+   "a": "",
+   "b": "cgaacg-fb",
+   "ratio": 0.0,
+   "quick": 0.0,
+   "real": 0.0
+  },
+  {
+   "a": "c",
+   "b": "dc-ae",
+   "ratio": 0.3333333333333333,
+   "quick": 0.3333333333333333,
+   "real": 0.3333333333333333
+  },
+  {
+   "a": "gff-cbabeb",
+   "b": "gbdgf",
+   "ratio": 0.26666666666666666,
+   "quick": 0.4,
+   "real": 0.6666666666666666
+  },
+  {
+   "a": "egba-df-dff-",
+   "b": "",
+   "ratio": 0.0,
+   "quick": 0.0,
+   "real": 0.0
+  },
+  {
+   "a": "gdgaga-bae",
+   "b": "bff",
+   "ratio": 0.15384615384615385,
+   "quick": 0.15384615384615385,
+   "real": 0.46153846153846156
+  },
+  {
+   "a": "faef",
+   "b": "eeabadb--geg-c",
+   "ratio": 0.2222222222222222,
+   "quick": 0.2222222222222222,
+   "real": 0.4444444444444444
+  },
+  {
+   "a": "-caecdff-fbdgc",
+   "b": "gba",
+   "ratio": 0.11764705882352941,
+   "quick": 0.35294117647058826,
+   "real": 0.35294117647058826
+  },
+  {
+   "a": "fcgbbeb",
+   "b": "bg-",
+   "ratio": 0.2,
+   "quick": 0.4,
+   "real": 0.6
+  },
+  {
+   "a": "-cdcg-dbeee",
+   "b": "efeed-dcd",
+   "ratio": 0.3,
+   "quick": 0.7,
+   "real": 0.9
+  },
+  {
+   "a": "ced",
+   "b": "bgedd",
+   "ratio": 0.5,
+   "quick": 0.5,
+   "real": 0.75
+  },
+  {
+   "a": "b-aba-d-fa",
+   "b": "edbaddbfc-eabf",
+   "ratio": 0.4166666666666667,
+   "quick": 0.5833333333333334,
+   "real": 0.8333333333333334
+  },
+  {
+   "a": "aff",
+   "b": "ad",
+   "ratio": 0.4,
+   "quick": 0.4,
+   "real": 0.8
+  },
+  {
+   "a": "adaf",
+   "b": "fcebda",
+   "ratio": 0.4,
+   "quick": 0.6,
+   "real": 0.8
+  },
+  {
+   "a": "--bgbgcbcgeg",
+   "b": "egae",
+   "ratio": 0.25,
+   "quick": 0.25,
+   "real": 0.5
+  },
+  {
+   "a": "fggafdggdag",
+   "b": "cgbbgf-ccaacgb",
+   "ratio": 0.16,
+   "quick": 0.48,
+   "real": 0.88
+  },
+  {
+   "a": "fccfeccbb",
+   "b": "-deca-",
+   "ratio": 0.26666666666666666,
+   "quick": 0.26666666666666666,
+   "real": 0.8
+  },
+  {
+   "a": "agbcd",
+   "b": "gd-cdagcg",
+   "ratio": 0.42857142857142855,
+   "quick": 0.5714285714285714,
+   "real": 0.7142857142857143
+  },
+  {
+   "a": "bcdda",
+   "b": "afbg-egedggf--",
+   "ratio": 0.21052631578947367,
+   "quick": 0.3157894736842105,
+   "real": 0.5263157894736842
+  },
+  {
+   "a": "aa",
+   "b": "--d--c-gb",
+   "ratio": 0.0,
+   "quick": 0.0,
+   "real": 0.36363636363636365
+  },
+  {
+   "a": "c",
+   "b": "gfb-a",
+   "ratio": 0.0,
+   "quick": 0.0,
+   "real": 0.3333333333333333
+  },
+  {
+   "a": "",
+   "b": "cbfbagcabb",
+   "ratio": 0.0,
+   "quick": 0.0,
+   "real": 0.0
+  },
+  {
+   "a": "c-e",
+   "b": "cdbfecfe-ce-",
+   "ratio": 0.4,
+   "quick": 0.4,
+   "real": 0.4
+  },
+  {
+   "a": "edf",
+   "b": "adcgc",
+   "ratio": 0.25,
+   "quick": 0.25,
+   "real": 0.75
+  },
+  {
+   "a": "efgcebaf-b",
+   "b": "gfeg",
+   "ratio": 0.2857142857142857,
+   "quick": 0.42857142857142855,
+   "real": 0.5714285714285714
+  },
+  {
+   "a": "cffb-",
+   "b": "cae",
+   "ratio": 0.25,
+   "quick": 0.25,
+   "real": 0.75
+  },
+  {
+   "a": "eefaadceggfac",
+   "b": "daaaafe",
+   "ratio": 0.3,
+   "quick": 0.6,
+   "real": 0.7
+  },
+  {
+   "a": "f",
+   "b": "dgecdf-c",
+   "ratio": 0.2222222222222222,
+   "quick": 0.2222222222222222,
+   "real": 0.2222222222222222
+  },
+  {
+   "a": "ad",
+   "b": "c-bbcegeaaf",
+   "ratio": 0.15384615384615385,
+   "quick": 0.15384615384615385,
+   "real": 0.3076923076923077
+  },
+  {
+   "a": "--dcaaaag",
+   "b": "dc",
+   "ratio": 0.36363636363636365,
+   "quick": 0.36363636363636365,
+   "real": 0.36363636363636365
+  },
+  {
+   "a": "",
+   "b": "badcgdgcebea-a",
+   "ratio": 0.0,
+   "quick": 0.0,
+   "real": 0.0
+  },
+  {
+   "a": "g-b-cd",
+   "b": "e",
+   "ratio": 0.0,
+   "quick": 0.0,
+   "real": 0.2857142857142857
+  },
+  {
+   "a": "abf",
+   "b": "eaegeedbaceddc",
+   "ratio": 0.23529411764705882,
+   "quick": 0.23529411764705882,
+   "real": 0.35294117647058826
+  },
+  {
+   "a": "fdgfdg--aag",
+   "b": "dedgbccaabb",
+   "ratio": 0.36363636363636365,
+   "quick": 0.45454545454545453,
+   "real": 1.0
+  },
+  {
+   "a": "cfcaaacab",
+   "b": "abfdbgbdddb",
+   "ratio": 0.2,
+   "quick": 0.3,
+   "real": 0.9
+  },
+  {
+   "a": "",
+   "b": "",
+   "ratio": 1.0,
+   "quick": 1.0,
+   "real": 1.0
+  },
+  {
+   "a": "be-bcbdeffgea",
+   "b": "eeaff",
+   "ratio": 0.4444444444444444,
+   "quick": 0.5555555555555556,
+   "real": 0.5555555555555556
+  },
+  {
+   "a": "-eagagbf-adb",
+   "b": "ecgadeaaf",
+   "ratio": 0.38095238095238093,
+   "quick": 0.6666666666666666,
+   "real": 0.8571428571428571
+  },
+  {
+   "a": "b-c-fec",
+   "b": "dd-c",
+   "ratio": 0.36363636363636365,
+   "quick": 0.36363636363636365,
+   "real": 0.7272727272727273
+  },
+  {
+   "a": "b",
+   "b": "bffbggb",
+   "ratio": 0.25,
+   "quick": 0.25,
+   "real": 0.25
+  },
+  {
+   "a": "afdeeg",
+   "b": "cgd-caffc-fc--",
+   "ratio": 0.2,
+   "quick": 0.4,
+   "real": 0.6
+  },
+  {
+   "a": "edcf-ddeecc",
+   "b": "ffc",
+   "ratio": 0.14285714285714285,
+   "quick": 0.2857142857142857,
+   "real": 0.42857142857142855
+  },
+  {
+   "a": "fde",
+   "b": "bcbdgcceege",
+   "ratio": 0.2857142857142857,
+   "quick": 0.2857142857142857,
+   "real": 0.42857142857142855
+  },
+  {
+   "a": "bbe",
+   "b": "g-a",
+   "ratio": 0.0,
+   "quick": 0.0,
+   "real": 1.0
+  },
+  {
+   "a": "",
+   "b": "gde-ac",
+   "ratio": 0.0,
+   "quick": 0.0,
+   "real": 0.0
+  },
+  {
+   "a": "gadg",
+   "b": "gddcb-gfebg",
+   "ratio": 0.4,
+   "quick": 0.4,
+   "real": 0.5333333333333333
+  },
+  {
+   "a": "gce",
+   "b": "g--agcfag-bae",
+   "ratio": 0.375,
+   "quick": 0.375,
+   "real": 0.375
+  },
+  {
+   "a": "dcdfb-d-",
+   "b": "affg-dcg",
+   "ratio": 0.25,
+   "quick": 0.5,
+   "real": 1.0
+  },
+  {
+   "a": "bfaeegga",
+   "b": "",
+   "ratio": 0.0,
+   "quick": 0.0,
+   "real": 0.0
+  },
+  {
+   "a": "g",
+   "b": "gfebdegdg-dccb",
+   "ratio": 0.13333333333333333,
+   "quick": 0.13333333333333333,
+   "real": 0.13333333333333333
+  },
+  {
+   "a": "d-dcfg-ec-fd",
+   "b": "gegc",
+   "ratio": 0.125,
+   "quick": 0.375,
+   "real": 0.5
+  },
+  {
+   "a": "aefdef-",
+   "b": "gbfcega",
+   "ratio": 0.14285714285714285,
+   "quick": 0.42857142857142855,
+   "real": 1.0
+  },
+  {
+   "a": "f",
+   "b": "cfaadbeebcdc",
+   "ratio": 0.15384615384615385,
+   "quick": 0.15384615384615385,
+   "real": 0.15384615384615385
+  },
+  {
+   "a": "-fcdgcbed-db",
+   "b": "-bbegdc--a-",
+   "ratio": 0.43478260869565216,
+   "quick": 0.6956521739130435,
+   "real": 0.9565217391304348
+  },
+  {
+   "a": "c-d-cac",
+   "b": "f--e-fggbcfaa",
+   "ratio": 0.2,
+   "quick": 0.4,
+   "real": 0.7
+  },
+  {
+   "a": "afb--cadg",
+   "b": "cfbff-degf",
+   "ratio": 0.5263157894736842,
+   "quick": 0.631578947368421,
+   "real": 0.9473684210526315
+  },
+  {
+   "a": "eaeef-",
+   "b": "fefd-b",
+   "ratio": 0.5,
+   "quick": 0.5,
+   "real": 1.0
+  },
+  {
+   "a": "dfecb",
+   "b": "aggagebaad-a",
+   "ratio": 0.11764705882352941,
+   "quick": 0.35294117647058826,
+   "real": 0.5882352941176471
+  },
+  {
+   "a": "gcbda-cbcagb",
+   "b": "afceeecgafaga-",
+   "ratio": 0.23076923076923078,
+   "quick": 0.5384615384615384,
+   "real": 0.9230769230769231
+  },
+  {
+   "a": "abgg-bagc",
+   "b": "gbb-dca",
+   "ratio": 0.125,
+   "quick": 0.75,
+   "real": 0.875
+  },
+  {
+   "a": "aabbdb",
+   "b": "-a",
+   "ratio": 0.25,
+   "quick": 0.25,
+   "real": 0.5
+  },
+  {
+   "a": "d-ca",
+   "b": "cbe--",
+   "ratio": 0.2222222222222222,
+   "quick": 0.4444444444444444,
+   "real": 0.8888888888888888
+  },
+  {
+   "a": "eaaaaabgee",
+   "b": "c-aff--ccbf",
+   "ratio": 0.19047619047619047,
+   "quick": 0.19047619047619047,
+   "real": 0.9523809523809523
+  },
+  {
+   "a": "cg-g-efeea",
+   "b": "facegdggg",
+   "ratio": 0.3157894736842105,
+   "quick": 0.631578947368421,
+   "real": 0.9473684210526315
+  },
+  {
+   "a": "d-eafeegc",
+   "b": "aecce-fb-",
+   "ratio": 0.2222222222222222,
+   "quick": 0.6666666666666666,
+   "real": 1.0
+  },
+  {
+   "a": "gddeag-deag-",
+   "b": "bfbdgef-",
+   "ratio": 0.3,
+   "quick": 0.4,
+   "real": 0.8
+  },
+  {
+   "a": "ddddbcef",
+   "b": "fgcda-fbf",
+   "ratio": 0.35294117647058826,
+   "quick": 0.47058823529411764,
+   "real": 0.9411764705882353
+  },
+  {
+   "a": "-bcfafeaba",
+   "b": "-de",
+   "ratio": 0.3076923076923077,
+   "quick": 0.3076923076923077,
+   "real": 0.46153846153846156
+  },
+  {
+   "a": "egb-ceafdcgbaa",
+   "b": "",
+   "ratio": 0.0,
+   "quick": 0.0,
+   "real": 0.0
+  },
+  {
+   "a": "f--bgbbe",
+   "b": "dbgc-",
+   "ratio": 0.3076923076923077,
+   "quick": 0.46153846153846156,
+   "real": 0.7692307692307693
+  },
+  {
+   "a": "cfddcaefaaae-",
+   "b": "",
+   "ratio": 0.0,
+   "quick": 0.0,
+   "real": 0.0
+  },
+  {
+   "a": "c",
+   "b": "ade-b",
+   "ratio": 0.0,
+   "quick": 0.0,
+   "real": 0.3333333333333333
+  },
+  {
+   "a": "ffegbf-",
+   "b": "c-dca-",
+   "ratio": 0.15384615384615385,
+   "quick": 0.15384615384615385,
+   "real": 0.9230769230769231
+  },
+  {
+   "a": "dacdbfc-bga",
+   "b": "b-ffd-bfcf",
+   "ratio": 0.38095238095238093,
+   "quick": 0.5714285714285714,
+   "real": 0.9523809523809523
+  },
+  {
+   "a": "ac-",
+   "b": "c-ceggdc",
+   "ratio": 0.36363636363636365,
+   "quick": 0.36363636363636365,
+   "real": 0.5454545454545454
+  },
+  {
+   "a": "",
+   "b": "efce",
+   "ratio": 0.0,
+   "quick": 0.0,
+   "real": 0.0
+  },
+  {
+   "a": "bf--bca",
+   "b": "d-ebedfged",
+   "ratio": 0.23529411764705882,
+   "quick": 0.35294117647058826,
+   "real": 0.8235294117647058
+  },
+  {
+   "a": "dbgegcaeca-fc-",
+   "b": "",
+   "ratio": 0.0,
+   "quick": 0.0,
+   "real": 0.0
+  },
+  {
+   "a": "ecfgagdecccd",
+   "b": "cdbb-ecdcde",
+   "ratio": 0.34782608695652173,
+   "quick": 0.6086956521739131,
+   "real": 0.9565217391304348
+  },
+  {
+   "a": "abg",
+   "b": "affe-bag-cedc",
+   "ratio": 0.375,
+   "quick": 0.375,
+   "real": 0.375
+  },
+  {
+   "a": "facfaf-bb",
+   "b": "dfgae",
+   "ratio": 0.2857142857142857,
+   "quick": 0.2857142857142857,
+   "real": 0.7142857142857143
+  },
+  {
+   "a": "b--acadbdccbe",
+   "b": "aabd",
+   "ratio": 0.47058823529411764,
+   "quick": 0.47058823529411764,
+   "real": 0.47058823529411764
+  },
+  {
+   "a": "a-d-",
+   "b": "f",
+   "ratio": 0.0,
+   "quick": 0.0,
+   "real": 0.4
+  },
+  {
+   "a": "bcaeb--ebbbgc",
+   "b": "ddc-gcag",
+   "ratio": 0.2857142857142857,
+   "quick": 0.47619047619047616,
+   "real": 0.7619047619047619
+  },
+  {
+   "a": "gagaffgdfgf",
+   "b": "gafcfdgafbcbf",
+   "ratio": 0.5833333333333334,
+   "quick": 0.75,
+   "real": 0.9166666666666666
+  },
+  {
+   "a": "dadcgg",
+   "b": "-aaaeeabebag",
+   "ratio": 0.2222222222222222,
+   "quick": 0.2222222222222222,
+   "real": 0.6666666666666666
+  },
+  {
+   "a": "aeb",
+   "b": "fcba",
+   "ratio": 0.2857142857142857,
+   "quick": 0.5714285714285714,
+   "real": 0.8571428571428571
+  },
+  {
+   "a": "eb-c-bceg",
+   "b": "eedbe-dgd",
+   "ratio": 0.4444444444444444,
+   "quick": 0.5555555555555556,
+   "real": 1.0
+  },
+  {
+   "a": "f-e--ead",
+   "b": "ddgga",
+   "ratio": 0.15384615384615385,
+   "quick": 0.3076923076923077,
+   "real": 0.7692307692307693
+  },
+  {
+   "a": "fcdff-eedeaacb",
+   "b": "f-ag-fbdc",
+   "ratio": 0.34782608695652173,
+   "quick": 0.6086956521739131,
+   "real": 0.782608695652174
+  },
+  {
+   "a": "ffcdeb",
+   "b": "-ecgbagb-gc",
+   "ratio": 0.23529411764705882,
+   "quick": 0.35294117647058826,
+   "real": 0.7058823529411765
+  },
+  {
+   "a": "ebg--e",
+   "b": "fefggfa-g-e",
+   "ratio": 0.47058823529411764,
+   "quick": 0.5882352941176471,
+   "real": 0.7058823529411765
+  },
+  {
+   "a": "ec",
+   "b": "gdbffd",
+   "ratio": 0.0,
+   "quick": 0.0,
+   "real": 0.5
+  },
+  {
+   "a": "dgaaa",
+   "b": "-eeg",
+   "ratio": 0.2222222222222222,
+   "quick": 0.2222222222222222,
+   "real": 0.8888888888888888
+  },
+  {
+   "a": "gg-faf-a",
+   "b": "bdbgfgcdg-",
+   "ratio": 0.3333333333333333,
+   "quick": 0.4444444444444444,
+   "real": 0.8888888888888888
+  },
+  {
+   "a": "-fbcff",
+   "b": "becbe",
+   "ratio": 0.36363636363636365,
+   "quick": 0.36363636363636365,
+   "real": 0.9090909090909091
+  },
+  {
+   "a": "fgceddgcabf",
+   "b": "agaaeaegb",
+   "ratio": 0.4,
+   "quick": 0.5,
+   "real": 0.9
+  },
+  {
+   "a": "aadc-ecdg",
+   "b": "bccbabbc-",
+   "ratio": 0.3333333333333333,
+   "quick": 0.4444444444444444,
+   "real": 1.0
+  },
+  {
+   "a": "-gaafcdfecaeb",
+   "b": "bfd-gaadga-ad",
+   "ratio": 0.46153846153846156,
+   "quick": 0.6153846153846154,
+   "real": 1.0
+  },
+  {
+   "a": "dac",
+   "b": "cfa-ege-bdgdge",
+   "ratio": 0.11764705882352941,
+   "quick": 0.35294117647058826,
+   "real": 0.35294117647058826
+  },
+  {
+   "a": "-adbcc",
+   "b": "gcaeg",
+   "ratio": 0.18181818181818182,
+   "quick": 0.36363636363636365,
+   "real": 0.9090909090909091
+  },
+  {
+   "a": "fbfgfgbb",
+   "b": "fdgd-e",
+   "ratio": 0.2857142857142857,
+   "quick": 0.2857142857142857,
+   "real": 0.8571428571428571
+  },
+  {
+   "a": "dgaea",
+   "b": "cdcbd",
+   "ratio": 0.2,
+   "quick": 0.2,
+   "real": 1.0
+  },
+  {
+   "a": "c--d",
+   "b": "ff",
+   "ratio": 0.0,
+   "quick": 0.0,
+   "real": 0.6666666666666666
+  },
+  {
+   "a": "ggd",
+   "b": "-dd-",
+   "ratio": 0.2857142857142857,
+   "quick": 0.2857142857142857,
+   "real": 0.8571428571428571
+  },
+  {
+   "a": "ce-fdgdcbb",
+   "b": "egaceagb",
+   "ratio": 0.4444444444444444,
+   "quick": 0.4444444444444444,
+   "real": 0.8888888888888888
+  },
+  {
+   "a": "cdfdbbfedbe",
+   "b": "d",
+   "ratio": 0.16666666666666666,
+   "quick": 0.16666666666666666,
+   "real": 0.16666666666666666
+  },
+  {
+   "a": "cgef",
+   "b": "-cecaf",
+   "ratio": 0.6,
+   "quick": 0.6,
+   "real": 0.8
+  },
+  {
+   "a": "fga-dgfbce",
+   "b": "e",
+   "ratio": 0.18181818181818182,
+   "quick": 0.18181818181818182,
+   "real": 0.18181818181818182
+  },
+  {
+   "a": "dagacgdecgaecd",
+   "b": "-egfabeaa",
+   "ratio": 0.2608695652173913,
+   "quick": 0.5217391304347826,
+   "real": 0.782608695652174
+  },
+  {
+   "a": "baf",
+   "b": "fbg",
+   "ratio": 0.3333333333333333,
+   "quick": 0.6666666666666666,
+   "real": 1.0
+  },
+  {
+   "a": "gdebfg-f-ad",
+   "b": "c-daec",
+   "ratio": 0.23529411764705882,
+   "quick": 0.47058823529411764,
+   "real": 0.7058823529411765
+  },
+  {
+   "a": "cdedacff",
+   "b": "bdecc-",
+   "ratio": 0.42857142857142855,
+   "quick": 0.5714285714285714,
+   "real": 0.8571428571428571
+  },
+  {
+   "a": "-dda-cfecc",
+   "b": "dfbgcc-gd",
+   "ratio": 0.42105263157894735,
+   "quick": 0.631578947368421,
+   "real": 0.9473684210526315
+  },
+  {
+   "a": "e",
+   "b": "",
+   "ratio": 0.0,
+   "quick": 0.0,
+   "real": 0.0
+  },
+  {
+   "a": "-daae",
+   "b": "dbe-",
+   "ratio": 0.2222222222222222,
+   "quick": 0.6666666666666666,
+   "real": 0.8888888888888888
+  },
+  {
+   "a": "c",
+   "b": "--fec",
+   "ratio": 0.3333333333333333,
+   "quick": 0.3333333333333333,
+   "real": 0.3333333333333333
+  },
+  {
+   "a": "baa--bfe",
+   "b": "-",
+   "ratio": 0.2222222222222222,
+   "quick": 0.2222222222222222,
+   "real": 0.2222222222222222
+  },
+  {
+   "a": "-dfafb",
+   "b": "eedbcaagce",
+   "ratio": 0.25,
+   "quick": 0.375,
+   "real": 0.75
+  },
+  {
+   "a": "ccbef",
+   "b": "cffdfc",
+   "ratio": 0.36363636363636365,
+   "quick": 0.5454545454545454,
+   "real": 0.9090909090909091
+  },
+  {
+   "a": "fedaabga",
+   "b": "-g-",
+   "ratio": 0.18181818181818182,
+   "quick": 0.18181818181818182,
+   "real": 0.5454545454545454
+  },
+  {
+   "a": "cebcdcc-gba",
+   "b": "--ddfaagcebag",
+   "ratio": 0.3333333333333333,
+   "quick": 0.5833333333333334,
+   "real": 0.9166666666666666
+  },
+  {
+   "a": "fb-accgea-fd-b",
+   "b": "f-gcgbaf",
+   "ratio": 0.5454545454545454,
+   "quick": 0.6363636363636364,
+   "real": 0.7272727272727273
+  },
+  {
+   "a": "egf-cefad",
+   "b": "-bc",
+   "ratio": 0.3333333333333333,
+   "quick": 0.3333333333333333,
+   "real": 0.5
+  },
+  {
+   "a": "fgfd-gebdc",
+   "b": "dbdebde-d-dbbg",
+   "ratio": 0.3333333333333333,
+   "quick": 0.5,
+   "real": 0.8333333333333334
+  },
+  {
+   "a": "b-cbb-gcd-",
+   "b": "bcfagdafaad-",
+   "ratio": 0.45454545454545453,
+   "quick": 0.45454545454545453,
+   "real": 0.9090909090909091
+  },
+  {
+   "a": "bcgb",
+   "b": "dbfcffaeb",
+   "ratio": 0.46153846153846156,
+   "quick": 0.46153846153846156,
+   "real": 0.6153846153846154
+  },
+  {
+   "a": "ff-",
+   "b": "",
+   "ratio": 0.0,
+   "quick": 0.0,
+   "real": 0.0
+  },
+  {
+   "a": "fbffbadefd-a-",
+   "b": "a",
+   "ratio": 0.14285714285714285,
+   "quick": 0.14285714285714285,
+   "real": 0.14285714285714285
+  },
+  {
+   "a": "bbecceg",
+   "b": "cee-aafc--aab",
+   "ratio": 0.2,
+   "quick": 0.5,
+   "real": 0.7
+  },
+  {
+   "a": "g-",
+   "b": "-g",
+   "ratio": 0.5,
+   "quick": 1.0,
+   "real": 1.0
+  },
+  {
+   "a": "bff",
+   "b": "decadcf-",
+   "ratio": 0.18181818181818182,
+   "quick": 0.18181818181818182,
+   "real": 0.5454545454545454
+  },
+  {
+   "a": "-gffa",
+   "b": "-fdad",
+   "ratio": 0.6,
+   "quick": 0.6,
+   "real": 1.0
+  },
+  {
+   "a": "accegeb",
+   "b": "efcabdgb",
+   "ratio": 0.4,
+   "quick": 0.6666666666666666,
+   "real": 0.9333333333333333
+  },
+  {
+   "a": "edcbe",
+   "b": "ffdfgfaff-fd",
+   "ratio": 0.11764705882352941,
+   "quick": 0.11764705882352941,
+   "real": 0.5882352941176471
+  },
+  {
+   "a": "dfccda-g-gec",
+   "b": "bceeefbdb",
+   "ratio": 0.09523809523809523,
+   "quick": 0.38095238095238093,
+   "real": 0.8571428571428571
+  },
+  {
+   "a": "cef-fgb-f",
+   "b": "ceeacedadag-de",
+   "ratio": 0.2608695652173913,
+   "quick": 0.34782608695652173,
+   "real": 0.782608695652174
+  },
+  {
+   "a": "bddacabbfcade",
+   "b": "afadffa-",
+   "ratio": 0.38095238095238093,
+   "quick": 0.47619047619047616,
+   "real": 0.7619047619047619
+  },
+  {
+   "a": "fcagab",
+   "b": "f-ge-aaffa",
+   "ratio": 0.375,
+   "quick": 0.5,
+   "real": 0.75
+  },
+  {
+   "a": "fcbacd",
+   "b": "bf",
+   "ratio": 0.25,
+   "quick": 0.5,
+   "real": 0.5
+  },
+  {
+   "a": "fgfcfde-ae-ef",
+   "b": "ecea-bfc",
+   "ratio": 0.19047619047619047,
+   "quick": 0.5714285714285714,
+   "real": 0.7619047619047619
+  },
+  {
+   "a": "dgbacbadce",
+   "b": "fcccafd--",
+   "ratio": 0.10526315789473684,
+   "quick": 0.42105263157894735,
+   "real": 0.9473684210526315
+  },
+  {
+   "a": "fg-",
+   "b": "fab",
+   "ratio": 0.3333333333333333,
+   "quick": 0.3333333333333333,
+   "real": 1.0
+  },
+  {
+   "a": "abgfadgggd",
+   "b": "",
+   "ratio": 0.0,
+   "quick": 0.0,
+   "real": 0.0
+  },
+  {
+   "a": "aegd",
+   "b": "fdf",
+   "ratio": 0.2857142857142857,
+   "quick": 0.2857142857142857,
+   "real": 0.8571428571428571
+  },
+  {
+   "a": "gee-dc-eceeb",
+   "b": "a-dcf",
+   "ratio": 0.35294117647058826,
+   "quick": 0.35294117647058826,
+   "real": 0.5882352941176471
+  },
+  {
+   "a": "-dadfa-cgc",
+   "b": "eabcacecfbc-gb",
+   "ratio": 0.16666666666666666,
+   "quick": 0.5833333333333334,
+   "real": 0.8333333333333334
+  },
+  {
+   "a": "fgfadd",
+   "b": "aacdgbaafbbb",
+   "ratio": 0.1111111111111111,
+   "quick": 0.4444444444444444,
+   "real": 0.6666666666666666
+  },
+  {
+   "a": "cgacdcb",
+   "b": "f-bfddbe",
+   "ratio": 0.26666666666666666,
+   "quick": 0.26666666666666666,
+   "real": 0.9333333333333333
+  },
+  {
+   "a": "caeebadagfe",
+   "b": "",
+   "ratio": 0.0,
+   "quick": 0.0,
+   "real": 0.0
+  }
+ ]
+}

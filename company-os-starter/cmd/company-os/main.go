@@ -59,14 +59,20 @@ func run(argv []string, stdout, stderr io.Writer) int {
 		return int(model.ExitUsage)
 	}
 
-	results, err := cmd(ws, args)
+	results, err := cmd(ws, args, stdout)
 	if err != nil {
 		fmt.Fprintf(stderr, "error: %v\n", err)
 		return int(model.CodeOf(err))
 	}
 
-	// Rendering lands with internal/render in Phase 3; until then no command
-	// returns records to render.
+	// The JSON renderer lands in Phase 4; the gate renderer in Phase 3. Until
+	// then a command without an entry in `renderers` returns no records.
+	if r, ok := renderers[args.Cmd]; ok {
+		if err := r(stdout, results); err != nil {
+			fmt.Fprintf(stderr, "error: %v\n", err)
+			return int(model.CodeOf(err))
+		}
+	}
 	if model.HasFailure(results) {
 		return int(model.ExitValidation)
 	}

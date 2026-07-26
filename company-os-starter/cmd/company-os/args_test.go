@@ -3,11 +3,20 @@ package main
 import (
 	"bytes"
 	"errors"
+	"io"
 	"strings"
 	"testing"
 
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/model"
 )
+
+// portedCommands are the subcommands whose implementation has landed, so the
+// surface test must not invoke them. Delete an entry only when its command goes
+// back to being a stub, which should never happen.
+var portedCommands = map[string]bool{
+	"init": true, "add": true, "reality": true, "scratchpad": true,
+	"today": true, "ids": true, "skills": true,
+}
 
 // TestEverySubcommandParses walks the whole surface ported from
 // bin/company-os:2661-2781: one valid invocation per subcommand, asserting the
@@ -152,8 +161,14 @@ func TestEverySubcommandParses(t *testing.T) {
 			}
 			tc.check(t, a)
 
-			// Surface only: every command must reach its stub, not a parse error.
-			if _, err := commands[a.Cmd](nil, a); err == nil ||
+			// Surface only: every not-yet-ported command must reach its stub
+			// rather than a parse error. A command whose phase has landed is
+			// exercised by its own package's tests and by the differential
+			// harness, not from here — calling it would write to disk.
+			if _, ported := portedCommands[a.Cmd]; ported {
+				return
+			}
+			if _, err := commands[a.Cmd](nil, a, io.Discard); err == nil ||
 				!strings.Contains(err.Error(), "not implemented") {
 				t.Fatalf("dispatch returned %v, want a not-implemented error", err)
 			}

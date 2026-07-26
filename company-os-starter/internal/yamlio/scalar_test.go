@@ -176,6 +176,109 @@ func TestGitCommitPinKeepsPrecision(t *testing.T) {
 	}
 }
 
+// TestExplicitTagsDispatchOnTheTag covers the R-1.7a hole: PyYAML runs
+// resolution and construction as separate passes, and an explicit tag suppresses
+// only the first. Treating a tagged scalar as a string made `!!int 0` a
+// non-empty string — truthy — where Python has an int 0 that `or {}` collapses.
+//
+// Every PyStr below is str(safe_load("a: <form>")['a']) under the vendored
+// PyYAML 6.0.2.
+func TestExplicitTagsDispatchOnTheTag(t *testing.T) {
+	cases := []struct {
+		form  string
+		kind  Kind
+		pyStr string
+		falsy bool
+	}{
+		{"!!int 0", KindInt, "0", true},
+		{"!!int 7", KindInt, "7", false},
+		{"!!int '0'", KindInt, "0", true},    // the tag outranks the quoting
+		{`!!int "12"`, KindInt, "12", false}, // ...and the double quoting too
+		{"!!int 0x10", KindInt, "16", false},
+		{"!!int 010", KindInt, "8", false},
+		{"!!int 0o17", KindInt, "15", false},
+		{"!!int 1_000", KindInt, "1000", false},
+		{"!!int -0x10", KindInt, "-16", false},
+		{"!!int 1:30", KindInt, "90", false},
+		{"!!float 0", KindFloat, "0.0", true},
+		{"!!float 12", KindFloat, "12.0", false}, // reFloat does not match "12"
+		{"!!float 1.5", KindFloat, "1.5", false},
+		{"!!float '2.5'", KindFloat, "2.5", false},
+		{"!!float 1:30", KindFloat, "90.0", false},
+		{"!!float .inf", KindFloat, "inf", false},
+		{"!!float -.inf", KindFloat, "-inf", false},
+		{"!!bool false", KindBool, "False", true},
+		{"!!bool no", KindBool, "False", true},
+		{"!!bool 'yes'", KindBool, "True", false},
+		{"!!null ''", KindNull, "None", true},
+		{"!!null ~", KindNull, "None", true},
+		{"!!null null", KindNull, "None", true},
+		{"!!str 0", KindStr, "0", false},
+		{"!!str ''", KindStr, "", true},
+		{"!!str 2035-01-15", KindStr, "2035-01-15", false},
+		{"!!timestamp 2035-01-15", KindTimestamp, "2035-01-15", false},
+		{"!!timestamp '2035-01-15 10:00:00'", KindTimestamp, "2035-01-15 10:00:00", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.form, func(t *testing.T) {
+			node, err := scalarNode(t, tc.form)
+			if err != nil {
+				t.Fatalf("parse: %v", err)
+			}
+			got, err := Resolve(node)
+			if err != nil {
+				t.Fatalf("Resolve: %v", err)
+			}
+			if got.Kind != tc.kind {
+				t.Errorf("kind: got %s, PyYAML constructs %s", got.Kind.Tag(), tc.kind.Tag())
+			}
+			if s := got.String(); s != tc.pyStr {
+				t.Errorf("render: got %q, PyYAML str() gives %q", s, tc.pyStr)
+			}
+			// The whole point: `or {}` branches on this, so a wrong kind is a
+			// wrong control-flow decision, not a cosmetic one.
+			if isFalsy(node) != tc.falsy {
+				t.Errorf("falsy: got %v, Python's bool() says falsy=%v", isFalsy(node), tc.falsy)
+			}
+		})
+	}
+
+	// Forms whose tag names a constructor that then refuses the text. PyYAML
+	// raises ValueError, KeyError, IndexError or AttributeError on each; without
+	// dispatching on the tag these were all silently accepted as strings.
+	for _, form := range []string{
+		"!!int abc", "!!int ''", "!!bool maybe", "!!bool ''",
+		"!!float abc", "!!float ''", "!!timestamp 2035-02-30", "!!timestamp nope",
+	} {
+		t.Run("rejects "+form, func(t *testing.T) {
+			node, err := scalarNode(t, form)
+			if err != nil {
+				t.Fatalf("parse: %v", err)
+			}
+			if got, err := Resolve(node); err == nil {
+				t.Errorf("accepted as %s %q; PyYAML raises", got.Kind.Tag(), got.String())
+			}
+		})
+	}
+
+	// Quoting alone still forces a string — only the TAG branch was wrong.
+	for _, tc := range []struct{ form, want string }{
+		{"'0'", "0"}, {`"2035-01-15"`, "2035-01-15"}, {"'true'", "true"},
+	} {
+		node, err := scalarNode(t, tc.form)
+		if err != nil {
+			t.Fatalf("parse %q: %v", tc.form, err)
+		}
+		got, err := Resolve(node)
+		if err != nil {
+			t.Fatalf("Resolve(%q): %v", tc.form, err)
+		}
+		if got.Kind != KindStr || got.Raw != tc.want {
+			t.Errorf("%s resolved to %s %q, want !!str %q", tc.form, got.Kind.Tag(), got.Raw, tc.want)
+		}
+	}
+}
+
 // TestResolveRejectsNonScalar keeps the error path honest — internal packages
 // return errors rather than exiting.
 func TestResolveRejectsNonScalar(t *testing.T) {

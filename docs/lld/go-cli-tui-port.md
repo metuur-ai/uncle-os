@@ -209,7 +209,34 @@ authored order. Three concrete sites:
   lines in `validate` stdout.
 - Gate 6's `feature_index_unresolved` (`:1519`) has the same shape.
 
-Every map-driven emission and every map-driven finding loop is explicitly sorted.
+Every map-driven emission and every map-driven finding loop is explicitly
+ordered — but **not by sorting**. Task 1.4 measured all three sites against the
+committed fixtures and the prescription "explicitly sorted" is wrong for two of
+them:
+
+- The `files:` map is built by `_materialize_all` (`:2454`) as a nested walk —
+  manifest slice order, then each slice's `paths:` list order, then
+  `sorted(src.rglob("*"))` *within* each subtree — and emitted with
+  `sort_keys=False`. `examples/federated/workspace.lock.yaml` records
+  `governance/…` before `components/…`, which is the manifest's `paths:` order
+  and the reverse of alphabetical. Rebuilding it through the real `hash_tree`
+  reproduces the committed file exactly; a global `sorted()` does not.
+- Gate 8 iterates `safe_load` of that lock, so its `[FAIL]` order is the lock's
+  DOCUMENT order. `examples/failing-federated-golden-validate.txt` freezes
+  `governance/requirements.yaml` before `components/svc-sliced.yaml`; swapping
+  the two lines in a copy of the lock swaps the two `[FAIL]` lines. Sorting here
+  breaks the golden.
+- Only gate 6 is sorted, and incidentally — `build_feature_index` (`:1440`)
+  iterates `cids = sorted(...)`, so insertion order happens to equal sorted
+  order. The loop still does not sort.
+
+Two further orderings share the same key set and must not be conflated:
+`aggregate_hash` (`:2436`) runs `sorted(files)`, a plain **string** sort, while
+`sorted(src.rglob("*"))` is CPython's **component-wise** `PurePath` order, under
+which `sdd/adr/a.md` precedes `sdd/adr-x.md` and Go's `sort.Strings` does not
+apply. `internal/yamlio` supplies `MapPairs` (document order), `OrderedMap`
+(insertion order, `dict` assignment semantics) and `PathLess`/`SortPaths`
+(`PurePath` order, differentially tested against CPython).
 
 ### `internal/yamlio` — `yaml.Node` end to end
 
@@ -245,13 +272,15 @@ company-os-starter/
   internal/skills/              four-layer merge, shadowing, extends
   internal/scaffold/            init, add, reality, scratchpad  (+ embedded templates)
   internal/federation/          manifest, sparse-checkout, slices, lock
+  internal/ids/                 the canonical ID registry, `ids list`, difflib suggestions
+  internal/roles/               the role glossary, `today`
   internal/validate/            the 7/8 gates, each returning GateResult
-  internal/render/              text.go, json.go
+  internal/render/              text.go, json.go, ids.go, today.go, glossary.go
   internal/tui/                 Phase 2: Bubble Tea program, screens, command preview
   templates/                    //go:embed
 ```
 
-Three structural rulings the naive port gets wrong:
+Four structural rulings the naive port gets wrong:
 
 - **`Workspace` is not a mechanical transliteration of `:211-263`.** `require_root`
   (`:230`), `platform_dir` (`:238`), and `team_dir` (`:244`) all call `die()`.
@@ -267,6 +296,23 @@ Three structural rulings the naive port gets wrong:
   write path and the derive path, and research §4c flags it as the one function
   that resists any split. Placing it in `scaffold` — the natural wrong guess —
   creates a cycle.
+- **`ids` and `today` are two packages, not one, and neither is named after its
+  command.** *(Added by task 2.8; the layout above listed neither.)* The Python
+  groups both under one comment banner (`:1208`, "ID registry & role views"),
+  which invites a single package, and the task-0.4 inventory guessed
+  `internal/ids` + `internal/today`. Both guesses are wrong for the same measured
+  reason: `role_glossary_lines` (`:1260`) has **two** callers, `cmd_today`
+  (`:1171`) and `cmd_ids` (`:1277`), while the registry has **three** callers in
+  other clusters — `suggest_ids` from `governance explain` (`:365`) and
+  `register_id` from `init`/`add` (`:1950`, `:1951`, `:2008`, `:2015`, `:2025`).
+  One package would force `governance` to import the role glossary to reach the
+  registry; a package called `today` could not hold the glossary without
+  `internal/ids` importing `internal/today`, which inverts what the two things
+  are. Splitting on the two fan-in sets and naming the second for the *role*
+  concept rather than the `today` command gives a one-way `ids → roles` edge and
+  leaves each shared function in the package its callers actually want.
+  `register_id` belongs in `internal/ids` when it lands, guarded per R-0.7c, on
+  the same `scaffold → ids` reasoning as `rebuild_generated`.
 
 The remaining cluster boundaries follow the coupling in research §4c: federation
 is most self-contained (2 external callers), skills next (2), then
@@ -303,8 +349,15 @@ in Phase 2 one new subcommand, `tui`.
 ### The dispatch seam
 
 ```go
-type Command func(ws *workspace.Workspace, args *Args) ([]model.GateResult, error)
+type Command func(ws *workspace.Workspace, args *Args, out io.Writer) ([]model.GateResult, error)
 ```
+
+**The `io.Writer` was added during implementation and is unavoidable.** The
+original signature could not carry prose, and every mutating command prints prose
+— the next-command guidance chain (R-1.8) is not a finding and never will be.
+Records still flow back through the return value and are rendered by a per-command
+renderer map in `cmd/company-os`; `out` carries only what was already unstructured
+narration in Python.
 
 Commands return results and an error. `main` maps them to output and an exit
 code. Nothing below `cmd/` calls `os.Exit` or writes to stdout — this is what
@@ -550,10 +603,26 @@ maintenance tax with no expiry date.
 first move *if the CLI stays Python*. Given a committed port, doing it twice is
 waste.
 
-**Rejected: a PyYAML-compatible custom emitter.** Feasible at ~200 lines, and it
-was the pre-mortem's recommended mitigation. Superseded by the four-line semantic
-guard change, which is strictly better: it removes the exposure permanently rather
-than matching a signature that could drift again.
+**Reversed by measurement: a PyYAML-compatible emitter is mandatory after all.**
+This document previously rejected it, on the reasoning that the four-line semantic
+guard removed the exposure permanently. That reasoning holds for *derived*
+artifacts and is now R-0.7c. It does not hold everywhere, because task 2.1 found
+a write path the guard cannot cover: `register_id` (`:1815`) re-dumps the **whole**
+`ids/registry.yaml` through `safe_dump` on every call, and on `examples/workspace`
+a single `add` rewrites seven flow-style entries into block style. That output is
+compared by the differential harness, so it must match PyYAML's bytes.
+
+An approximation is not sufficient either. "Wrap at 80 columns" is wrong on
+`team.yaml`, whose 85-column `precedence:` line PyYAML does **not** fold, because
+there is no space past column 80 to break at. The implementation transliterates
+`analyze_scalar` and the writer primitives from `vendor/yaml/emitter.py` and is
+verified against a live PyYAML oracle.
+
+It currently lives at `internal/scaffold/pyemit.go` only because `internal/yamlio`
+was under concurrent edit when it was written. **It belongs in `internal/yamlio`**
+— `internal/governance` (`deviation declare`, `exception request`) and
+`internal/federation` (the lock) both need it, and neither should import
+`internal/scaffold` to get it.
 
 **TUI split into Phase 2, read-only first.** The user chose full interactive
 coverage of all 16 commands over the cheaper read-only dashboard. That choice is
