@@ -1,16 +1,26 @@
 #!/usr/bin/env bash
 # Characterization harness (Unit 0) — the safety net for a repo with no test
 # suite. Freezes `validate` behavior against golden snapshots — on the passing
-# path AND on the failure path (R-0.9) — proves the generated artifacts are
-# idempotent (double graph build is a no-op), and runs the helper-level
-# selftest. Pass --update to refresh every golden snapshot after an intentional
-# change.
+# path AND on the failure path (R-0.9) — and proves the generated artifacts are
+# idempotent (double graph build is a no-op). Pass --update to refresh every
+# golden snapshot after an intentional change.
 #
 #   examples/acceptance.sh            # verify (CI gate)
 #   examples/acceptance.sh --update   # re-baseline the golden snapshot
+#
+# The helper-level `selftest.py` step is gone: R-9.3 deleted it at cutover, and
+# all 85 of its assertions live in `go test ./...` (see
+# .devlocal/go-port/selftest-inventory.md for the per-assertion mapping).
+# `make check` runs both halves.
 set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
-CLI="$HERE/../company-os-starter/bin/company-os"
+# The Go binary. `make build` produces it; build it first if absent, so this
+# script keeps working as a standalone CI gate.
+CLI="$HERE/../company-os-starter/company-os"
+if [ ! -x "$CLI" ]; then
+  echo "== building the CLI =="
+  ( cd "$HERE/../company-os-starter" && make --no-print-directory build ) || exit 1
+fi
 GOLDEN="$HERE/golden-validate.txt"
 FED_GOLDEN="$HERE/federated-golden-validate.txt"
 TMP="$(mktemp)"
@@ -20,11 +30,7 @@ fail=0
 # golden snapshot is portable across checkouts.
 normalize() { sed "s#^validating workspace .*#validating workspace <WORKSPACE>#"; }
 
-# 1. helper selftest (canonical compare, preserve-unknown, fail-safe rewrite)
-echo "== selftest =="
-python3 "$HERE/selftest.py" || fail=1
-
-# 2. golden validate snapshot on examples/workspace (R-0.7)
+# 1. golden validate snapshot on examples/workspace (R-0.7)
 echo "== golden validate snapshot (examples/workspace) =="
 "$CLI" --root "$HERE/workspace" validate 2>&1 | normalize > "$TMP"
 if [ "${1:-}" = "--update" ]; then

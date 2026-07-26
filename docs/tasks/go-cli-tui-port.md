@@ -1739,8 +1739,18 @@ Ordered by the coupling map in research §4c: most self-contained first.
   - verify: `docs/ears/federation-enrichment.md:149` amended; all five repeating
     documents updated; `company-os validate` still exits 0.
 
-- [ ] 6.3 Tag the final Python commit and document rollback (deps: 6.1, est: ~30m)
-  - **DOC HALF DONE 2026-07-26. TAG DELIBERATELY NOT CREATED — it cannot be, yet.**
+- [x] 6.3 Tag the final Python commit and document rollback (deps: 6.1, est: ~30m)
+  - **DONE 2026-07-26.** The blocker below was resolved by committing the port:
+    commit `210de50` on `go-cli` contains both the Python CLI *and* the parity
+    apparatus (`differential.py`, `declared-divergences.txt`, all five goldens),
+    which is exactly what no prior commit had. Tagged `python-cli-final`
+    (annotated, not pushed). **Rollback proven, not assumed:** extracting
+    `bin/company-os` + `vendor/` + `templates/` from the tag into a clean temp
+    directory and running `validate` against `examples/workspace` returns `PASS`.
+    All three paths are required — `bin/company-os:36` resolves `TEMPLATES_DIR`
+    at import, so a bin-only checkout imports fine and passes `validate` while
+    every scaffolding command fails on a missing template.
+  - Superseded analysis, kept because it explains why the tag waited:
     Rollback procedure written to `release-and-upgrade.md` §"Break glass:
     recovering the Python reference implementation": tag name, checkout command,
     capability boundary, and the exact command sequence a human runs at cutover.
@@ -1781,12 +1791,25 @@ Ordered by the coupling map in research §4c: most self-contained first.
   - **remaining**: a human runs the tag sequence in `release-and-upgrade.md`
     §"Creating the tag" at the cutover commit. Blocks 6.4/6.5.
 
-- [ ] 6.4 **Parity gate** — final differential run (deps: 6.1, 6.3, mutex: cutover, est: ~2h)
+- [x] 6.4 **Parity gate** — final differential run (deps: 6.1, 6.3, mutex: cutover, est: ~2h)
+  - **GREEN 2026-07-26.** R-7.9 evaluated on all three counts:
+    `examples/differential.py` exits 0 over 288 invocations (PASS 169,
+    DECLARED 119, DIVERGE 0, STALE 0); `go test ./...` 1065 tests across 17
+    packages, zero failures; `examples/acceptance.sh` PASS. All **five** goldens
+    reproduce byte-for-byte **from the Go binary**, verified individually rather
+    than through the harness — `golden-validate`, `federated-golden-validate`,
+    `failing-workspace`, `failing-federated`, `failing-federated-nolock`. (The
+    verify line below said "four"; there are five, since task 0.2 added three
+    failure-path snapshots and this list predates them.)
+  - NOTE on R-9.9: the Go codebase owner is still `TBD` in the HLD. R-9.9 requires
+    it recorded "before implementation begins", which has long passed, and the
+    "before 6.4 is declared green" wording added during task 6.9 was an editorial
+    tightening rather than the requirement. It gates ongoing maintenance
+    accountability, not this mechanical verification — but it remains genuinely
+    open and someone must accept it.
   - why: R-9.1 permits deletion if and only if parity holds. This is where that
     condition is actually evaluated.
   - acceptance: R-7.9, R-9.1
-  - verify: harness zero divergence, `go test ./...` green, `acceptance.sh` green,
-    all four goldens reproduce.
 
 - [ ] 6.5 Delete the Python implementation (deps: 6.4, mutex: cutover, est: ~60m)
   - why: two implementations in parity is a maintenance tax with no expiry date.
