@@ -17,14 +17,14 @@ CLI can read. That single decision is what makes the rest of this diagram
 possible: any tool that can read a file can participate.
 
 ```text
-                     ┌─────────────────────────────┐
-                     │   Company OS workspace        │
-                     │   (Markdown + YAML, in Git)   │
-                     │                               │
-                     │  company-os/  platforms/*/    │
+                     ┌────────────────────────────────┐
+                     │   Company OS workspace         │
+                     │   (Markdown + YAML, in Git)    │
+                     │                                │
+                     │  company-os/  platforms/*/     │
                      │  teams/*/     company-ontology/│
                      │  knowledge/  (synced catalog)  │
-                     └───────────────┬───────────────┘
+                     └───────────────┬────────────────┘
                                      │
                  authored & validated by
                                      │
@@ -34,7 +34,8 @@ possible: any tool that can read a file can participate.
                                      │
                  read & indexed by (separately)
                                      │
-                      ┌──────────────▼──────────────┐
+                                     ▼
+                      ┌───────────────────────────────┐
                       │        Local Search           │
                       │  SQLite FTS5 index, one repo  │
                       │  or many, offline, no server  │
