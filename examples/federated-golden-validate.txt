@@ -4,9 +4,9 @@ validating workspace <WORKSPACE>
   [ok] customer-notification-service: registry and descriptor agree (communications)
 
 [2/8] deviation and exception expiry
-  [ok] customer-engagement: deviation platform-standard://communications/prd-structure current (review 2027-01-15)
-  [ok] customer-engagement: deviation company-standard://estimation/story-points current (review 2027-01-14)
-  [ok] customer-engagement: exception platform-standard://communications/message-schema valid until 2026-12-31
+  [ok] customer-engagement: deviation platform-standard://communications/prd-structure current (review 2035-01-15)
+  [ok] customer-engagement: deviation company-standard://estimation/story-points current (review 2035-01-14)
+  [ok] customer-engagement: exception platform-standard://communications/message-schema valid until 2035-12-31
 
 [3/8] active PRD contracts
 

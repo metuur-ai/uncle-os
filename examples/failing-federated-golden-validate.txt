@@ -1,0 +1,26 @@
+validating workspace <WORKSPACE>
+
+[1/8] ownership reconciliation
+
+[2/8] deviation and exception expiry
+
+[3/8] active PRD contracts
+
+[4/8] frontmatter core and tag derivation (interop contract)
+
+[5/8] CLAUDE.md context node drift (fail-safe, absence-tolerant)
+  [ok] platforms/sliced-alpha: no CLAUDE.md node (absent -> pass)
+
+[6/8] feature-index drift (derived component->artifact map)
+  [ok] sliced-alpha: no feature-index (absent -> pass; run graph build to enable)
+
+[7/8] custom skills layering (shadowing + extends resolution)
+  [ok] skills layered cleanly (0 canonical, 0 team; no shadowing or dangling extends)
+
+[8/8] federated slice integrity (read-only derived content)
+  [FAIL] repo 'sliced-alpha': slice set in workspace.yaml differs from workspace.lock.yaml (a target or allowlist changed without a re-sync) — run: company-os workspace sync
+  [FAIL] federated slice hand-edited: platforms/sliced-alpha/governance/requirements.yaml — content hash differs from workspace.lock.yaml; slices are read-only derived content — re-sync: company-os workspace sync
+  [FAIL] federated slice file missing: platforms/sliced-alpha/components/svc-sliced.yaml (recorded in workspace.lock.yaml) — re-sync: company-os workspace sync
+  [FAIL] repo 'never-synced' in workspace.yaml has no workspace.lock.yaml entry (lock does not cover the manifest) — run: company-os workspace sync
+
+FAIL — 4 problem(s)

@@ -1,0 +1,16 @@
+version: 1
+generatedFrom: workspace.yaml
+repos:
+- name: sliced-alpha
+  url: https://git.example.com/acme/sliced-alpha.git
+  slices:
+  - localDirectory: platforms/sliced-alpha
+    paths:
+    - governance/
+  pin:
+    commit: 1111111111111111111111111111111111111111
+  resolvedCommit: 1111111111111111111111111111111111111111
+  sliceHash: 0000000000000000000000000000000000000000000000000000000000000000
+  files:
+    platforms/sliced-alpha/governance/requirements.yaml: 0000000000000000000000000000000000000000000000000000000000000000
+    platforms/sliced-alpha/components/svc-sliced.yaml: 1111111111111111111111111111111111111111111111111111111111111111

@@ -8,5 +8,5 @@ deviations:
   rationale: 'Investigation work is sized in t-shirt sizes; cycle time is reported
     instead of points.
 
-    ', approvedBy: 'company://engineering-standards', reviewDate: 2027-03-01}
+    ', approvedBy: 'company://engineering-standards', reviewDate: 2035-03-01}
 tags: [kind/deviations, team/fraud-detection]

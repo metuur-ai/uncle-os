@@ -1,0 +1,7 @@
+schemaVersion: '1.0'
+team: ghost
+deviations:
+- {rule: 'company-standard://estimation/story-points', tier: default, status: declared,
+   rationale: Deliberately stale., reviewDate: '2020-01-01'}
+- {rule: 'company-standard://retro-cadence', tier: default, status: declared,
+   rationale: Still current., reviewDate: '2035-01-14'}

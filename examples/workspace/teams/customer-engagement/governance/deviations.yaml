@@ -5,7 +5,7 @@ deviations:
   rationale: 'Team uses a two-page lean PRD for changes under 2 weeks; the full structure
     is used for larger initiatives.
 
-    ', approvedBy: 'platform://communications', reviewDate: 2027-01-15}
+    ', approvedBy: 'platform://communications', reviewDate: 2035-01-15}
 - {rule: 'company-standard://estimation/story-points', tier: default, status: declared,
-  rationale: Team forecasts with cycle time instead of points., reviewDate: '2027-01-14'}
+  rationale: Team forecasts with cycle time instead of points., reviewDate: '2035-01-14'}
 tags: [kind/deviations, team/customer-engagement]

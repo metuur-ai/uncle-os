@@ -4,5 +4,5 @@ deviations:
 - {rule: 'company-standard://change-log', tier: default, status: declared, rationale: 'Five-person
     team; the PR description is the change log.
 
-    ', reviewDate: '2027-02-01'}
+    ', reviewDate: '2035-02-01'}
 tags: [kind/deviations, team/core]

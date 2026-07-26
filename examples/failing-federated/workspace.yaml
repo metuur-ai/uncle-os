@@ -1,0 +1,18 @@
+version: 1
+# Deliberately inconsistent with workspace.lock.yaml. See EXAMPLE_README.md.
+repos:
+  - name: sliced-alpha
+    url: https://git.example.com/acme/sliced-alpha.git
+    localDirectory: platforms/sliced-alpha
+    pin:
+      commit: 1111111111111111111111111111111111111111
+    paths:
+      - governance/
+      - components/
+  - name: never-synced
+    url: https://git.example.com/acme/never-synced.git
+    localDirectory: knowledge/never-synced
+    pin:
+      commit: 2222222222222222222222222222222222222222
+    paths:
+      - docs/

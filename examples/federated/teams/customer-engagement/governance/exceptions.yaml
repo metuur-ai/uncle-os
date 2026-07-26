@@ -6,5 +6,5 @@ exceptions:
   reason: Legacy protocol cannot carry the standard envelope.
   compensatingControls: [TODO]
   approvedBy: 'TODO: rule owner'
-  expires: '2026-12-31'
+  expires: '2035-12-31'
 tags: [kind/exceptions, team/customer-engagement]

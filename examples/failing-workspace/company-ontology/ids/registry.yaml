@@ -1,0 +1,5 @@
+schemaVersion: '1.0'
+kind: IdRegistry
+ids:
+- {id: 'component://alpha/svc-alpha', kind: component}
+- {id: 'component://beta/svc-beta', kind: component}

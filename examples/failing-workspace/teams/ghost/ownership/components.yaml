@@ -1,0 +1,6 @@
+schemaVersion: '1.0'
+team: {id: ghost, name: Ghost Team}
+components:
+- {id: no-such-service, relationship: accountable}
+- {id: svc-alpha, relationship: accountable}
+- {id: svc-beta, relationship: accountable}

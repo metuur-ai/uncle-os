@@ -1,0 +1,7 @@
+schemaVersion: '1.0'
+kind: Component
+metadata: {id: svc-beta, name: Service Beta, type: service, status: active}
+ownership: {accountableTeam: 'team://ghost'}
+platformRelationships:
+- platform: platform://beta
+  relationship: belongs-to

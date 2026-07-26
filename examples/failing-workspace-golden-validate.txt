@@ -1,0 +1,52 @@
+validating workspace <WORKSPACE>
+
+[1/7] ownership reconciliation
+  [FAIL] ghost: owns 'no-such-service' but no descriptor in any platform catalog
+  [FAIL] 'svc-alpha': team 'ghost' claims accountable but descriptor says 'team://other' (single-source rule: descriptor ownership must match team registry)
+  [ok] svc-beta: registry and descriptor agree (beta)
+
+[2/7] deviation and exception expiry
+  [FAIL] ghost: deviation for company-standard://estimation/story-points expired 2020-01-01 — re-review or remove
+  [ok] ghost: deviation company-standard://retro-cadence current (review 2035-01-14)
+  [FAIL] ghost: exception for company-standard://security-service-baseline has NO expiry — invalid
+  [FAIL] ghost: exception for company-standard://customer-data-privacy expired 2020-01-01
+  [ok] ghost: exception company-standard://tier-1-observability valid until 2035-12-31
+
+[3/7] active PRD contracts
+  [FAIL] alpha/2035-broken-contract: missing frontmatter ['team', 'components', 'governanceSnapshot']
+  [ok] beta/2035-beta-change: contract fields present
+
+[4/7] frontmatter core and tag derivation (interop contract)
+  [ok] company-os/skills/creating-prd.SKILL.md: core fields + tags in sync
+  [ok] platforms/alpha/change-records/active/2035-broken-contract/prd.md: core fields + tags in sync
+  [FAIL] platforms/alpha/reality/components/svc-alpha.md: frontmatter core: reality doc has no 'updated' date (the done-gate reads it)
+  [ok] platforms/beta/archive/prds/2035-old-dirname/outcome.md: core fields + tags in sync
+  [ok] platforms/beta/archive/prds/2035-old-dirname/prd.md: core fields + tags in sync
+  [ok] platforms/beta/change-records/active/2035-beta-change/prd.md: core fields + tags in sync
+  [ok] teams/ghost/product/discovery/2035-bad-pointers/brief.md: core fields + tags in sync
+  [warn] teams/ghost/product/discovery/2035-bad-pointers/brief.md: pointers[0]: missing 'label' — pointer guidance (not blocking)
+  [warn] teams/ghost/product/discovery/2035-bad-pointers/brief.md: pointers[1]: missing 'system' — pointer guidance (not blocking)
+  [warn] teams/ghost/product/discovery/2035-bad-pointers/brief.md: pointers[1]: needs 'url' or 'id' — pointer guidance (not blocking)
+  [warn] teams/ghost/product/discovery/2035-bad-pointers/brief.md: pointers[2]: must be a mapping — pointer guidance (not blocking)
+  [FAIL] teams/ghost/product/discovery/2035-drifted-tags/brief.md: committed tags drifted from frontmatter derivation — run: company-os graph build
+  [ok] teams/ghost/skills/creating-prd.SKILL.md: core fields + tags in sync
+  [ok] teams/ghost/skills/reviewing-prd.SKILL.md: core fields + tags in sync
+
+[5/7] CLAUDE.md context node drift (fail-safe, absence-tolerant)
+  [ok] company-os/CLAUDE.md: hand-owned, no generated markers (-> pass)
+  [FAIL] platforms/alpha/CLAUDE.md: generated block drifted — run: company-os graph build
+  [ok] platforms/beta/CLAUDE.md: context node in sync
+  [FAIL] teams/ghost/team.yaml: roster[1]: needs 'name' and 'role'
+  [ok] teams/ghost: no CLAUDE.md node (absent -> pass)
+  [ok] company-ontology/CLAUDE.md: context node in sync
+
+[6/7] feature-index drift (derived component->artifact map)
+  [FAIL] alpha: feature-index drifted from derivation — run: company-os graph build
+  [FAIL] beta: feature-index component 'svc-beta' references discovery '2035-no-such-brief' which resolves to no document
+  [FAIL] beta: feature-index component 'svc-beta' references prd '2035-renamed-change' which resolves to no document
+
+[7/7] custom skills layering (shadowing + extends resolution)
+  [FAIL] skill shadowing: teams/ghost/skills/creating-prd.SKILL.md reuses the canonical id 'skill://product/creating-prd' of company-os/skills/creating-prd.SKILL.md — extend it with `extends: platform-skill://...` instead of replacing it
+  [FAIL] dangling extends: teams/ghost/skills/reviewing-prd.SKILL.md declares extends: platform-skill://alpha/no-such-base but no such base skill exists
+
+FAIL — 15 problem(s)

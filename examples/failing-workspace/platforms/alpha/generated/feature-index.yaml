@@ -1,0 +1,4 @@
+components:
+  svc-alpha-renamed:
+    reality: reality/components/svc-alpha-renamed.md
+platform: alpha

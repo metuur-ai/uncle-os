@@ -1,0 +1,17 @@
+schemaVersion: '1.0'
+team: ghost
+exceptions:
+- rule: 'company-standard://security-service-baseline'
+  component: svc-alpha
+  reason: Deliberately missing an expiry.
+  approvedBy: 'TODO: rule owner'
+- rule: 'company-standard://customer-data-privacy'
+  component: svc-beta
+  reason: Deliberately expired.
+  approvedBy: 'TODO: rule owner'
+  expires: '2020-01-01'
+- rule: 'company-standard://tier-1-observability'
+  component: svc-beta
+  reason: Still valid.
+  approvedBy: 'TODO: rule owner'
+  expires: '2035-12-31'

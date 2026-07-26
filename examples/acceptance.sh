@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Characterization harness (Unit 0) — the safety net for a repo with no test
-# suite. Freezes `validate` behavior against a golden snapshot, proves the
-# generated artifacts are idempotent (double graph build is a no-op), and runs
-# the helper-level selftest. Pass --update to refresh the golden snapshot after
-# an intentional change.
+# suite. Freezes `validate` behavior against golden snapshots — on the passing
+# path AND on the failure path (R-0.9) — proves the generated artifacts are
+# idempotent (double graph build is a no-op), and runs the helper-level
+# selftest. Pass --update to refresh every golden snapshot after an intentional
+# change.
 #
 #   examples/acceptance.sh            # verify (CI gate)
 #   examples/acceptance.sh --update   # re-baseline the golden snapshot
@@ -55,8 +56,44 @@ else
   echo "FAIL: federated validate output drifted from golden snapshot"; fail=1
 fi
 
+# 2c. failure-path golden snapshots (R-0.9). The two snapshots above cover only
+#     the all-pass path — between them they contain zero `[FAIL]` and zero
+#     `[warn]` lines, against 15 failure sites in cmd_validate. These three
+#     fixtures are DELIBERATELY BROKEN and exit 1; together they drive at least
+#     one [FAIL] through every gate, the single warn() site, and gate 4's
+#     conditional `[ok]` (a doc with core-field errors emits its failures and NO
+#     ok line). Captured from the Python CLI while it still exists, because the
+#     per-gate line prefix is not uniform and a records refactor would otherwise
+#     break it silently.
+echo "== failure-path golden snapshots =="
+for W in failing-workspace failing-federated failing-federated-nolock; do
+  G="$HERE/$W-golden-validate.txt"
+  "$CLI" --root "$HERE/$W" validate 2>&1 | normalize > "$TMP"
+  rc="${PIPESTATUS[0]}"
+  if [ "${1:-}" = "--update" ]; then
+    cp "$TMP" "$G"; echo "failure snapshot updated -> ${G}"
+  fi
+  if [ ! -f "$G" ]; then
+    echo "FAIL: no failure snapshot ($W); run: examples/acceptance.sh --update"; fail=1
+  elif diff -u "$G" "$TMP"; then
+    echo "ok: validate matches failure snapshot ($W)"
+  else
+    echo "FAIL: validate output drifted from failure snapshot ($W)"; fail=1
+  fi
+  # These fixtures must keep FAILING, and with the documented exit code — a
+  # fixture that silently starts passing would still diff clean against a
+  # re-baselined golden, so the exit code is asserted separately from the diff.
+  if [ "$rc" = 1 ]; then
+    echo "ok: validate exit 1 ($W)"
+  else
+    echo "FAIL: validate exit $rc, expected 1 ($W)"; fail=1
+  fi
+done
+
 # 3. validate exits 0 on every committed fixture: the example workspace, the
 #    standalone-team fixture, AND the federated fixture (offline, from lock).
+#    The failing-* fixtures are excluded on purpose — they are asserted to exit
+#    1 in section 2c above.
 echo "== validate exit code (all fixtures) =="
 for W in workspace standalone-team federated; do
   if "$CLI" --root "$HERE/$W" validate >/dev/null 2>&1; then

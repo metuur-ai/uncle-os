@@ -1,0 +1,6 @@
+schemaVersion: '1.0'
+kind: Team
+metadata: {id: ghost, name: Ghost Team}
+roster:
+- {name: Ada Byron, role: developer}
+- {name: Grace Hopper}

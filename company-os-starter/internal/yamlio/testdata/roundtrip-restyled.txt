@@ -1,0 +1,1 @@
+examples/banking/bank/initiatives/instant-refunds/initiative.md (frontmatter)	$[11][0][1] ("platform://payments"): style plain -> single-quoted

@@ -1,0 +1,13 @@
+components:
+  svc-beta:
+    activePrds:
+    - 2035-beta-change
+    archivedPrds:
+    - 2035-renamed-change
+    discovery:
+    - 2035-no-such-brief
+    outcomes:
+    - due: '2035-10-01'
+      prd: 2035-renamed-change
+      status: pending
+platform: beta

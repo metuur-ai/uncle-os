@@ -1,0 +1,4 @@
+schemaVersion: '1.0'
+kind: CompanyBaseline
+controls:
+- {id: security-service-baseline, version: '1.0', level: mandatory, requirement: 'Services authenticate all inbound calls.'}

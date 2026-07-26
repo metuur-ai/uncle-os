@@ -9,5 +9,5 @@ exceptions:
   compensatingControls: [Daily reconciliation report against settlement ledger, Manual
       review of duplicate alerts]
   approvedBy: 'platform://payments'
-  expires: '2026-12-31'
+  expires: '2035-12-31'
 tags: [kind/exceptions, team/fraud-detection]

@@ -1,0 +1,10 @@
+version: 1
+# A manifest with no workspace.lock.yaml beside it. See EXAMPLE_README.md.
+repos:
+  - name: unsynced
+    url: https://git.example.com/acme/unsynced.git
+    localDirectory: platforms/unsynced
+    pin:
+      commit: 3333333333333333333333333333333333333333
+    paths:
+      - governance/
