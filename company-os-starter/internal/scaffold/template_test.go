@@ -4,7 +4,6 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"testing"
 
@@ -30,26 +29,35 @@ func TestEmbeddedRealityTemplateMatchesDisk(t *testing.T) {
 
 // TestBuiltinsMatchPythonModuleStrings pins the two hand-ported constants to the
 // oracle, so a transcription slip fails here rather than in a golden diff.
+//
+// It used to read the strings out of bin/company-os directly. R-9.3 deleted that
+// file, so the oracle is now a frozen copy extracted from the python-cli-final
+// tag — the last tree that contained it. Regenerate with:
+//
+//	git show python-cli-final:company-os-starter/bin/company-os |
+//	  python3 -c 'import re,sys; s=sys.stdin.read(); \
+//	    print(re.search(r"(?s)\nPRD_TEMPLATE = \"\"\"(.*?)\"\"\"", s).group(1), end="")' \
+//	  > internal/scaffold/testdata/prd-template.python.txt
+//
+// Editing a testdata file to make this pass is a deliberate act: it means the Go
+// template has intentionally diverged from what shipped, and the artifacts every
+// adopter's `discover new` / `prd new` produces will change shape.
 func TestBuiltinsMatchPythonModuleStrings(t *testing.T) {
-	src, err := os.ReadFile(filepath.Join("..", "..", "bin", "company-os"))
-	if err != nil {
-		t.Fatalf("reading the Python CLI: %v", err)
-	}
 	for _, tc := range []struct {
 		symbol string
+		golden string
 		got    string
 	}{
-		{"DISCOVERY_TEMPLATE", DiscoveryTemplate},
-		{"PRD_TEMPLATE", PRDTemplate},
+		{"DISCOVERY_TEMPLATE", "discovery-template.python.txt", DiscoveryTemplate},
+		{"PRD_TEMPLATE", "prd-template.python.txt", PRDTemplate},
 	} {
-		re := regexp.MustCompile(`(?s)\n` + tc.symbol + ` = """(.*?)"""`)
-		m := re.FindSubmatch(src)
-		if m == nil {
-			t.Fatalf("%s not found in bin/company-os", tc.symbol)
+		want, err := os.ReadFile(filepath.Join("testdata", tc.golden))
+		if err != nil {
+			t.Fatalf("reading the frozen %s oracle: %v", tc.symbol, err)
 		}
-		if string(m[1]) != tc.got {
-			t.Errorf("%s differs from the Python module string\n"+
-				"python %d bytes\ngo     %d bytes", tc.symbol, len(m[1]), len(tc.got))
+		if string(want) != tc.got {
+			t.Errorf("%s differs from the Python module string frozen at python-cli-final\n"+
+				"python %d bytes\ngo     %d bytes", tc.symbol, len(want), len(tc.got))
 		}
 	}
 }

@@ -1,0 +1,28 @@
+---
+type: discovery-brief
+id: {bid}
+title: {title}
+status: draft
+team: {team}
+created: {date}
+tags: [kind/discovery, team/{team}, status/draft]
+---
+
+# Discovery: {title}
+
+## {ds[0]}
+<!-- What evidence triggered this? Support tickets, metrics, stakeholder ask. -->
+
+## {ds[1]}
+<!-- We believe that <change> for <who> will achieve <outcome>. -->
+
+## {ds[2]}
+<!-- Measurable. How will we know the hypothesis is true/false? -->
+
+## Affected components (initial guess)
+<!-- component ids, if known -->
+
+## Risks and open questions
+
+## Decision
+<!-- validated | invalidated, and why. Set by `discover validate`. -->

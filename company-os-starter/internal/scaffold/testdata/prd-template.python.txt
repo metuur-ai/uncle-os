@@ -1,0 +1,36 @@
+---
+type: prd
+id: {pid}
+title: {title}
+status: proposed
+team: {team}
+platform: {platform}
+components: [{components}]
+governanceSnapshot: {date}
+decisionOwner: TODO
+created: {date}
+fromDiscovery: {discovery}
+tags: [kind/prd, platform/{platform}, team/{team}, status/proposed]
+---
+
+# PRD: {title}
+
+## {ps[0]}
+{problem}
+
+## {ps[1]}
+{metrics}
+
+## {ps[2]}
+<!-- What will be different in the Representation of Reality when done? -->
+
+## Affected components
+{component_list}
+
+## Applicable governance (snapshot {date})
+<!-- Injected by `prd new`. Check items off as evidence is linked. -->
+{governance_checklist}
+
+## Out of scope
+
+## Rollout and validation
