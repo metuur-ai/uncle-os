@@ -71,7 +71,7 @@ Look around — `init` scaffolded the four peer roots the whole system is
 built on: `company-os/` (baseline standards), `platforms/ordering/` (the
 platform you just named), `teams/web/` (the team you just named), and
 `company-ontology/` (canonical IDs). This is the shape every Company OS
-workspace has, whether it's one team or fifty.
+workspace starts from, whether it's one team or fifty.
 
 ## 3. Register the online ordering app
 

@@ -10,9 +10,11 @@ with **no network and no source repo** — it compares the committed slice bytes
 to the committed lock hashes.
 
 **Key files:**
-- `workspace.yaml` — manifest: repo `platform-communications`, `root:
-  platforms/communications`, pinned `paths:` (governance/, components/,
-  reality/, skills/, templates/).
+- `workspace.yaml` — manifest: repo `platform-communications`,
+  `localDirectory: platforms/communications`, pinned `paths:` (governance/,
+  components/, reality/, skills/, templates/). A repo contributing several
+  areas would use a `slices:` list instead — see
+  `../../company-os-starter/docs/FEDERATION-RUNBOOK.md`.
 - `workspace.lock.yaml` — written by `workspace sync`; never hand-edit.
 - Everything else mirrors `../workspace/` (same team, ontology, baseline) so
   you can diff the two examples to see exactly what federation adds.

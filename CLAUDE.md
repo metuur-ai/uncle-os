@@ -46,9 +46,14 @@ company-os ids list                                  # list canonical IDs from i
 company-os skills list                               # merged four-layer skill view
 
 # Federation (Phase 4 — Option B; requires a workspace.yaml manifest + git ≥2.27)
-company-os workspace sync [--frozen] [--only <repo>] # materialize read-only governance slices + write workspace.lock.yaml
-company-os workspace status                          # per-repo pin/lock/slice drift status
+company-os workspace sync [--frozen] [--only <repo>] # materialize read-only slices + write workspace.lock.yaml
+company-os workspace status                          # per-repo pin/slice-set/lock drift status
 ```
+
+Each manifest repo names a destination with `localDirectory:` and an include-only
+allowlist with `paths:`. A repo contributing several areas uses a `slices:` list of
+`{paths, localDirectory}` instead — one clone, one cache, N destinations. Targets
+must be disjoint across the manifest.
 
 There is no test suite. To exercise changes, run the CLI against `examples/workspace` and confirm `company-os validate` still exits 0. `docs/TUTORIAL.md` is an end-to-end walkthrough with real command output — use it as the acceptance path after changing CLI behavior.
 
@@ -56,12 +61,13 @@ There is no test suite. To exercise changes, run the CLI against `examples/works
 
 ### The federation (three OS layers + ontology)
 
-A workspace is one directory containing four peer roots. Platforms are "teams" relative to Company OS; the same tier/deviation model applies at every level.
+A workspace is one directory containing four authored peer roots, plus an optional fifth synced one. Platforms are "teams" relative to Company OS; the same tier/deviation model applies at every level.
 
 - `company-os/standards/` — company baseline controls applied to everything.
 - `platforms/<p>/` — the authoritative catalog. Holds `components/<id>.yaml` (descriptors), `governance/requirements.yaml`, `reality/` (current-state truth), `change-records/active/` (live PRDs), `archive/prds/` (completed + outcomes), `skills/`.
 - `teams/<t>/` — `ownership/components.yaml`, `governance/{deviations,exceptions}.yaml`, `product/discovery/`, `standards/definition-of-{ready,done}.md`, and `generated/`.
 - `company-ontology/` — canonical IDs (`ids/registry.yaml`), concept notes, bounded contexts, context maps. Referenced by the other layers, never redefined by them.
+- `knowledge/` — the catalog: read-only documentation slices synced from repos that are *not* Company OS workspaces (a component repo's `docs/sdd`, `specs/`). Never authored by hand, never scaffolded by `init`. It is a **node root but not a graph-docs root** — it gets a `CLAUDE.md` index and gate `[8/8]` hash integrity, but `graph build` and gates `[1/8]`–`[7/8]` skip it, because foreign docs carry no `type:` frontmatter and the slice is `0444`. Indexed, not governed.
 
 ### Invariants the CLI enforces (know these before editing)
 
@@ -74,6 +80,8 @@ A workspace is one directory containing four peer roots. Platforms are "teams" r
 4. **A change is done only when reality is updated.** `prd complete` refuses to archive while any `- [ ]` governance checklist item is unchecked, or while a component's `reality/components/<id>.md` has an `updated:` date older than the PRD's `created:` date. On success it moves the PRD to `archive/prds/`, writes an `outcome.md` due in 90 days, and appends `log.md`.
 
 5. **Deviations and exceptions expire.** `validate` step [2/7] fails on any past `reviewDate` (deviation) or missing/past `expires` (exception).
+
+6. **Synced slices are read-only, and the lock is the oracle.** `workspace sync` materializes each slice at `0444`/`0555` and records a per-file hash map plus the resolved slice set. Gate `[8/8]` fails on a hand-edit *and* on a slice-set change made without a re-sync (the old files still hash clean, so nothing else catches it). Never edit a slice — change the source repo, bump the pin, re-sync.
 
 ### Product lifecycle (where artifacts live and move)
 

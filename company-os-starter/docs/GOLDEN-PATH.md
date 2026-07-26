@@ -46,7 +46,7 @@ Run a workspace command outside a root and the CLI tells you exactly this:
 ```text
 $ company-os discover new --team solo "Faster checkout"
 error: '/.../ws' is not a workspace root: none of company-os/, platforms/,
-  teams/, company-ontology/ found here.
+  teams/, company-ontology/, knowledge/ found here.
   workspace root resolution order: --root -> $COMPANY_OS_WORKSPACE_ROOT -> current directory
 ```
 
@@ -62,7 +62,7 @@ W=$(mktemp -d)/ws; mkdir -p "$W"    # a throwaway workspace for this walkthrough
 
 ## 1. Setup — scaffold the workspace
 
-`init` writes the four peer roots (`company-os/`, `platforms/`, `teams/`,
+`init` writes the four source roots (`company-os/`, `platforms/`, `teams/`,
 `company-ontology/`) and derives their generated artifacts so a fresh workspace
 validates green. Pass `--company/--team/--platform` to run non-interactively
 (required when there is no terminal, e.g. CI); omit them and the CLI prompts.

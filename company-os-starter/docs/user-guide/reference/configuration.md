@@ -47,12 +47,21 @@ in. Two files at the workspace root:
 
 | File | Written by | Purpose |
 |---|---|---|
-| `workspace.yaml` | you, by hand | declares pinned repos/refs; its mere presence switches `validate` to 8 gates and enables `company-os workspace ...` |
+| `workspace.yaml` | you, by hand | declares pinned repos/refs and where each lands; its mere presence switches `validate` to 8 gates and enables `company-os workspace ...` |
 | `workspace.lock.yaml` | `company-os workspace sync` | generated — records exactly what was materialized, checked against on every `validate` (gate `[8/N]`) and every `workspace status` |
+
+Each repo names its destination with `localDirectory:` and what to pull with
+`paths:`. A repo contributing several areas uses a `slices:` list of
+`{paths, localDirectory}` pairs instead, sharing one clone and one cache.
+Destinations must land under a canonical root — `company-os/`, `platforms/`,
+`teams/`, `company-ontology/`, or `knowledge/` — and must not overlap each
+other.
 
 `company-os workspace sync` also writes a git-ignored cache at
 `.company-os/federation-cache/`. Full walkthrough:
-[docs/FEDERATION-RUNBOOK.md](../../../docs/FEDERATION-RUNBOOK.md).
+[docs/FEDERATION-RUNBOOK.md](../../../docs/FEDERATION-RUNBOOK.md); the
+catalog specifically:
+[how-to/sync-a-knowledge-catalog.md](../how-to/sync-a-knowledge-catalog.md).
 
 ## `install.sh`: the one env var
 

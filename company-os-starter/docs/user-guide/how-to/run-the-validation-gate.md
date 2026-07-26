@@ -29,7 +29,7 @@ isn't there yet.
 | `[5/N]` CLAUDE.md context node drift | a generated `CLAUDE.md` context block matches a fresh render (absent CLAUDE.md → pass) |
 | `[6/N]` feature-index drift | each platform's `generated/feature-index.yaml` matches its derivation, and every reference in it resolves (absent → pass) |
 | `[7/N]` custom skills layering | no team/personal skill shadows a canonical skill's id/name, and every `extends:` resolves (absent/no conflicts → pass) |
-| `[8/N]` federated slice integrity *(federated workspaces only)* | materialized governance slices still match `workspace.lock.yaml` — a content-hash mismatch means someone hand-edited derived content |
+| `[8/N]` federated slice integrity *(federated workspaces only)* | materialized slices still match `workspace.lock.yaml` — a content-hash mismatch means someone hand-edited derived content, and a slice-set mismatch means a `localDirectory:`/`paths:` moved without a re-sync |
 
 ## Reading a real run
 

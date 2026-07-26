@@ -34,7 +34,24 @@ Missing/expired expires ⇒ validate FAILS.
 See templates/ — frontmatter fields marked mandatory are enforced by
 `discover validate`, `prd validate`, and `prd complete`.
 
+## Federation manifest — workspace.yaml (workspace root, optional)
+Its presence switches the workspace into federated mode (validate grows an
+8th gate). Top level: `repos:`, a non-empty list.
+Required per repo: name (a plain [A-Za-z0-9._-] label — it keys the git cache
+dir), url, pin, and a destination.
+`pin:` — EXACTLY ONE of commit:/tag:. Branches and bare refs ⇒ FAILS.
+Destination — EITHER top-level `localDirectory:` + optional `paths:`, OR a
+`slices:` list of {localDirectory, paths}. Setting both forms ⇒ FAILS.
+`paths:` defaults to the governance allowlist; it is an include-only
+allowlist (no globs, no excludes).
+`localDirectory:` must be relative and land under company-os/, platforms/,
+teams/, company-ontology/, or knowledge/. Under knowledge/ it must name an
+area (depth >= 2), not the catalog root. Targets must be disjoint across the
+whole manifest — equal or nested ⇒ FAILS.
+
 ## Generated files
 teams/<t>/generated/effective-governance.yaml is DERIVED by
 `company-os governance resolve`. Never edit it by hand; CI should run
 `governance resolve` and fail if the committed file differs.
+workspace.lock.yaml is DERIVED by `company-os workspace sync` (resolved SHAs,
+slice list, per-file hashes). Committed, machine-owned, never hand-edited.

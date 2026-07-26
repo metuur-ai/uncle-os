@@ -41,6 +41,7 @@ Jump to a how-to:
 | Deviate from a rule, or ask for an exception | [how-to/handle-a-deviation-or-exception.md](how-to/handle-a-deviation-or-exception.md) |
 | Check my work against governance before I claim it's ready/done | [how-to/check-your-work-against-governance.md](how-to/check-your-work-against-governance.md) |
 | Understand why `company-os validate` failed, or wire it into CI | [how-to/run-the-validation-gate.md](how-to/run-the-validation-gate.md) |
+| Pull a repo's docs into the knowledge catalog, without its source code | [how-to/sync-a-knowledge-catalog.md](how-to/sync-a-knowledge-catalog.md) |
 | Keep Local Search's index fresh and scoped correctly | [how-to/keep-search-fresh.md](how-to/keep-search-fresh.md) |
 
 ## I want the bigger picture

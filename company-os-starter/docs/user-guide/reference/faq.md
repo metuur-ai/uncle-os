@@ -104,6 +104,21 @@ Those commands need a `workspace.yaml` manifest at the root. If you're a plain
 monorepo with no federation, you don't need them — just use `validate`
 directly.
 
+**Can I pull just one folder out of a repo, without the source code?**
+Yes — that's a knowledge slice. Point `paths:` at the documentation directories
+you want and `localDirectory:` at somewhere under `knowledge/`. The allowlist is
+the only thing copied, so code never lands in the workspace. One repo can
+contribute several areas via a `slices:` list, sharing one clone —
+[how-to/sync-a-knowledge-catalog.md](../how-to/sync-a-knowledge-catalog.md).
+
+**Why don't the docs in `knowledge/` show up in validate or get tags?**
+Because the catalog is indexed, not governed. Knowledge slices come from repos
+that aren't Company OS workspaces: their docs have no `type:` frontmatter (the
+frontmatter gate would reject every one) and the slice is read-only (tag
+rewriting would fail). `knowledge/` still gets a `CLAUDE.md` index and gate
+`[8/8]` hash integrity — it just isn't policed by gates 1–7. A document that
+needs governing belongs in a platform or team root instead.
+
 ## Search
 
 **How do I make my workspace searchable from the terminal or an agent?**

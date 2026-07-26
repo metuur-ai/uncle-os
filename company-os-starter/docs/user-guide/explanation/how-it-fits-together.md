@@ -23,6 +23,7 @@ possible: any tool that can read a file can participate.
                      │                               │
                      │  company-os/  platforms/*/    │
                      │  teams/*/     company-ontology/│
+                     │  knowledge/  (synced catalog)  │
                      └───────────────┬───────────────┘
                                      │
                  authored & validated by

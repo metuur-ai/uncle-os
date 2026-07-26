@@ -19,16 +19,17 @@ company-os --root <path> <command> ...
 `--root` defaults to `$COMPANY_OS_WORKSPACE_ROOT`, then the current
 directory. Every command except `init` and `scratchpad` requires running
 inside (or pointed at, via `--root`) an existing workspace root — one where
-at least one of `company-os/`, `platforms/`, `teams/`, `company-ontology/`
-exists.
+at least one of `company-os/`, `platforms/`, `teams/`, `company-ontology/`,
+`knowledge/` exists (or a `workspace.yaml` manifest, before the first sync).
 
 ---
 
 ## `init`
 
-Scaffold a brand-new workspace (the four peer roots: `company-os/`,
+Scaffold a brand-new workspace (the four source roots: `company-os/`,
 `platforms/<p>/`, `teams/<t>/`, `company-ontology/`). Refuses to run inside
-an existing workspace root.
+an existing workspace root. The fifth root, `knowledge/`, is not scaffolded —
+it appears only when a knowledge slice is synced into it.
 
 ```text
 company-os init [--company NAME] [--team ID] [--platform ID]
@@ -303,14 +304,43 @@ company-os workspace status
 access (CI-safe); it dies if the lock is missing or doesn't cover a repo.
 `--only` limits `sync` to a single repo by name.
 
+Each repo declares a destination one of two ways. A single slice uses the
+top-level pair:
+
+```yaml
+  - name: platform-communications
+    url: https://github.com/acme/platform-communications.git
+    localDirectory: platforms/communications     # where it lands
+    pin: {tag: v2.1.0}                           # commit: or tag:, never a branch
+    paths: [governance/, components/, reality/]  # what to pull
+```
+
+A repo contributing several areas uses `slices:` instead — one clone, one
+cache, one checkout, N destinations:
+
+```yaml
+  - name: component-library
+    url: https://github.com/acme/component-library.git
+    pin: {tag: v1.2.0}
+    slices:
+      - {paths: [docs/sdd],       localDirectory: knowledge/components/component-library}
+      - {paths: [.claude/skills], localDirectory: knowledge/skills/component-library}
+```
+
+Setting `slices:` alongside a top-level `localDirectory:` or `paths:` is
+rejected rather than silently ignoring the top-level key, and slice targets
+must be disjoint across the whole manifest — equal or nested targets are
+refused.
+
 ```bash
 $ company-os workspace sync
 $ company-os workspace status
 ```
 
-`sync` writes `workspace.lock.yaml`; `status` reports each repo's pin vs.
-lock drift and materialized-slice cleanliness, then suggests either
-`workspace sync` or `validate` as the next step.
+`sync` writes `workspace.lock.yaml`; `status` prints one line per repo listing
+every target, and reports pin drift, slice-set drift (a target or allowlist
+changed without a re-sync), and materialized-slice cleanliness, then suggests
+either `workspace sync` or `validate` as the next step.
 
 ---
 
