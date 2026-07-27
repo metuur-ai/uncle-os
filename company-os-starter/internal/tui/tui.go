@@ -305,7 +305,7 @@ func (m Model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.menu = 0
 		case "end", "G":
 			m.menu = len(m.screens) - 1
-		case "enter", " ", "right", "l":
+		case "enter":
 			opened := m.open(m.menu)
 			if opened.handOff {
 				return opened, tea.Quit
@@ -325,10 +325,10 @@ func (m Model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.pick = 0
 		case "end", "G":
 			m.pick = len(choices) - 1
-		case "backspace", "left", "h":
+		case "backspace":
 			back, _ := m.goBack()
 			return back, nil
-		case "enter", " ", "right", "l":
+		case "enter":
 			if len(choices) > 0 {
 				m.load(m.active, choices[m.pick])
 				if m.handOff {
@@ -346,7 +346,7 @@ func (m Model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 	default: // ModeBody
 		switch msg.String() {
-		case "backspace", "left", "h":
+		case "backspace":
 			back, _ := m.goBack()
 			return back, nil
 		}

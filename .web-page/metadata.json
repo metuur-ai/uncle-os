@@ -1,0 +1,6 @@
+{
+  "name": "Company OS & Team OS Guide",
+  "description": "Interactive learning environment and workspace simulator for Company OS and Team OS Git-based governance systems.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

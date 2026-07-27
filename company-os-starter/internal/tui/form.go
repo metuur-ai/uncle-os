@@ -159,12 +159,13 @@ func (m Model) formKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.field, m.fail = clamp(m.field+1, 0, len(fields)-1), ""
 		return m, nil
 	case "left":
+		// Value cycling ONLY. On a text field there is no value to cycle and
+		// left no longer navigates: since 2026-07-27 the arrows mean exactly one
+		// thing in this UI, and Esc is the way back from every field.
 		if len(f.Choices) > 0 {
 			m.setValue(m.field, cycle(f, m.values[m.field], -1))
-			return m, nil
 		}
-		back, _ := m.goBack()
-		return back, nil
+		return m, nil
 	case "right":
 		if len(f.Choices) > 0 {
 			m.setValue(m.field, cycle(f, m.values[m.field], +1))
@@ -254,9 +255,13 @@ func (m Model) confirmKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "y", "enter":
 		m.commit()
 		return m, nil
-	case "n", "backspace", "left":
+	case "n", "backspace":
 		// One definition of back, shared with Esc — see goBack, which also owns
 		// the field-less-offer case (an offer has no form to return to).
+		//
+		// `left` was dropped here with the other arrow aliases: there is no
+		// focused field in this mode, so it had no value-cycling meaning and was
+		// pure navigation.
 		back, _ := m.goBack()
 		return back, nil
 	}

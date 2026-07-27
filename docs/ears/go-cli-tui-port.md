@@ -181,6 +181,7 @@ friction F5 (35-40 domain terms) and F6 (EARS and `@spec` syntax) are untouched.
 | R-5.13 | THE SYSTEM SHALL render validate results in the TUI from the same records the text and JSON renderers consume. |
 | R-5.14 | **Amended 2026-07-27 — see [Amendment 3](#amendment-3--esc-means-back-2026-07-27).** THE SYSTEM SHALL provide, from every screen and every field, at least one key that exits the TUI unconditionally and is named in that screen's footer, leaving no partial write. `Ctrl-C` SHALL be that key everywhere; `q` SHALL also exit everywhere except while a free-text field has focus, where it is a character. |
 | R-5.24 | THE SYSTEM SHALL return to the previous screen on `Esc` from every screen and every field, and SHALL exit only from the top-level menu where there is nothing to return to. Every screen's footer SHALL name the key that goes back. |
+| R-5.25 | THE SYSTEM SHALL move between screens on `Enter` (forward) and `Esc` (back) only, and SHALL NOT bind the left or right arrow to navigation; within a form the left and right arrows SHALL mean only "cycle the focused picker's value", so no key means navigation on one screen and editing on another. Vertical movement within a list is not navigation and is unaffected. |
 | R-5.15 | THE SYSTEM SHALL honour `NO_COLOR` within the TUI and SHALL degrade legibly on a terminal narrower than 80 columns and on resize. |
 | R-5.16 | THE SYSTEM SHALL NOT require a TTY, a terminal size, or any interactive capability for any subcommand other than `tui`. |
 | R-5.17 | WHEN `tui` is invoked with a TTY attached from a directory that is not a workspace root, THE SYSTEM SHALL open a recovery menu rather than exiting — the workspace roots found at or one level below that directory, a previewed `init` for the current directory, and an explanation of what a root is — and WHEN a root is selected SHALL re-enter the normal catalog with that path as `--root`. The scan SHALL NOT descend more than one level, because a root surfacing from four levels down is not predictable from where the reader is standing. Added 2026-07-26; exempts `tui` from R-4.4 — see [Amendment 1](#amendment-1--r-44-exemption-for-tui-2026-07-26). |
@@ -234,6 +235,18 @@ Every mode retains at least one unconditional exit and the footer names it —
 which `TestExitKeysFromFormAndConfirmation` now asserts as a property, failing if
 any mode's exit set is empty. What Esc adds is the behaviour that was missing:
 holding it walks back to the menu and then out.
+
+**R-5.25, added the same day, removes the ambiguity that hid the defect.** The
+original keymap bound four keys to "forward" (`enter`, `space`, `right`, `l`) and
+three to "back" (`backspace`, `left`, `h`) — while inside a form `left`/`right`
+meant something else entirely, cycling the focused picker's value. The same
+physical key navigated on one screen and edited on another, which is why the
+missing way back was hard to see rather than obvious. Navigation is now `Enter`
+and `Esc` only; the arrows keep exactly one meaning, and it lives in the form.
+Vertical movement within a list (`up`/`down`, `j`/`k`) is untouched — moving
+within a list is not moving between screens. Pinned by `TestArrowsDoNotNavigate`,
+which also asserts the keys that DO work, so it cannot pass by breaking
+navigation altogether.
 
 ### Amendment 2 — advisor scope corrected (2026-07-27)
 

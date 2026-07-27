@@ -189,7 +189,10 @@ func TestTheConfirmedActionIsTheOneThatWasShown(t *testing.T) {
 // TestCancellingRunsNothing is R-5.9's first half at this seam. Every way out of
 // the confirmation that is not `y` must leave Commit uncalled.
 func TestCancellingRunsNothing(t *testing.T) {
-	for _, k := range []string{"q", "esc", "ctrl+c", "n", "backspace", "left"} {
+	// "left" was dropped from this list on 2026-07-27: arrows no longer
+	// navigate, so it is not a way out of the confirmation any more. The keys
+	// that ARE ways out all still leave Commit uncalled, which is the property.
+	for _, k := range []string{"q", "esc", "ctrl+c", "n", "backspace"} {
 		var built []*spyAction
 		m := reachConfirm(t, formModel(t, &built), "a title")
 		m, _ = key(t, m, k)

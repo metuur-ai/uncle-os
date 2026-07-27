@@ -193,6 +193,57 @@ func TestEscGoesBackOneLevel(t *testing.T) {
 	t.Error("repeated esc never reached an exit")
 }
 
+// TestArrowsDoNotNavigate pins the keymap agreed 2026-07-27: back-and-forth is
+// Enter and Esc, and the arrows are not aliases for it.
+//
+// Before this, `right`/`l`/`space` all opened a screen and `left`/`h` all went
+// back, so four keys meant "forward" and three meant "back" — while inside a
+// form left/right meant something else entirely (cycle the focused picker's
+// value). The same physical key meant navigate on one screen and edit on
+// another, which is what made the form's one-way door hard to see.
+//
+// left/right keep exactly one meaning now, and it lives in the form. Up/down
+// (and j/k) are untouched: moving within a list is not moving between screens.
+func TestArrowsDoNotNavigate(t *testing.T) {
+	base := newModel(t)
+
+	for _, k := range []string{"right", "l", " "} {
+		after, cmd := key(t, base, k)
+		if isQuit(cmd) {
+			t.Errorf("%q quit from the menu", k)
+		}
+		if after.Mode() != tui.ModeMenu {
+			t.Errorf("%q opened a screen from the menu; only enter should", k)
+		}
+	}
+
+	pick, _ := key(t, base, "down")
+	pick, _ = key(t, pick, "enter")
+	if pick.Mode() != tui.ModePick {
+		t.Fatalf("enter did not open the picker, got %v", pick.Mode())
+	}
+	for _, k := range []string{"left", "h"} {
+		after, _ := key(t, pick, k)
+		if after.Mode() != tui.ModePick {
+			t.Errorf("%q went back from the picker; only esc/backspace should", k)
+		}
+	}
+
+	// And the two that DO still work, so this test cannot pass by breaking
+	// navigation altogether.
+	if after, _ := key(t, pick, "esc"); after.Mode() != tui.ModeMenu {
+		t.Errorf("esc did not go back from the picker, got %v", after.Mode())
+	}
+	if after, _ := key(t, pick, "backspace"); after.Mode() != tui.ModeMenu {
+		t.Errorf("backspace did not go back from the picker, got %v", after.Mode())
+	}
+
+	// Up/down movement is deliberately unchanged.
+	if after, _ := key(t, base, "j"); after.Mode() != tui.ModeMenu {
+		t.Error("j should move within the menu, not leave it")
+	}
+}
+
 // TestEveryScreenIsReachable walks the whole catalog through Update, which is
 // what makes R-5.4's list a testable boundary rather than a comment: adding an
 // eleventh screen without a Run, or one that panics on open, fails here.
