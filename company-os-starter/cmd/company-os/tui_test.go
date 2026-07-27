@@ -127,6 +127,37 @@ func TestNoOtherSubcommandNeedsATTY(t *testing.T) {
 	}
 }
 
+// TestQuittingTheRecoveryMenuExitsZero is R-5.23, and it is the ONLY externally
+// observable surface of R-5.17's exemption from R-4.4.
+//
+// Before R-5.17, `tui` outside a workspace root exited 3. It now opens a recovery
+// menu, and a reader who quits without choosing gets 0 — because quitting a menu
+// is not a failure, so R-4.10 is not engaged (Amendment 1's ruling). R-4.10
+// explicitly contemplates callers branching on exit status, so this number is
+// part of the contract and not an implementation detail.
+//
+// It had no test until 2026-07-27; task 7.7's verify line claimed it while
+// nothing checked it. Found in review by @uncle-dev:uncle-lead.
+func TestQuittingTheRecoveryMenuExitsZero(t *testing.T) {
+	prevTTY := interactive
+	interactive = func() bool { return true }
+	t.Cleanup(func() { interactive = prevTTY })
+
+	// "q" quits from any screen (R-5.14). Driving the real UI rather than
+	// calling recoveryScreens directly is the point: the exit code is produced
+	// by run(), and that is what a caller sees.
+	prevIn := stdin
+	stdin = strings.NewReader("q")
+	t.Cleanup(func() { stdin = prevIn })
+
+	dir := t.TempDir() // not a workspace root, and holds none
+	var stdout, stderr bytes.Buffer
+	if code := run([]string{"--root", dir, "tui"}, &stdout, &stderr); code != 0 {
+		t.Errorf("quitting the recovery menu exited %d, want 0\nstderr: %s",
+			code, stderr.String())
+	}
+}
+
 // TestBareInvocationDoesNotLaunchTheTUI is R-5.2. A bare `company-os` prints
 // usage and exits 2, exactly as it did before this subcommand existed — the
 // property that keeps an agent or a CI job from landing in an interactive app.

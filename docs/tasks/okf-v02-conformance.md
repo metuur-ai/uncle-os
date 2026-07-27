@@ -160,13 +160,25 @@ commit as the title backfill (3.4) or the harness's double-build check goes red.
     `type: prd` at gate 3 (`:975`) and `prd validate` (`:627-630`). This audit
     produces the evidence table that 1.2's clause is written against, so it has to
     come first. Read-only; no files change.
-  - **Re-planned 2026-07-27 — cheaper than estimated.** The evidence table was to
-    be built by reading `bin/company-os`, which no longer exists. The port carried
-    every cited Python line forward as a Go source comment, so this becomes a
-    verification pass over Amendment 2's anchor map rather than a fresh read.
-    Re-estimate ~20m. Confirm each Go site says what the map claims; a site whose
-    comment cites a Python line but implements something else is the finding this
-    task exists to catch.
+  - **Re-planned 2026-07-27, then CORRECTED the same day after review. Keep the
+    ~40m.** The first re-plan cut this to ~20m on the grounds that Amendment 2's
+    anchor map replaced the fresh read. That is true of **one of the task's two
+    halves** and the estimate quietly dropped the other:
+    - **R-1.13 half — covered.** The blocking-field sites are in the anchor map.
+      This half is a verification pass: confirm each Go site says what the map
+      claims. A site whose comment cites a Python line but implements something
+      else is exactly the finding this task exists to catch — two such were already
+      found while building the map.
+    - **R-1.4 half — NOT covered, and it is the substantive work.** Its candidates
+      come from R-1.3: unknown `type` values, unknown frontmatter keys, broken
+      cross-links, missing optional documents, missing federation roots. **None of
+      those five appears anywhere in the anchor map**, and none was cited in the
+      Python implementation either. They have to be located in Go from scratch and
+      each needs a package, symbol and line.
+    - Use `python-cli-final` where a historical citation has to be settled; the
+      tag exists and the file reads in full (R-9.2).
+  - Found in review by `@uncle-dev:uncle-po`. Recorded because a re-estimate that
+    makes a task look mostly done is worse than no re-estimate.
   - acceptance: R-1.13 — every field that blocks anywhere is identified across
     `CoreFieldErrors` (`internal/product/contract.go:65`), gate 3
     (`internal/product/check.go:89`), and the `prd validate` required-field list
@@ -211,9 +223,16 @@ commit as the title backfill (3.4) or the harness's double-build check goes red.
     bump it; R-1.7 — the enum becomes `minimal | standard | strict`, `provisional`
     is dropped as unused, and `01-flexibility-skills-and-role-views.md:121` is
     corrected.
+  - **Re-planned 2026-07-27 — the enum has a THIRD sync point the plan predates.**
+    `scaffoldPlatform` (`internal/scaffold/scaffold.go:196-197`) now emits
+    `companyOsVersion: "2026.2"` and `profile: standard` into every new platform.
+    When this was planned those values existed only in committed fixtures. The
+    emitter is correct against the corrected enum, which is precisely why it is
+    easy to miss — reconcile it deliberately rather than discover it later.
   - verify: `grep -rn "conformance:" examples/` — all eight fixtures conformant
     against the new document with **zero fixture edits**; `grep -rn "provisional"`
-    returns nothing outside history.
+    returns nothing outside history; the scaffolded value in
+    `internal/scaffold/scaffold.go` is a member of the documented enum.
 
 - [ ] 1.4 State the OKF relationship and retire the stale v0.1 claims (deps: 1.2, est: ~40m)
   - why: The repo declares "Documentation standard: OKF v0.1" in its founding
@@ -385,8 +404,20 @@ commit as the title backfill (3.4) or the harness's double-build check goes red.
     file listing. This is the change with a consumer today. Re-estimate ~60m.
   - acceptance: R-3.2 — every document in `examples/workspace/` and
     `examples/standalone-team/` that lacks a title has one.
+  - **Scope, stated as an allowlist rather than "generated/reserved" (2026-07-27).**
+    R-3.2 says "every document"; the re-measurement counts only documents carrying
+    frontmatter `type:`. Of the 24 markdown files across the two fixtures, **16 are
+    typed and in scope**; the 8 below are out, and two of them are neither
+    generated nor reserved, so the old verify wording left a verifier guessing:
+
+    | Out of scope | Why |
+    |---|---|
+    | 5 × `CLAUDE.md` | generated — `title:` is derived, not authored |
+    | `workspace/EXAMPLE_README.md`, `standalone-team/EXAMPLE_README.md` | fixture orientation prose, not workspace documents |
+    | `workspace/platforms/communications/log.md` | append-only event log, no frontmatter by design |
+
   - verify: `grep -rL "^title:" examples/workspace examples/standalone-team
-    --include='*.md'` returns only generated/reserved files.
+    --include='*.md'` returns exactly the eight files above and nothing else.
 
 - [ ] 3.5 Add `resource:` to reality documents (deps: 3.4, est: ~20m, mutex: fixtures)
   - why: Restores the field the founding proposal used

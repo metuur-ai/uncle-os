@@ -183,11 +183,43 @@ friction F5 (35-40 domain terms) and F6 (EARS and `@spec` syntax) are untouched.
 | R-5.15 | THE SYSTEM SHALL honour `NO_COLOR` within the TUI and SHALL degrade legibly on a terminal narrower than 80 columns and on resize. |
 | R-5.16 | THE SYSTEM SHALL NOT require a TTY, a terminal size, or any interactive capability for any subcommand other than `tui`. |
 | R-5.17 | WHEN `tui` is invoked with a TTY attached from a directory that is not a workspace root, THE SYSTEM SHALL open a recovery menu rather than exiting — the workspace roots found at or one level below that directory, a previewed `init` for the current directory, and an explanation of what a root is — and WHEN a root is selected SHALL re-enter the normal catalog with that path as `--root`. The scan SHALL NOT descend more than one level, because a root surfacing from four levels down is not predictable from where the reader is standing. Added 2026-07-26; exempts `tui` from R-4.4 — see [Amendment 1](#amendment-1--r-44-exemption-for-tui-2026-07-26). |
-| R-5.18 | WHEN the TUI opens on a workspace, THE SYSTEM SHALL present, ahead of every other screen, each derived artifact that is missing or stale together with the command that produces it, because each is otherwise reported only where the reader must already be looking: an unresolved `effective-governance.yaml` as a `[warn]` line inside `today --role`, a drifted generated block as a `[FAIL]` line at the end of `validate`. |
-| R-5.19 | THE SYSTEM SHALL derive that list from the same checks `validate` runs, so the advisor and the gate cannot disagree about whether something is wrong; WHERE nothing is wrong the list SHALL be empty, so a healthy workspace presents the catalog it presented before this requirement existed. |
+| R-5.18 | **Restated 2026-07-27 — see [Amendment 2](#amendment-2--advisor-scope-corrected-2026-07-27).** WHEN the TUI opens on a workspace, THE SYSTEM SHALL present, ahead of every other screen, each artifact the workspace is missing or has let go stale, together with the command that resolves it, because each is otherwise reported only where the reader must already be looking: an unresolved `effective-governance.yaml` as a `[warn]` line inside `today --role`, a drifted generated block as a `[FAIL]` line at the end of `validate`. |
+| R-5.19 | **Restated 2026-07-27 — see [Amendment 2](#amendment-2--advisor-scope-corrected-2026-07-27).** THE SYSTEM SHALL NOT report a problem that `validate` does not report, nor omit one that `validate` reports; every detector SHALL share its definition with the command that reports or fixes the problem, so the two cannot disagree. WHERE nothing is wrong the list SHALL be empty, so a healthy workspace presents the catalog it presented before this requirement existed. |
 | R-5.20 | WHILE the advisor is detecting problems, and WHILE a reader is opening an offer to read its preview, THE SYSTEM SHALL make no filesystem change — detection runs on every TUI start, so it must be incapable of altering what it inspects. |
 | R-5.21 | THE SYSTEM SHALL express every offered fix as a single flag-complete `company-os` invocation executed through the preview-and-confirm path of R-5.6–R-5.8, such that the previewed line parses back into the invocation that runs (R-5.10). |
-| R-5.22 | IF a detected problem cannot be resolved by an invocation the system can construct — a missing federation manifest needs repo URLs and commit pins nothing can infer — THE SYSTEM SHALL report and explain it and SHALL NOT offer a fix, because a form that writes a plausible-but-wrong manifest is worse than the missing file. |
+| R-5.22 | **Restated 2026-07-27 — see [Amendment 2](#amendment-2--advisor-scope-corrected-2026-07-27).** IF resolving a detected problem requires a value that cannot be derived from the workspace — a federation manifest needs repo URLs and commit pins; an unresolved feature-index reference needs an authoring decision — THE SYSTEM SHALL report and explain the problem and SHALL NOT offer a fix, because a form that writes a plausible-but-wrong value is worse than the missing one. |
+
+| R-5.23 | WHEN the reader leaves the recovery menu of R-5.17 without selecting a workspace, THE SYSTEM SHALL exit 0, because quitting a menu is not a failure. |
+
+### Amendment 2 — advisor scope corrected (2026-07-27)
+
+**Authority:** review findings from `@uncle-dev:uncle-lead` and
+`@uncle-dev:uncle-po` against the clauses as first written, the same day.
+
+R-5.18, R-5.19 and R-5.22 were written one day after the advisor was built and
+described it inaccurately in three ways. All three were **too narrow**, and the
+implementation was correspondingly incomplete.
+
+| Clause | Defect as first written | Restated |
+| --- | --- | --- |
+| R-5.18 | Subject was "each **derived** artifact". Two of the four shipped diagnoses are about artifacts that are **authored**: `teams/<t>/standards/definition-of-done.md` and `workspace.yaml` — the latter exists precisely because it *cannot* be derived (R-5.22). Half the advisor fell outside its own requirement. | Subject widened to "each artifact the workspace is missing or has let go stale". |
+| R-5.19 | "Derive that list from **the same checks `validate` runs**" is true of exactly one detector. `effective-governance.yaml` is a `today --role` warning, not a gate; `MissingTeamFiles` is not a check `validate` runs at all. The clause also mandated code sharing, which is an implementation, not an outcome — an implementer with an independent detector plus a property test proving agreement satisfies the intent and violated the letter. | Restated as the outcome: never report what `validate` does not, never omit what it does; every detector shares its definition with whatever reports or fixes the problem. |
+| R-5.22 | Trigger was "cannot be resolved by an invocation **the system can construct**" — circular, since it is defined by the system's own capability, so an implementation that constructs fewer invocations satisfies it trivially. | Trigger anchored in the problem: resolving it requires a value that cannot be derived from the workspace. |
+
+**The restatement exposed a real gap, which was then fixed.** `validate` has two
+derived-artifact gates — `[5/7]` context-node drift and `[6/7]` feature-index
+drift. The advisor covered only the first, so under the corrected R-5.18/R-5.19
+it failed both. Gate 6 is now surfaced, split by code because its two failing
+findings need opposite treatment: `feature-index.drift` is derived state and
+`graph build` settles it, while `feature-index.unresolved-reference` is an
+authoring error that rebuilding reproduces — so it is explained and not offered,
+which is now also a named example in R-5.22. Task 7.7 was reopened for this.
+
+**R-5.23 is new, not a restatement.** The exit code on quitting the recovery menu
+was the observable surface of the R-4.4 exemption and lived only in a table inside
+[Amendment 1](#amendment-1--r-44-exemption-for-tui-2026-07-26). R-4.10 explicitly
+contemplates callers branching on exit status, so a reader checking R-5.17 alone
+could not learn it. It is now a clause with a test.
 
 ### Amendment 1 — R-4.4 exemption for `tui` (2026-07-26)
 
@@ -203,7 +235,16 @@ root-resolution order printed. R-5.17 replaces that path for `tui` alone.
 | Every subcommand other than `tui` | **Unchanged.** R-4.4 holds as written. |
 | `tui` with no TTY | **Unchanged.** R-5.3's exit 7 is decided before the root question is asked, so the non-interactive contract is untouched and no filesystem change occurs. |
 | `tui` with a TTY, outside a root | **Exempted.** Opens the recovery menu instead of exiting 3. |
-| Exit code when the reader quits that menu without choosing | **0, not 3.** This is the observable surface of the exemption and the part a caller could branch on under R-4.10. |
+| Exit code when the reader quits that menu without choosing | **0, not 3.** Promoted to R-5.23 on 2026-07-27 — see the ruling below. |
+
+**RULING on the R-4.10 collision (added 2026-07-27).** The table above named the
+collision and stopped, leaving two locked clauses in apparent contradiction.
+Resolved: **R-4.10 governs failures** — "THE SYSTEM SHALL use only non-zero codes
+for every failure" — and quitting a menu is not a failure. What R-5.17 changed is
+not the code a failure returns; it is that *"`tui` was invoked outside a workspace
+root"* stopped being a failure for `tui`. A caller branching on zero against
+non-zero still sees a failure as non-zero, which is the property R-4.10 exists to
+preserve. R-4.4 is exempted for `tui`; R-4.10 is not engaged.
 
 **Why the exemption rather than better error text.** The behaviour was measured
 standing in `examples/banking/bank/workspaces/`, a directory holding two

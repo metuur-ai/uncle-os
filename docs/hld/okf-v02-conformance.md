@@ -72,8 +72,12 @@ names and defers the semantics. Stated plainly so no reader infers otherwise.
 
 **CI pipelines running `company-os validate`.** A constraint, not an opportunity.
 A workspace that exits 0 at commit N-1 must exit 0 at commit N. The kit's own
-oracle — `examples/acceptance.sh`, with `examples/selftest.py` and two frozen
-golden snapshots — is the verification surface for every criterion here.
+oracle — `make check`: gofmt, `go vet`, `go test ./...`, and
+`examples/acceptance.sh` with two frozen golden snapshots — is the verification
+surface for every criterion here. **Amended 2026-07-27** under R-9.8:
+~~`examples/selftest.py`~~ was deleted by R-9.3, and its assertions live in the Go
+test suite. The surface widened rather than narrowed; see
+[Amendment 2](../ears/okf-v02-conformance.md#amendment-2--re-plan-against-the-go-binary-2026-07-27).
 
 **Maintainers of the kit.** `docs/ONTOLOGY-GUIDE.md` (368 lines) documents
 `spec trace`, `validate --ontology`, vocabulary linting, `ears:` requirement
@@ -193,7 +197,7 @@ conformance document's "considered and deferred" section.
 
 | Unit | Content | CLI diff | `golden-validate.txt` | Committed generated files |
 |---|---|---|---|---|
-| U0 | Done-gate date parsing + selftest check | 1 line | unchanged | unchanged |
+| U0 | Done-gate date parsing + its automated check (~~selftest~~, retired 2026-07-27) | 1 line | unchanged | unchanged |
 | U1 | Conformance & versioning document; reserve `generated`/`verified` | none | unchanged | unchanged |
 | U2 | Ontology roadmap separation + fixture claim corrections | none | unchanged | unchanged |
 | U3 | `title` + `resource`; templates incl. the `outcome.md` writer; fixtures | templates only | **unchanged** | `CLAUDE.md` blocks change |
@@ -227,11 +231,13 @@ findings rather than rediscovering them.
    for exactly this reason. Any index design must skip manifest-declared slice
    roots (I9).
 2. **Generation must be wired into every derived-artifact path, not just
-   `graph build`.** `rebuild_generated` (`:1746`) has seven call sites — `:713`
-   `prd complete`, `:1925` `init`, `:1952`/`:1959`/`:1970` `add`, `:1993`
-   `reality new`. Wiring only `cmd_graph` means `company-os init` produces a
-   workspace that fails its own validate, which `examples/selftest.py` already
-   asserts against.
+   `graph build`.** `rebuild_generated` (~~`:1746`~~ → **`:1803`**, settled from
+   the `python-cli-final` tag 2026-07-27; today `internal/graph/graph.go:59`
+   `Rebuild`) has seven call sites — `prd complete`, `init`, three in `add`,
+   `reality new`. Wiring only `cmd_graph` (`graph.go:16` `Build`) means
+   `company-os init` produces a workspace that fails its own validate, which
+   `TestInitFreshWorkspaceValidatesGreen` (`cmd/company-os/selftest_test.go`)
+   asserts against — ~~`examples/selftest.py`~~, retired with the file.
 3. **`description:` belongs with it.** Its only consumer is the index, so shipping
    it here would create a field with no consumer — the exact drift this change
    exists to correct. Its quality also cannot be reviewed without a rendered

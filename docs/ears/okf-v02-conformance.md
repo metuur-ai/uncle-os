@@ -200,12 +200,12 @@ below marked *(settled)* was read from that tag.
 | Cited in | Python anchor | Go site today |
 | --- | --- | --- |
 | R-0.1, R-0.3 (Unit 0 Why) | `:679-682` done-gate date compare | `internal/product/prd.go:466` and `parseDate` — the comment there quotes the original string comparison |
-| R-1.2 | `:133-135` identity field (`id`, or `prd`) | `internal/product/contract.go` — the `!truthy(meta,"id") && !truthy(meta,"prd")` branch of `CoreFieldErrors` |
+| R-1.2 | `:133-135` identity field (`id`, or `prd`) | `internal/product/contract.go:70` — the `!truthy(meta,"id") && !truthy(meta,"prd")` branch of `CoreFieldErrors` |
 | R-1.13 | `core_field_errors:128-145` | `internal/product/contract.go:65` `CoreFieldErrors` |
-| R-1.13 | gate 3 `:975` | `internal/product/check.go:89` `Gate` (`:975-993`) |
-| R-1.13 | `cmd_prd` validate `:627-630` | `internal/product/prd.go` — the required-field list at `:23` and its validate path |
-| R-1.13 (format checks) | `:171-175` `format_checks_enforced` | `internal/product/contract.go` `FormatChecksEnforced` |
-| R-3.6 | `:701-705` `outcome.md` writer | `internal/product/prd.go:359-360` (call) and `:569-574` `outcomeDoc` (content) |
+| R-1.13 | gate 3 `:975` | `internal/product/check.go:36` `contractFields` — the four-field list the gate fails on. (`:89` `Gate` is the enclosing function; the check itself is 53 lines above it.) |
+| R-1.13 | `cmd_prd` validate `:627-630` — **the Go source cites `:627-628`**; a third stale-citation discrepancy, flagged here rather than left for task 1.1 to rediscover | `internal/product/prd.go:22-25` `processFields`. **Deliberately asymmetric with gate 3**: six fields vs four, because a workspace sweep does not demand `decisionOwner` or the `platform` of a document whose location states it (`check.go:33-35`). |
+| R-1.13 (format checks) | `:171-175` `format_checks_enforced` | `internal/product/contract.go:99` `FormatChecksEnforced` |
+| R-3.6 | `:701-705` `outcome.md` writer | `internal/product/prd.go:361` (call) and `:569-574` `outcomeDoc` (content) |
 | Unit 3 Why | `:1682` `build_claude_node` title fallback — **stale; the function begins at `:1709` (settled)** and `:1682` is inside `iter_knowledge_docs`, a different title-derivation site | `internal/graph/node.go:319-324` — resolved by matching the quoted expression `meta.get("title") or meta.get("id") or Path(rel).name`, not by line |
 | D-2.2 | `cmd_graph:1713` → **`:1770` (settled)**; `rebuild_generated:1746` → **`:1803` (settled)** | **Two distinct symbols, not one.** `cmd_graph` is `internal/graph/graph.go:16` `Build`; `rebuild_generated` is `internal/graph/graph.go:59` `Rebuild`. D-2.2 is specifically about generating from *both* paths, so an earlier version of this row — which mapped both names onto `Rebuild` — erased the requirement's subject. Both of this spec's line numbers are stale by 57; the Go comment's `:1803` is correct. |
 | D-2.5 | `iter_graph_docs` skip-list — **`:1361` (settled)**; the Go source's `:1346-1392` range starts inside `rewrite_frontmatter_tags` | `internal/graph/tags.go:186` `IterGraphDocs` |
@@ -262,6 +262,14 @@ surface or an exit-code contract. Both now exist and belong in it:
 - **`knowledge/`.** The synced catalog root did not exist when Unit 1 was written.
   It is a node root but not a graph-docs root, and R-1.10's Terminology owes it a
   definition alongside *federation root*.
+- **A code-side producer of `conformance:` now exists, and it lands inside Unit 1's
+  own subject.** `scaffoldPlatform` (`internal/scaffold/scaffold.go:196-197`)
+  writes `companyOsVersion: "2026.2"` and `profile: standard` into every new
+  platform. R-1.5, R-1.6 and R-1.7 were written when those values existed only in
+  committed fixtures; the `profile:` enum now has a **third** sync point —
+  `docs/01-flexibility-skills-and-role-views.md:121`, the fixtures, and this
+  emitter — and task 1.3's targets name only the first two. Harmless today, since
+  `standard` is in the corrected enum, which is exactly why it would be missed.
 
 These are additions to R-1.1's section list, not new units. They are recorded here
 rather than legislated, because adding requirements to a locked spec is a change

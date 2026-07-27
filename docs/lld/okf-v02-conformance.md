@@ -98,22 +98,37 @@ inconsistently applied when it is in fact correctly scoped.
 
 `title` cannot be documented as a plain SHOULD. It is blocking today in two places:
 
-```python
-# gate 3, :975
-missing = [f for f in ["title", "team", "components", "governanceSnapshot"] if not meta.get(f)]
+> **Amended 2026-07-27.** The two evidence blocks below were Python, from a file
+> R-9.3 deleted. They are restated against the Go implementation under the
+> authority of R-9.8; see
+> [Amendment 2](../ears/okf-v02-conformance.md#amendment-2--re-plan-against-the-go-binary-2026-07-27)
+> for the full anchor map. The field lists are unchanged — the port preserved
+> both, including the deliberate asymmetry between them.
+
+```go
+// gate 3 — internal/product/check.go:36 (was bin/company-os:975)
+var contractFields = []string{"title", "team", "components", "governanceSnapshot"}
 ```
-```python
-# prd validate, :627-630
-for field in ["title", "team", "platform", "components", "governanceSnapshot", "decisionOwner"]:
-    if not meta.get(field) or meta.get(field) == "TODO":
+```go
+// prd validate — internal/product/prd.go:22-25 (was bin/company-os:627-628;
+// this spec elsewhere cites :627-630, a discrepancy recorded in Amendment 2)
+var processFields = []string{
+    "title", "team", "platform", "components", "governanceSnapshot", "decisionOwner",
+}
 ```
 
+Note the asymmetry, which is intentional and documented at `check.go:33-35`: the
+gate's list is **shorter** by `platform` and `decisionOwner`, because a workspace
+sweep does not demand a decision owner or the platform of a document whose
+location already states it.
+
 For `type: prd` it is a MUST, enforced, exit 1. So every SHOULD in the clause is
-verified against `core_field_errors:128-145`, gate 3 `:975`, and `cmd_prd`
-validate `:627-630`, and anything that blocks anywhere is documented as
-conditionally required. Symmetrically, every MUST-NOT-reject item cites a
-`bin/company-os` file:line — an uncited item is a bug in the claim, not a
-formatting gap.
+verified against `CoreFieldErrors` (`internal/product/contract.go:65`), gate 3
+(`internal/product/check.go:36`), and `prd validate`'s process contract
+(`internal/product/prd.go:22-25`), and anything that blocks anywhere is
+documented as conditionally required. Symmetrically, every MUST-NOT-reject item
+cites a Go package, symbol and line — an uncited item is a bug in the claim, not
+a formatting gap.
 
 ### 4. `2026.2` is the floor; the bump rule is forward-only (R-1.5, R-1.6)
 

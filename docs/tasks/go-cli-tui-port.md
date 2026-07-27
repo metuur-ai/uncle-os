@@ -2610,21 +2610,40 @@ mutating form is written.
        called it an R-5.8 violation — but on a confirmation, enter *is* the
        confirmation. The key set was narrowed for field-less forms rather than
        the property weakened.
-  - **One claim from this session was found false and is retracted**, not
-    inherited: that a fresh `init` leaves a drifted block behind. See task 6.11.
-    `TestAdviceHeadsTheCatalog` now pins the true fresh-workspace state —
-    `validate` exits 0, and the advisor is non-empty because governance is
-    unresolved.
+  - **Two corrections after review, 2026-07-27 — this task was marked done while
+    incomplete, and the record should say so.**
+    1. **The advisor covered gate 5 and silently ignored gate 6.** `validate` has
+       two derived-artifact gates; feature-index drift was never surfaced, so
+       R-5.18's "each" was false on the day this was closed. Now covered, split by
+       code: `feature-index.drift` is offered a `graph build`, while
+       `feature-index.unresolved-reference` is explained and not offered, because
+       rebuilding derives the same broken reference again. Found by
+       `@uncle-dev:uncle-po`.
+    2. **R-5.18, R-5.19 and R-5.22 were all too narrow** and are restated in
+       [Amendment 2](../ears/go-cli-tui-port.md#amendment-2--advisor-scope-corrected-2026-07-27):
+       R-5.18's subject excluded the two authored artifacts the advisor reports,
+       R-5.19 mandated code sharing that holds for only one of three detectors,
+       and R-5.22's trigger was circular. R-5.23 was added for the exit code on
+       quitting the recovery menu, which had been asserted in this task's verify
+       line with nothing checking it.
+  - **One claim from this session was retracted — and the retraction was itself
+    wrong.** A fresh `init` DOES leave a drifted block behind when the workspace
+    path has a `scratchpad` ancestor. See task 6.11 for the full sequence and 6.12
+    for the open decision. `TestAdviceHeadsTheCatalog` pins only that the advisor
+    is non-empty on a fresh workspace; it does not run `validate`, and this task
+    previously implied it did.
   - why: the two states a new user is most likely to be in — standing one
     directory too high, and holding a workspace whose derived files have not been
     generated — were the two the TUI handled worst. One exited 3 with a
     resolution order; the other required knowing which of eleven subcommands to
     run next.
-  - acceptance: R-5.17, R-5.18, R-5.19, R-5.20, R-5.21, R-5.22, GPF-R-1.9a,
-    GPF-R-1.9b, GPF-R-1.9c
-  - verify: `tui` from a directory holding two roots offers both and exits 0 on
-    quit; `tui` with no TTY still exits 7; the advisor is empty on
-    `examples/workspace` and heads the catalog when it is not; every offered fix
-    round-trips through the real parser into the same `*Args`; detection and
-    preview leave the workspace tree hash unchanged; `--repair` restores a
-    deleted file byte-identically and skips every file that exists.
+  - acceptance: R-5.17, R-5.18, R-5.19, R-5.20, R-5.21, R-5.22, R-5.23,
+    GPF-R-1.9a, GPF-R-1.9b, GPF-R-1.9c
+  - verify: `tui` from a directory holding two roots offers both;
+    `TestQuittingTheRecoveryMenuExitsZero` pins exit 0 on quit (R-5.23); `tui`
+    with no TTY still exits 7; the advisor is empty on `examples/workspace`, heads
+    the catalog when it is not, and covers **both** derived-artifact gates; every
+    offered fix round-trips through the real parser into the same `*Args`;
+    detection and preview leave the workspace tree hash unchanged; `--repair`
+    restores a deleted file byte-identically, skips every file that exists, and
+    reports its registry write (`TestRepairReportsARestoredRegistryEntry`).
