@@ -184,6 +184,23 @@ there is no Go precedent in this repository.
    shell configuration.
    If nobody will run this test, Phase 2's PO justification is struck and the TUI
    is re-justified on engineer value alone.
+
+   > **Status 2026-07-27 — NOT MET, and stated here rather than left implied.**
+   > The TUI is built, merged, and on `main`; **nobody from the audience this
+   > criterion names has seen it.** The criterion reads as pending, but its
+   > subject already shipped, so what is pending is only the evidence that it was
+   > worth shipping for the stated reason.
+   >
+   > It is currently **unsatisfiable**, and not for want of a volunteer: the
+   > criterion requires "the published install line," and no release exists, so
+   > that line prints "no release has been published for this platform yet."
+   > Task 7.6 carries the correction — it is blocked on the `v0.1.0` release
+   > decision, not on recruitment.
+   >
+   > The remedy in the second sentence above is **pre-committed** in task 7.6:
+   > if the journey is not run within 30 days of that release, this criterion is
+   > struck and the TUI is re-justified on engineer value alone — amended with
+   > the date and the reason, not deleted.
 10. `company-os tui` with no TTY attached exits 7, prints an explanatory message,
     and changes nothing.
 11. Every TUI screen is enumerated in the spec and asserted by test. "Reaches all

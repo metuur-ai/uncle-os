@@ -1648,16 +1648,24 @@ Ordered by the coupling map in research §4c: most self-contained first.
     has been published yet" message pointing at `make install` from source,
     rather than a bare download error.
 
-    **Status 2026-07-27 — the first of the two is done locally, the second is
-    not.** `go-cli` was fast-forwarded into `main` (verified as a fast-forward:
-    `main` was 0 commits ahead), so the tree on `main` is now the Go one and the
-    Python-era `install.sh` is gone from it. **This does not yet change what any
-    URL serves:** `raw.githubusercontent.com/…/main/…` reflects `origin/main`,
-    so the silent wrong answer above persists until `main` is pushed. No tag was
-    created and no release exists, which is deliberate — it was not authorized
-    as part of this step. The `releases/latest/download/…` row of the table
-    above therefore still reads 404, and `install.sh`'s explicit
-    "no release has been published yet" message is still the path a user hits.
+    **Status 2026-07-27 — the first of the two is DONE and pushed; the second is
+    not. The dangerous condition is gone.** `go-cli` was fast-forwarded into
+    `main` and pushed (`origin/main` = `a25416d`). The table above is now
+    **historical**: `raw.githubusercontent.com/…/main/…/install.sh` serves the Go
+    installer, verified by fetching it. A user following the published one-liner
+    no longer installs the deleted Python CLI.
+
+    What replaced it is an **honest failure, not a silent wrong answer** — the
+    Go `install.sh` exits with "no release has been published for this platform
+    yet" and points at `make install` from source. That is the correct behaviour
+    for a repository with no release, and it is why this is no longer urgent.
+
+    **Still missing: the tag.** No release exists, deliberately — it was not
+    authorized. The `releases/latest/download/…` 404 row still holds. **This task
+    cannot start without it (R-6.4 requires a downloaded release artifact), and
+    neither can task 7.6**, whose condition 3 is "an install line only" — a line
+    that currently prints the no-release message. 7.6 is therefore blocked on this
+    release decision, not on recruitment, which is how it had been recorded.
   - **No longer gated on 5.2.** The dependency was "the macOS half is only
     meaningful once notarization is done"; `install.sh` removed that — a
     `curl`-fetched binary is never quarantined, so the unsigned artifact is the
@@ -2331,11 +2339,21 @@ Ordered by the coupling map in research §4c: most self-contained first.
     behaviour the contract, and the port chose faithful reproduction over quietly
     ingesting more documents than the oracle — which was the right call *for the
     port* and is now a shipped defect that outlived its justification.
-  - **Why it matters rather than being a curiosity:** the product ships
-    `company-os scratchpad init` and documents a per-repo `scratchpad/` working
-    area, so the name is one the tool itself teaches users to create. Anyone whose
-    checkout sits under such a directory gets a workspace that fails its own gate
-    on day one, with a message telling them to run a command that will not fix it.
+  - **Why it matters — corrected 2026-07-27, the first framing overstated it.**
+    This task originally argued the exposure from "the product ships
+    `company-os scratchpad init`, so the tool teaches the name that breaks it."
+    **That argument does not hold.** `scratchpad init` creates `<repo>/scratchpad`
+    (`internal/scaffold/commands.go:544`, `--repo PATH`) — *inside* a repo or
+    workspace. It never puts a workspace *under* a `scratchpad` ancestor, which is
+    the only configuration that fails. Corrected after review by
+    `@uncle-dev:uncle-po`; the wrong framing would have distorted priority for the
+    next reader.
+  - **What it actually is:** a latent, path-dependent violation of the golden
+    path's central promise, with **no known reporter**, surfaced by an incidental
+    measurement rather than by a user. It is produced by a developer who
+    independently keeps work under `~/scratchpad/` and runs `init` there — real,
+    but not "day one for every new user." Schedule as normal work, not as a
+    queue-jumper.
   - **The decision, which is the deliverable — not a patch.** The skip exists to
     keep a team's private scratchpad out of the graph, and that intent is right.
     Three options, in preference order:
@@ -2524,7 +2542,30 @@ mutating form is written.
     leaves the workspace untouched; scaffolding delegates to the same code path
     `init`'s `_prompt` wizard uses, so GPF-R-1.3/1.4 hold for both.
 
-- [ ] 7.6 Product-owner journey verification (deps: 7.3, 7.5, est: ~2h) — **BLOCKED**
+- [ ] 7.6 Product-owner journey verification (deps: 7.3, 7.5, 5.3-release, est: ~2h) — **BLOCKED**
+  - **Mis-blocked until 2026-07-27, corrected after review.** This task recorded
+    "what remains is a person and a machine." That was wrong. Condition 3 below is
+    "an install line only", and that line currently prints "no release has been
+    published for this platform yet" — so **7.6 cannot be run today even if a
+    volunteer walked in.** It is blocked on the `v0.1.0` release decision, not on
+    recruitment. The distinction matters: as written the block read as a staffing
+    problem the team cannot solve, when it is a release decision the team can.
+    Found by `@uncle-dev:uncle-po`.
+  - **Pre-committed remedy, decided now rather than when the date arrives.**
+    - The clock starts on the day `v0.1.0` is published, not before — until then
+      the task is unsatisfiable and elapsed time is evidence of nothing.
+    - `review-by:` **TBD — set to release day + 30**.
+    - `owner:` **TBD.** Deliberately left blocking, on the precedent of task 6.9:
+      naming an owner requires a person to accept the responsibility and cannot be
+      inferred from a repository. No name is invented here.
+    - **If this is not run by `review-by:`, HLD Success Criterion 9 is struck**,
+      and the TUI's justification is amended in the HLD to engineer value alone —
+      not deleted, amended, carrying the date and the reason. This is recorded as a
+      decision already made, so that it is not re-argued on the day by someone
+      attached to the product-owner framing.
+  - **State it plainly today, not in 30 days: the TUI shipped and nobody from the
+    audience it was justified on has seen it.** Success Criterion 9 currently reads
+    as pending when its subject is built, merged, and on `main`.
   - BLOCKED 2026-07-26. This is the only Phase 7 acceptance that no engineering
     session can satisfy, and it must not be marked done by proxy. It needs a
     HUMAN PRODUCT OWNER, and specifically one who is not a member of this

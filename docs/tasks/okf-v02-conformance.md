@@ -203,11 +203,28 @@ commit as the title backfill (3.4) or the harness's double-build check goes red.
     unknown types, unknown keys, broken cross-links, missing optional documents,
     and missing federation roots; R-1.10 — Terminology defines *reality*,
     *deviation*, *exception*, *component*, *canonical*, *authority*, *tier*,
-    *federation root*, *generated artifact*, *absence tolerance*.
-  - verify: every MUST-NOT-reject item carries a file:line from 1.1; `title` is
-    documented as conditionally required with its two blocking sites cited; the
-    document stays under ~150 lines — past that it is drifting into
-    `FRONTMATTER-CORE.md`'s territory and should shed a section rather than sprawl.
+    *federation root*, *generated artifact*, *absence tolerance*;
+    **R-1.11 (this task's share)** — CONFORMANCE.md either covers the exit-code
+    contract, the `--json` surface, and the `knowledge/` root, or records each in
+    considered-and-deferred as a known-incomplete area of the `2026.2` clause with
+    the change that would close it. Silence on all three is not an acceptable
+    outcome; [Amendment 2](../ears/okf-v02-conformance.md#amendment-2--re-plan-against-the-go-binary-2026-07-27)
+    recorded them as findings precisely so this task cannot ship without answering
+    them.
+  - **On that last clause (added 2026-07-27, `@uncle-dev:uncle-po`).** It attaches
+    to R-1.11, which already exists and already owns the considered-and-deferred
+    section, so no clause is added and the locked spec is untouched. It is
+    deliberately an **or**: it does not prejudge that the three belong in the
+    conformance clause. It removes the option of deciding *nothing*, which is what
+    the re-plan's "a scoping call for whoever picks up 1.2" otherwise permits — a
+    decision with no owner and no deadline is how a known gap becomes a forgotten
+    one.
+  - verify: every MUST-NOT-reject item carries a Go file:line from 1.1; `title` is
+    documented as conditionally required with its two blocking sites cited; grep
+    CONFORMANCE.md for `exit`, `--json`, and `knowledge/` — each appears either in
+    the clause or in considered-and-deferred, never in neither; the document stays
+    under ~150 lines — past that it is drifting into `FRONTMATTER-CORE.md`'s
+    territory and should shed a section rather than sprawl.
 
 - [ ] 1.3 Define the version scheme and reconcile the `profile:` enum (deps: 1.2, est: ~45m)
   - why: Eight fixtures commit `companyOsVersion: '2026.2'` against a version
