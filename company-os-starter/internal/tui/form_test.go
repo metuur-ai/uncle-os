@@ -196,19 +196,25 @@ func TestCancellingRunsNothing(t *testing.T) {
 		if built[0].commits != 0 {
 			t.Errorf("%q ran the action instead of cancelling it (R-5.9)", k)
 		}
-		if k == "q" || k == "esc" || k == "ctrl+c" {
+		if k == "q" || k == "ctrl+c" {
 			if m.View() != "" {
 				t.Errorf("%q left a frame behind: %q", k, m.View())
 			}
 		} else if m.Mode() != tui.ModeForm {
+			// esc joined n/backspace/left here when it became "back" — from a
+			// confirmation it returns to the form rather than leaving.
 			t.Errorf("%q from the confirmation went to %v, want the form", k, m.Mode())
 		}
 	}
 }
 
-// TestExitKeysFromFormAndConfirmation extends R-5.14 to the two new modes, and
-// pins the ONE carve-out: `q` is a character while a free-text field has focus,
-// and esc / ctrl-c still are not.
+// TestExitKeysFromFormAndConfirmation extends R-5.14 to the two mutating modes.
+//
+// Amended 2026-07-27 with the Esc change. The safety property is the one that
+// matters and it is unchanged: **every mode still has an unconditional exit.**
+// `ctrl+c` carries it everywhere including a text field, and `q` carries it
+// everywhere except a text field, where it is a character — the ONE carve-out,
+// pinned below. Esc moved to "back" and is covered by TestEscGoesBackFromAForm.
 func TestExitKeysFromFormAndConfirmation(t *testing.T) {
 	var built []*spyAction
 	picker := formModel(t, &built)           // field 0: the team picker
@@ -220,10 +226,13 @@ func TestExitKeysFromFormAndConfirmation(t *testing.T) {
 		m    tui.Model
 		keys []string
 	}{
-		{"form/picker", picker, []string{"q", "esc", "ctrl+c"}},
-		{"form/text", text, []string{"esc", "ctrl+c"}},
-		{"confirm", confirm, []string{"q", "esc", "ctrl+c"}},
+		{"form/picker", picker, []string{"q", "ctrl+c"}},
+		{"form/text", text, []string{"ctrl+c"}}, // q types here
+		{"confirm", confirm, []string{"q", "ctrl+c"}},
 	} {
+		if len(where.keys) == 0 {
+			t.Fatalf("%s: no unconditional exit at all", where.name)
+		}
 		for _, k := range where.keys {
 			after, cmd := key(t, where.m, k)
 			if !isQuit(cmd) {
@@ -243,10 +252,58 @@ func TestExitKeysFromFormAndConfirmation(t *testing.T) {
 	if !strings.Contains(typed.View(), "q") {
 		t.Errorf("q was neither an exit nor a character:\n%s", typed.View())
 	}
-	// And the footer must say which keys DO leave, or the carve-out is a trap.
-	view := text.View()
-	if !strings.Contains(view, "esc") || !strings.Contains(view, "ctrl-c") {
+	// And the footer must say which key DOES leave, or the carve-out is a trap.
+	if view := text.View(); !strings.Contains(view, "ctrl-c") {
 		t.Errorf("the text field's footer does not name a way out:\n%s", view)
+	}
+}
+
+// TestEscGoesBackFromAForm is the reported defect, at the seam where it hurt.
+//
+// From BOTH field kinds — because that is what was broken: `backspace` returned
+// only from a picker (on a text field it deletes) and `left` only from a text
+// field (on a picker it cycles the value), so no single key went back from every
+// field, and the form footer named none of them. Opening a form by mistake meant
+// killing the UI.
+func TestEscGoesBackFromAForm(t *testing.T) {
+	var built []*spyAction
+	picker := formModel(t, &built)
+	text, _ := key(t, picker, "down")
+	confirm := reachConfirm(t, picker, "ok")
+
+	for _, tc := range []struct {
+		name string
+		from tui.Model
+		want tui.Mode
+	}{
+		{"form/picker -> menu", picker, tui.ModeMenu},
+		{"form/text -> menu", text, tui.ModeMenu},
+		{"confirm -> form", confirm, tui.ModeForm},
+	} {
+		after, cmd := key(t, tc.from, "esc")
+		if isQuit(cmd) {
+			t.Errorf("%s: esc quit instead of going back", tc.name)
+			continue
+		}
+		if after.Mode() != tc.want {
+			t.Errorf("%s: esc landed in %v, want %v", tc.name, after.Mode(), tc.want)
+		}
+	}
+
+	// Going back from a confirmation must still not have written anything.
+	if built[0].commits != 0 {
+		t.Errorf("esc from the confirmation ran the action (R-5.8/R-5.9)")
+	}
+
+	// Every form footer names esc, or the way back is undiscoverable — which is
+	// precisely how the old build failed its reader.
+	for _, tc := range []struct {
+		name string
+		m    tui.Model
+	}{{"picker", picker}, {"text", text}, {"confirm", confirm}} {
+		if !strings.Contains(tc.m.View(), "esc") {
+			t.Errorf("%s footer does not name esc:\n%s", tc.name, tc.m.View())
+		}
 	}
 }
 

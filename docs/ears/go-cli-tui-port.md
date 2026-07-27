@@ -179,7 +179,8 @@ friction F5 (35-40 domain terms) and F6 (EARS and `@spec` syntax) are untouched.
 | R-5.11 | THE SYSTEM SHALL delegate scaffolding to the same code path `init`'s existing `_prompt` wizard (`:1954-1965`) uses, so that GPF-R-1.3 and GPF-R-1.4 hold for both interactive paths without a second implementation. |
 | R-5.12 | THE SYSTEM SHALL execute TUI actions by calling the same in-process command functions the flag CLI calls, and SHALL NOT shell out to itself or parse its own rendered output. |
 | R-5.13 | THE SYSTEM SHALL render validate results in the TUI from the same records the text and JSON renderers consume. |
-| R-5.14 | THE SYSTEM SHALL exit the TUI on `q`, `Esc`, or `Ctrl-C` from any screen, leaving no partial write. |
+| R-5.14 | **Amended 2026-07-27 — see [Amendment 3](#amendment-3--esc-means-back-2026-07-27).** THE SYSTEM SHALL provide, from every screen and every field, at least one key that exits the TUI unconditionally and is named in that screen's footer, leaving no partial write. `Ctrl-C` SHALL be that key everywhere; `q` SHALL also exit everywhere except while a free-text field has focus, where it is a character. |
+| R-5.24 | THE SYSTEM SHALL return to the previous screen on `Esc` from every screen and every field, and SHALL exit only from the top-level menu where there is nothing to return to. Every screen's footer SHALL name the key that goes back. |
 | R-5.15 | THE SYSTEM SHALL honour `NO_COLOR` within the TUI and SHALL degrade legibly on a terminal narrower than 80 columns and on resize. |
 | R-5.16 | THE SYSTEM SHALL NOT require a TTY, a terminal size, or any interactive capability for any subcommand other than `tui`. |
 | R-5.17 | WHEN `tui` is invoked with a TTY attached from a directory that is not a workspace root, THE SYSTEM SHALL open a recovery menu rather than exiting — the workspace roots found at or one level below that directory, a previewed `init` for the current directory, and an explanation of what a root is — and WHEN a root is selected SHALL re-enter the normal catalog with that path as `--root`. The scan SHALL NOT descend more than one level, because a root surfacing from four levels down is not predictable from where the reader is standing. Added 2026-07-26; exempts `tui` from R-4.4 — see [Amendment 1](#amendment-1--r-44-exemption-for-tui-2026-07-26). |
@@ -190,6 +191,49 @@ friction F5 (35-40 domain terms) and F6 (EARS and `@spec` syntax) are untouched.
 | R-5.22 | **Restated 2026-07-27 — see [Amendment 2](#amendment-2--advisor-scope-corrected-2026-07-27).** IF resolving a detected problem requires a value that cannot be derived from the workspace — a federation manifest needs repo URLs and commit pins; an unresolved feature-index reference needs an authoring decision — THE SYSTEM SHALL report and explain the problem and SHALL NOT offer a fix, because a form that writes a plausible-but-wrong value is worse than the missing one. |
 
 | R-5.23 | WHEN the reader leaves the recovery menu of R-5.17 without selecting a workspace, THE SYSTEM SHALL exit 0, because quitting a menu is not a failure. |
+
+### Amendment 3 — Esc means back (2026-07-27)
+
+**Authority:** reported from the running TUI by the codebase owner after
+`v0.1.0`, with a screenshot of the `discover new` form. This is a user-reported
+defect, not a review finding.
+
+**Statement as originally locked:**
+
+> R-5.14 | THE SYSTEM SHALL exit the TUI on `q`, `Esc`, or `Ctrl-C` from any
+> screen, leaving no partial write.
+
+**The reasoning that produced it, and why it was wrong.** Task 7.1 recorded:
+"going back is `backspace`/`left`, because a key that sometimes exits is the trap
+R-5.14 exists to prevent." The intent — an audience defined by terminal
+unfamiliarity must always be able to get out — is right and is preserved. The
+execution was not, because it left **no way back from a form at all**:
+
+| Key | On a picker field | On a free-text field |
+| --- | --- | --- |
+| `backspace` | returns to the menu | **deletes a character** |
+| `left` | **cycles the value** | returns to the menu |
+| `esc` | quits the whole UI | quits the whole UI |
+
+No single key went back from every field, the two that sometimes did were
+inverses of each other, and **the form footer named neither** — it read
+`up/down field   left/right value   enter next   q / esc / ctrl-c quit`. A reader
+who opened a form by mistake could only kill the UI. The trap the requirement was
+written to prevent was built into the screen it most needed to protect.
+
+| Clause | Status | Disposition |
+| --- | --- | --- |
+| C1 — an unconditional exit from every screen, named in the footer | **IN FORCE — restated as the outcome, and strengthened** | R-5.14 now states the *property* (at least one unconditional exit, named) rather than a key list, and extends it to every **field**, not just every screen — the text-field case the original list silently failed. `Ctrl-C` carries it everywhere; `q` everywhere but a text field. |
+| C2 — `Esc` is one of those exits | **RETIRED** | Superseded by R-5.24. Esc now goes back one level and exits only from the top-level menu, which is the convention the reporter expected and the one nearly every TUI uses. |
+| C3 — no exit leaves a partial write | **IN FORCE — unchanged** | Nothing is written before the confirmation (R-5.8), so no exit from any mode can leave one. Asserted by `TestCancellingRunsNothing` and re-asserted for Esc in `TestEscGoesBackFromAForm`. |
+
+**Why this does not reopen the trap.** The safety property was never carried by
+Esc alone, so removing it from the exit set costs nothing: `Ctrl-C` still exits
+from every mode including a text field, and `q` from every mode but that one.
+Every mode retains at least one unconditional exit and the footer names it —
+which `TestExitKeysFromFormAndConfirmation` now asserts as a property, failing if
+any mode's exit set is empty. What Esc adds is the behaviour that was missing:
+holding it walks back to the menu and then out.
 
 ### Amendment 2 — advisor scope corrected (2026-07-27)
 

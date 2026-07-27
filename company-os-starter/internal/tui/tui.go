@@ -206,22 +206,34 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyMsg:
-		// R-5.14, before anything else and from every mode. The audience for
-		// this UI is defined by terminal unfamiliarity, so the exit has to be
-		// the one behaviour that never depends on where you are. That is also
-		// why Esc does not mean "back": a key that sometimes exits and
-		// sometimes does not is the trap R-5.14 exists to prevent. Going back
-		// is backspace or left, and the footer says so on every screen.
+		// R-5.14 as amended 2026-07-27. Esc means BACK, and quits only from the
+		// top level where there is nothing to go back to.
 		//
-		// `q` has ONE carve-out and it is stated rather than hidden: while a
-		// free-text field has focus it is a character, because a form whose
-		// title cannot contain the letter q is not a form. Esc and Ctrl-C stay
-		// unconditional there, so every mode including a text field still has
-		// two ways out, the footer names them, and nothing has been written at
-		// that point in any case (R-5.8) — so no exit from a form can leave a
-		// partial write.
+		// It used to quit unconditionally, on the reasoning that "a key that
+		// sometimes exits and sometimes does not is the trap". The measured
+		// consequence was worse than the trap: from a form there was no way back
+		// at all. `backspace` went back only from a picker field (on a text field
+		// it deletes a character) and `left` only from a text field (on a picker
+		// it cycles the value), so no single key returned to the menu from every
+		// field — and the form footer named none of them. Leaving a form you had
+		// opened by mistake meant killing the whole UI.
+		//
+		// The safety property R-5.14 was written for is unchanged, because it was
+		// never carried by Esc alone: `ctrl+c` still exits from EVERY mode
+		// unconditionally, and `q` still exits from every mode except a free-text
+		// field, where it is a character. Every mode still has at least one
+		// unconditional exit, the footer still names it, and nothing is written
+		// before the confirmation (R-5.8), so no exit can leave a partial write.
 		switch msg.String() {
-		case "esc", "ctrl+c":
+		case "ctrl+c":
+			m.quitting = true
+			return m, tea.Quit
+		case "esc":
+			if back, ok := m.goBack(); ok {
+				return back, nil
+			}
+			// Top level: nothing to go back to, so Esc keeps its old meaning
+			// rather than becoming a key that does nothing.
 			m.quitting = true
 			return m, tea.Quit
 		case "q":
@@ -239,6 +251,45 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 	}
 	return m, nil
+}
+
+// goBack moves one level toward the menu and reports whether there was anywhere
+// to go. It is the ONE definition of "back" in this package: Esc, backspace and
+// the confirmation's `n` all route through it, so they cannot drift into meaning
+// different things on different screens — which is exactly what happened while
+// each mode decided for itself.
+//
+// It writes nothing and cannot: every transition here is a mode change, and the
+// only path that touches the filesystem is commit, past the confirmation.
+func (m Model) goBack() (Model, bool) {
+	switch m.mode {
+	case ModeMenu:
+		return m, false // top level
+
+	case ModePick, ModeForm:
+		m.mode = ModeMenu
+		m.fail = ""
+		return m, true
+
+	case ModeConfirm:
+		// A field-less form is an offer with nothing to return to; landing in it
+		// would leave a mode whose only state is an empty field list.
+		if m.form != nil && len(m.form.Fields) == 0 {
+			m.mode = ModeMenu
+			m.action = nil
+			return m, true
+		}
+		m.mode = ModeForm
+		return m, true
+
+	default: // ModeBody
+		if len(m.screens[m.active].Choices) > 0 {
+			m.mode = ModePick
+		} else {
+			m.mode = ModeMenu
+		}
+		return m, true
+	}
 }
 
 // key handles everything that is not an exit.
@@ -275,7 +326,8 @@ func (m Model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		case "end", "G":
 			m.pick = len(choices) - 1
 		case "backspace", "left", "h":
-			m.mode = ModeMenu
+			back, _ := m.goBack()
+			return back, nil
 		case "enter", " ", "right", "l":
 			if len(choices) > 0 {
 				m.load(m.active, choices[m.pick])
@@ -295,12 +347,8 @@ func (m Model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	default: // ModeBody
 		switch msg.String() {
 		case "backspace", "left", "h":
-			if len(m.screens[m.active].Choices) > 0 {
-				m.mode = ModePick
-			} else {
-				m.mode = ModeMenu
-			}
-			return m, nil
+			back, _ := m.goBack()
+			return back, nil
 		}
 		var cmd tea.Cmd
 		m.vp, cmd = m.vp.Update(tea.Msg(msg))
@@ -463,27 +511,27 @@ func (m Model) footer() string {
 	// in a text field q is a character — telling the reader otherwise is the
 	// only way this carve-out could trap them.
 	case m.typing() && m.narrow():
-		keys = "type  enter=next  esc=quit"
+		keys = "type  enter=next  esc=back"
 	case m.typing():
-		keys = "type   enter next   left back   esc / ctrl-c quit"
+		keys = "type   enter next   esc back   ctrl-c quit"
 	case m.mode == ModeForm && m.narrow():
-		keys = "l/r=value  enter=next  q=quit"
+		keys = "l/r=value  enter=next  esc=back"
 	case m.mode == ModeForm:
-		keys = "up/down field   left/right value   enter next   q / esc / ctrl-c quit"
+		keys = "up/down field   left/right value   enter next   esc back   q / ctrl-c quit"
 	case m.mode == ModeConfirm && m.narrow():
-		keys = "y=run  n=back  q=cancel"
+		keys = "y=run  esc=back  q=quit"
 	case m.mode == ModeConfirm:
-		keys = "y run   n back   q / esc / ctrl-c cancel without writing"
+		keys = "y run   n / esc back   q / ctrl-c cancel without writing"
 	case m.narrow() && m.mode == ModeMenu:
 		keys = "up/down  enter  q=quit"
 	case m.narrow():
-		keys = "up/down  bksp=back  q=quit"
+		keys = "up/down  esc=back  q=quit"
 	case m.mode == ModeMenu:
 		keys = "up/down move   enter open   q / esc / ctrl-c quit"
 	case m.mode == ModePick:
-		keys = "up/down move   enter open   backspace back   q / esc / ctrl-c quit"
+		keys = "up/down move   enter open   esc back   q / ctrl-c quit"
 	default:
-		keys = "up/down scroll   backspace back   q / esc / ctrl-c quit"
+		keys = "up/down scroll   esc back   q / ctrl-c quit"
 	}
 	return m.sty.dim.Render(m.truncate(keys))
 }

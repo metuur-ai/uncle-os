@@ -99,10 +99,15 @@ func isQuit(cmd tea.Cmd) bool {
 	return ok
 }
 
-// TestExitFromEveryScreen is R-5.14. The three keys are asserted from all three
-// modes, not from the menu alone: a UI that only exits from its first screen is
-// the failure mode the requirement exists for, and it passes any test that never
-// navigates.
+// TestExitFromEveryScreen is R-5.14 as amended 2026-07-27. The safety property
+// is unchanged and is what this asserts: EVERY mode has an unconditional exit.
+// A UI that only exits from its first screen is the failure the requirement
+// exists for, and it passes any test that never navigates.
+//
+// What changed is which keys carry it. `ctrl+c` and `q` still exit from all
+// three modes below; Esc no longer does — it goes back, and is covered by
+// TestEscGoesBackOneLevel. Esc's exit survives only at the menu, where there is
+// nothing to go back to, and that case is asserted here too.
 func TestExitFromEveryScreen(t *testing.T) {
 	base := newModel(t)
 
@@ -121,8 +126,14 @@ func TestExitFromEveryScreen(t *testing.T) {
 	for _, where := range []struct {
 		name string
 		m    tui.Model
-	}{{"menu", menu}, {"picker", pick}, {"body", body}} {
-		for _, k := range []string{"q", "esc", "ctrl+c"} {
+		keys []string
+	}{
+		// Esc is an exit ONLY here, and only because the menu is the top level.
+		{"menu", menu, []string{"q", "esc", "ctrl+c"}},
+		{"picker", pick, []string{"q", "ctrl+c"}},
+		{"body", body, []string{"q", "ctrl+c"}},
+	} {
+		for _, k := range where.keys {
 			after, cmd := key(t, where.m, k)
 			if !isQuit(cmd) {
 				t.Errorf("%s: %q did not quit (R-5.14)", where.name, k)
@@ -132,6 +143,54 @@ func TestExitFromEveryScreen(t *testing.T) {
 			}
 		}
 	}
+}
+
+// TestEscGoesBackOneLevel is the amended half of R-5.14, and the defect that
+// prompted it: from a form there was no way back at all. `backspace` returned
+// only from a picker field (on a text field it deletes a character) and `left`
+// only from a text field (on a picker it cycles the value), so no single key
+// went back from every field — and the form footer named none of them. Leaving
+// a form opened by mistake meant killing the UI.
+//
+// Reported from the running TUI, not found by inspection.
+func TestEscGoesBackOneLevel(t *testing.T) {
+	base := newModel(t)
+	pick, _ := key(t, base, "down")
+	pick, _ = key(t, pick, "enter")
+	body, _ := key(t, pick, "enter")
+
+	for _, tc := range []struct {
+		name string
+		from tui.Model
+		want tui.Mode
+	}{
+		{"body -> picker", body, tui.ModePick},
+		{"picker -> menu", pick, tui.ModeMenu},
+	} {
+		after, cmd := key(t, tc.from, "esc")
+		if isQuit(cmd) {
+			t.Errorf("%s: esc quit instead of going back", tc.name)
+			continue
+		}
+		if after.Mode() != tc.want {
+			t.Errorf("%s: esc landed in %v, want %v", tc.name, after.Mode(), tc.want)
+		}
+	}
+
+	// And the whole point: repeated Esc reaches the menu and then, and only
+	// then, exits. A reader who has gone in too far can hold one key to leave.
+	m := body
+	for i := 0; i < 4; i++ {
+		after, cmd := key(t, m, "esc")
+		if isQuit(cmd) {
+			if m.Mode() != tui.ModeMenu {
+				t.Errorf("esc quit from %v, not from the menu", m.Mode())
+			}
+			return
+		}
+		m = after
+	}
+	t.Error("repeated esc never reached an exit")
 }
 
 // TestEveryScreenIsReachable walks the whole catalog through Update, which is

@@ -163,8 +163,8 @@ func (m Model) formKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.setValue(m.field, cycle(f, m.values[m.field], -1))
 			return m, nil
 		}
-		m.mode = ModeMenu
-		return m, nil
+		back, _ := m.goBack()
+		return back, nil
 	case "right":
 		if len(f.Choices) > 0 {
 			m.setValue(m.field, cycle(f, m.values[m.field], +1))
@@ -178,8 +178,8 @@ func (m Model) formKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.preview(), nil
 	case "backspace":
 		if len(f.Choices) > 0 {
-			m.mode = ModeMenu
-			return m, nil
+			back, _ := m.goBack()
+			return back, nil
 		}
 		if r := []rune(m.values[m.field]); len(r) > 0 {
 			m.setValue(m.field, string(r[:len(r)-1]))
@@ -255,16 +255,10 @@ func (m Model) confirmKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.commit()
 		return m, nil
 	case "n", "backspace", "left":
-		// Declining an OFFER goes back to the menu, not to the form: a
-		// field-less form has nothing to return to, and landing there would
-		// leave a mode whose only state is an empty field list.
-		if m.form != nil && len(m.form.Fields) == 0 {
-			m.mode = ModeMenu
-			m.action = nil
-			return m, nil
-		}
-		m.mode = ModeForm
-		return m, nil
+		// One definition of back, shared with Esc — see goBack, which also owns
+		// the field-less-offer case (an offer has no form to return to).
+		back, _ := m.goBack()
+		return back, nil
 	}
 	return m, nil
 }
@@ -334,8 +328,8 @@ func (m Model) confirmView() string {
 	b.WriteString(wrap("  $ "+m.action.Preview(), m.width))
 	b.WriteString("\n\n")
 	b.WriteString(m.sty.dim.Render(wrap(
-		"nothing has been written yet. y runs it; n goes back; "+
-			"q, esc or ctrl-c leaves the workspace untouched.", m.width)))
+		"nothing has been written yet. y runs it; n or esc goes back; "+
+			"q or ctrl-c leaves the workspace untouched.", m.width)))
 	return b.String()
 }
 
