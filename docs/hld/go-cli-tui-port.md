@@ -191,16 +191,18 @@ there is no Go precedent in this repository.
    > subject already shipped, so what is pending is only the evidence that it was
    > worth shipping for the stated reason.
    >
-   > It is currently **unsatisfiable**, and not for want of a volunteer: the
-   > criterion requires "the published install line," and no release exists, so
-   > that line prints "no release has been published for this platform yet."
-   > Task 7.6 carries the correction — it is blocked on the `v0.1.0` release
-   > decision, not on recruitment.
+   > It was **unsatisfiable** until 2026-07-27, and not for want of a volunteer:
+   > the criterion requires "the published install line," and no release existed,
+   > so that line printed "no release has been published for this platform yet."
+   > **`v0.1.0` was published 2026-07-27** and the one-liner verified end to end,
+   > so the criterion is now satisfiable. What remains is a product owner and a
+   > machine — true for the first time.
    >
    > The remedy in the second sentence above is **pre-committed** in task 7.6:
-   > if the journey is not run within 30 days of that release, this criterion is
+   > if the journey is not run by **2026-08-26** (release + 30), this criterion is
    > struck and the TUI is re-justified on engineer value alone — amended with
-   > the date and the reason, not deleted.
+   > the date and the reason, not deleted. That is a decision already made, so it
+   > is not re-argued on the day.
 10. `company-os tui` with no TTY attached exits 7, prints an explanatory message,
     and changes nothing.
 11. Every TUI screen is enumerated in the spec and asserted by test. "Reaches all

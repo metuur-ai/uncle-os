@@ -1660,12 +1660,34 @@ Ordered by the coupling map in research §4c: most self-contained first.
     yet" and points at `make install` from source. That is the correct behaviour
     for a repository with no release, and it is why this is no longer urgent.
 
-    **Still missing: the tag.** No release exists, deliberately — it was not
-    authorized. The `releases/latest/download/…` 404 row still holds. **This task
-    cannot start without it (R-6.4 requires a downloaded release artifact), and
-    neither can task 7.6**, whose condition 3 is "an install line only" — a line
-    that currently prints the no-release message. 7.6 is therefore blocked on this
-    release decision, not on recruitment, which is how it had been recorded.
+    **`v0.1.0` PUBLISHED 2026-07-27 at `ad8b082`.** Both rows of the table above
+    are now historical. The release workflow ran its three gates — `make check`,
+    `make release`, `make deps-check` — before publishing darwin/arm64,
+    darwin/amd64, linux/amd64, `SHA256SUMS` and `install.sh`, marked `latest`.
+    All three `releases/latest/download/…` URLs return 200, which is the exact
+    path `install.sh` resolves.
+
+    **The published one-liner was then run end to end** (with `INSTALL_DIR`
+    redirected to a temp dir): it downloads, installs, carries **no
+    `com.apple.quarantine`** — confirming 5.2's finding that `curl` never sets it
+    — and the installed binary reports
+    `company-os v0.1.0 (commit ad8b082, go1.22.12, darwin/arm64)`.
+
+    **This does NOT close this task, and must not be read as closing it.** R-6.4
+    is explicit that verification against anything other than a clean machine does
+    not satisfy it, and the run above was on the development workstation — the
+    machine most likely to hide a missing prerequisite. What it establishes is
+    that the install path is no longer *structurally* broken. The two clean
+    machines are still required.
+
+    **One discrepancy worth recording:** the release binary is built with
+    **go1.22.12** (the `go.mod` pin the workflow's `go-version-file` resolves),
+    while local development builds use go1.25.7. Not a defect — it is the
+    intended reproducibility behaviour — but it means the artifact users receive
+    is not byte-identical to a local `make install`, and 5.3's clean-machine run
+    exercises the toolchain nobody develops against.
+
+    **Task 7.6 is unblocked by this** and its 30-day clock starts today.
   - **No longer gated on 5.2.** The dependency was "the macOS half is only
     meaningful once notarization is done"; `install.sh` removed that — a
     `curl`-fetched binary is never quarantined, so the unsigned artifact is the
@@ -2543,18 +2565,17 @@ mutating form is written.
     `init`'s `_prompt` wizard uses, so GPF-R-1.3/1.4 hold for both.
 
 - [ ] 7.6 Product-owner journey verification (deps: 7.3, 7.5, 5.3-release, est: ~2h) — **BLOCKED**
-  - **Mis-blocked until 2026-07-27, corrected after review.** This task recorded
-    "what remains is a person and a machine." That was wrong. Condition 3 below is
-    "an install line only", and that line currently prints "no release has been
-    published for this platform yet" — so **7.6 cannot be run today even if a
-    volunteer walked in.** It is blocked on the `v0.1.0` release decision, not on
-    recruitment. The distinction matters: as written the block read as a staffing
-    problem the team cannot solve, when it is a release decision the team can.
-    Found by `@uncle-dev:uncle-po`.
-  - **Pre-committed remedy, decided now rather than when the date arrives.**
-    - The clock starts on the day `v0.1.0` is published, not before — until then
-      the task is unsatisfiable and elapsed time is evidence of nothing.
-    - `review-by:` **TBD — set to release day + 30**.
+  - **Was mis-blocked; that block is now CLEARED.** This task recorded "what
+    remains is a person and a machine", which was wrong — condition 3 is "an
+    install line only", and until 2026-07-27 that line printed "no release has
+    been published for this platform yet". The task was unsatisfiable regardless
+    of who volunteered. Found by `@uncle-dev:uncle-po`.
+    **`v0.1.0` was published 2026-07-27** and the published one-liner was verified
+    to install and run, so condition 3 is met. **What remains is now genuinely a
+    person and a machine** — the sentence is true for the first time.
+  - **Pre-committed remedy, decided in advance rather than when the date arrives.**
+    - `review-by:` **2026-08-26** — 30 days from the `v0.1.0` release, which is
+      when the clock could first legitimately start.
     - `owner:` **TBD.** Deliberately left blocking, on the precedent of task 6.9:
       naming an owner requires a person to accept the responsibility and cannot be
       inferred from a repository. No name is invented here.
