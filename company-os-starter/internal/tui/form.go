@@ -82,21 +82,25 @@ type Form struct {
 const unsetLabel = "(none)"
 
 // openForm enters a screen's form with its defaults filled in.
-func (m *Model) openForm(i int) {
+//
+// The form arrives ALREADY RESOLVED (see Screen.ResolveForm): a screen may
+// supply it lazily, and resolving it here instead would call that closure again
+// on a path that must not re-read the workspace mid-edit.
+func (m *Model) openForm(i int, f *Form) {
 	s := m.screens[i]
 	m.active = i
 	m.title = s.Title
 	m.choice = ""
 	m.fail = ""
 	m.action = nil
-	m.form = s.Form
+	m.form = f
 	m.field = 0
-	m.values = make([]string, len(s.Form.Fields))
-	for j, f := range s.Form.Fields {
-		m.values[j] = initialValue(f)
+	m.values = make([]string, len(f.Fields))
+	for j, fld := range f.Fields {
+		m.values[j] = initialValue(fld)
 	}
 	m.mode = ModeForm
-	if len(s.Form.Fields) == 0 {
+	if len(f.Fields) == 0 {
 		// A form with nothing to collect is an OFFER: a fixed invocation the
 		// reader either confirms or declines. Go straight to the preview so the
 		// confirmation is the whole interaction, rather than showing an empty

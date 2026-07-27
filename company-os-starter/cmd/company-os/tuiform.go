@@ -1,14 +1,27 @@
 package main
 
-// The two mutating forms (R-5.5): `discover new` and `prd new`.
+// The mutating forms (R-5.5): `discover new`, `prd new`, and the three `add`
+// kinds — team, platform, component.
 //
-// R-5.5 names these two and forbids forms for `workspace sync` and
-// `scratchpad init`. That is not an arbitrary cut. These are the two commands a
-// product owner AUTHORS — the ones whose arguments are a title they are still
-// wording and a team they have to look up — and they are the reason the TUI has
-// an audience at all. Nobody is going to scaffold infrastructure through a form
-// instead of typing the command, so a form for those two would be surface with
-// no reader.
+// R-5.5 still forbids forms for `workspace sync` and `scratchpad init`, and
+// that cut still holds: both need values no reader has in their head at the
+// menu (a repo URL and a commit pin; a path outside the workspace).
+//
+// The first two are the commands a product owner AUTHORS — the ones whose
+// arguments are a title they are still wording and a team they have to look up.
+// This file used to argue from that to a closed set of two: "nobody is going to
+// scaffold infrastructure through a form instead of typing the command, so a
+// form for those two would be surface with no reader." That was a prediction
+// about readers, and it was wrong — the three `add` forms exist because someone
+// asked for them (Amendment 4, 2026-07-27). The prediction is recorded rather
+// than deleted, because the next person to argue a form has no audience should
+// know this file has been wrong about that before.
+//
+// `add` is one command with a `kind` positional, but it is THREE screens, not
+// one screen with a kind picker: only `component` takes `--platform`, and a
+// single form would have to offer that field to all three and let two of them
+// fail at commit. A form whose fields are wrong for the chosen value is the
+// kind of surface a menu is supposed to remove.
 //
 // Everything a form collects becomes a field of *Args and nothing else (R-5.10):
 // the invocation is rendered from that *Args by screenCommand, and the SAME
@@ -23,10 +36,12 @@ package main
 // behind a preview and a confirmation, not in a browser.
 
 import (
+	"fmt"
 	"path/filepath"
 	"sort"
 	"strings"
 
+	"github.com/metuur-ai/uncle-os/company-os-starter/internal/scaffold"
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/tui"
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/workspace"
 )
@@ -57,9 +72,9 @@ func newInvocation(ws *workspace.Workspace, args *Args) tui.Action {
 	return &invocation{ws: ws, args: args}
 }
 
-// mutatingScreens is R-5.5's list. Two entries, both marked in their title,
-// because a menu that does not distinguish reading from writing is a menu that
-// gets someone to write by accident.
+// mutatingScreens is R-5.5's list. Every entry is marked in its title, because
+// a menu that does not distinguish reading from writing is a menu that gets
+// someone to write by accident.
 func mutatingScreens(ws *workspace.Workspace, root string) []tui.Screen {
 	teams := baseNames(ws.AllTeams())
 	platforms := baseNames(ws.AllPlatforms())
@@ -138,7 +153,99 @@ func mutatingScreens(ws *workspace.Workspace, root string) []tui.Screen {
 				},
 			},
 		},
+		{
+			Title: "add team (writes)",
+			Form: &tui.Form{
+				Fields: []tui.Field{idField("team")},
+				Build: func(v []string) (tui.Action, error) {
+					return addInvocation(ws, root, "team", v[0], "")
+				},
+			},
+		},
+		{
+			Title: "add platform (writes)",
+			Form: &tui.Form{
+				Fields: []tui.Field{idField("platform")},
+				Build: func(v []string) (tui.Action, error) {
+					return addInvocation(ws, root, "platform", v[0], "")
+				},
+			},
+		},
+		{
+			Title: "add component (writes)",
+			// Resolved at open time, not here: a reader who adds a platform and
+			// then a component to it in one sitting must see the platform they
+			// just created. Everything else in this file is fixed at catalog
+			// build, which is why this is the only FormFn.
+			FormFn: func() *tui.Form {
+				current := baseNames(ws.AllPlatforms())
+				return &tui.Form{
+					Fields: []tui.Field{
+						{
+							Label:   "platform",
+							Choices: current,
+							Help:    platformFieldHelp(current),
+						},
+						idField("component"),
+					},
+					Build: func(v []string) (tui.Action, error) {
+						return addInvocation(ws, root, "component", v[1], v[0])
+					},
+				}
+			},
+		},
 	}
+}
+
+// idField is the new-id field shared by the three `add` screens.
+//
+// Labelled "id" rather than "name" to match what the parser calls the positional
+// ("id of the new platform/team/component", args.go), and the Help discloses the
+// slugging, the same way `discover new`'s title field discloses how a brief id is
+// derived. Without it, "My Team" silently becoming "my-team" reads as the CLI
+// ignoring what was typed.
+func idField(kind string) tui.Field {
+	return tui.Field{
+		Label: "id",
+		Help: "id of the new " + kind + ". Lowercased, and every run of other " +
+			"characters becomes one dash: \"My " + kind + "\" creates \"my-" +
+			kind + "\".",
+	}
+}
+
+// platformFieldHelp names the target platform's role, and says plainly when there
+// is nothing to pick.
+//
+// The empty case is neither hypothetical nor cosmetic: a required field with no
+// Choices is indistinguishable from a text box — internal/tui gives it no
+// left/right hint and lets keystrokes through — and a workspace with no platforms
+// is exactly where a reader reaches for `add component` first. Typing one anyway
+// is refused by ws.PlatformDir with exit 3 rather than scaffolding into nowhere,
+// but the field should say so before they type.
+func platformFieldHelp(platforms []string) string {
+	if len(platforms) == 0 {
+		return "the platform that will own the component. This workspace has " +
+			"none yet — add a platform first."
+	}
+	return "the platform that will own the component. Its descriptor is written " +
+		"to platforms/<platform>/components/."
+}
+
+// addInvocation builds one `company-os add <kind> <id> [--platform p]`.
+//
+// The empty-slug refusal lives here because Build is the seam designed for it:
+// the form's own required check only rejects whitespace, so "###" would pass it,
+// slug to "", and reach scaffold.Add with an empty id — which resolves
+// teams/<id>/team.yaml to teams/team.yaml and scatters a team's files into the
+// layer root. Refusing in Build keeps the reader in the form with the reason, and
+// writes nothing.
+func addInvocation(ws *workspace.Workspace, root, kind, id, platform string) (tui.Action, error) {
+	if scaffold.Slugify(id) == "" {
+		return nil, fmt.Errorf("%q has no letters or digits — the id would be empty", id)
+	}
+	return newInvocation(ws, &Args{
+		Root: root, Cmd: "add", Kind: kind, Name: id, Platform: platform,
+	}), nil
 }
 
 // componentsHelp names the ids this workspace actually has, because the flag is

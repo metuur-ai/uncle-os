@@ -461,7 +461,19 @@ Structure:
   defect.
 - **Mutating forms ship second, one at a time, each justified by an observed
   request.** `discover new` and `prd new` first — the two a PO actually authors.
-  No forms are built for `workspace sync` or `scratchpad init`.
+  Then `add team`, `add platform`, and `add component`, on a request to scaffold
+  a workspace without leaving the TUI (EARS Amendment 4, 2026-07-27). Three
+  screens rather than one with a `kind` picker: only `component` takes
+  `--platform`, so one form would offer that field to all three kinds and let two
+  fail at commit. No forms are built for `workspace sync` or `scratchpad init` —
+  both need values that cannot be derived from the workspace.
+- **A form whose choices describe changeable state is resolved at open time**
+  (`Screen.FormFn`, R-5.26), not at catalog build. `add component` is the only
+  one: a reader creates a platform and then a component in it, so its picker must
+  see what the previous screen just wrote. This resolves one form, not the
+  catalog — the advisor list is still computed when the TUI opens, because
+  rebuilding the catalog would make `Esc` run the detectors and would move menu
+  entries under a resting cursor.
 - **Command preview is mandatory on every mutating screen**, and it is **derived
   from the same args structure the command executes**, never a hand-written string
   per screen. A hand-written preview drifts from what runs, which destroys the one

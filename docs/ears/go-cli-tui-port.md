@@ -170,7 +170,7 @@ friction F5 (35-40 domain terms) and F6 (EARS and `@spec` syntax) are untouched.
 | R-5.2 | THE SYSTEM SHALL NOT launch the TUI from a bare invocation, from any other subcommand, or from any environment-variable trigger. |
 | R-5.3 | IF `tui` is invoked with no TTY attached, THE SYSTEM SHALL print an explanatory message to stderr, exit 7, and make no filesystem change. |
 | R-5.4 | THE SYSTEM SHALL ship read-only screens first, enumerated and asserted by test: workspace overview, `today --role`, validate results, component browser, PRD browser, discovery browser, `governance explain`, `skills list`, `ids list`, and `workspace status`. |
-| R-5.5 | THE SYSTEM SHALL ship mutating forms only after R-5.4 is complete, one at a time, beginning with `discover new` and `prd new`, and SHALL NOT build forms for `workspace sync` or `scratchpad init`. |
+| R-5.5 | **Restated 2026-07-27 — see [Amendment 4](#amendment-4--the-add-forms-2026-07-27).** THE SYSTEM SHALL ship mutating forms only after R-5.4 is complete, each justified by an observed request rather than by completeness: `discover new`, `prd new`, `add team`, `add platform`, and `add component`. THE SYSTEM SHALL NOT build forms for `workspace sync` or `scratchpad init`. |
 | R-5.6 | WHEN the TUI is about to perform a mutating action, THE SYSTEM SHALL display the exact flag-complete `company-os` invocation equivalent to that action before executing it. |
 | R-5.7 | THE SYSTEM SHALL derive the previewed command from the same argument structure it executes, and SHALL NOT hand-write a preview string per screen, because a hand-written preview drifts from what runs and destroys the property justifying interactive mutation. |
 | R-5.8 | WHILE a mutating action is previewed, THE SYSTEM SHALL require explicit confirmation and SHALL make no filesystem change until confirmation is given. |
@@ -192,6 +192,68 @@ friction F5 (35-40 domain terms) and F6 (EARS and `@spec` syntax) are untouched.
 | R-5.22 | **Restated 2026-07-27 — see [Amendment 2](#amendment-2--advisor-scope-corrected-2026-07-27).** IF resolving a detected problem requires a value that cannot be derived from the workspace — a federation manifest needs repo URLs and commit pins; an unresolved feature-index reference needs an authoring decision — THE SYSTEM SHALL report and explain the problem and SHALL NOT offer a fix, because a form that writes a plausible-but-wrong value is worse than the missing one. |
 
 | R-5.23 | WHEN the reader leaves the recovery menu of R-5.17 without selecting a workspace, THE SYSTEM SHALL exit 0, because quitting a menu is not a failure. |
+| R-5.26 | WHERE a mutating form offers choices describing workspace state the reader can change from inside the same session, THE SYSTEM SHALL resolve that form when its screen is opened rather than when the catalog is built, so a value created a moment ago is offerable without relaunching. Added 2026-07-27; see [Amendment 4](#amendment-4--the-add-forms-2026-07-27). |
+
+### Amendment 4 — the `add` forms (2026-07-27)
+
+**Authority:** requested from the running TUI by the codebase owner, after
+`v0.1.0` and after Amendment 3. A user request, not a review finding.
+
+**Statement as originally locked:**
+
+> R-5.5 | THE SYSTEM SHALL ship mutating forms only after R-5.4 is complete, one
+> at a time, beginning with `discover new` and `prd new`, and SHALL NOT build
+> forms for `workspace sync` or `scratchpad init`.
+
+**What was right, and stays.** "Only after R-5.4 is complete" holds — the ten
+read-only screens shipped first, and the ordering that eliminated the entire
+"the TUI wrote the wrong thing" class of defect is unchanged. The exclusion of
+`workspace sync` and `scratchpad init` holds, on its original reasoning and on
+Amendment 2's: both need values that cannot be derived from the workspace — a
+repo URL and a commit pin, a path outside the tree — and a form that writes a
+plausible-but-wrong value is worse than the missing one.
+
+**What was wrong.** `cmd/company-os/tuiform.go` argued from "the two commands a
+product owner authors" to a closed set of two, in these words:
+
+> Nobody is going to scaffold infrastructure through a form instead of typing
+> the command, so a form for those two would be surface with no reader.
+
+That is a prediction about readers, and the reader it predicted asked for the
+opposite: to create a team, a platform, and a component from the TUI. The LLD
+already named the correct test — mutating forms ship *"one at a time, each
+justified by an observed request"* — and an observed request is exactly what
+arrived. R-5.5 is restated to enumerate the five forms and to make the
+justification standard explicit, so the next addition is argued the same way
+rather than against a count.
+
+The prediction is left in the source comment rather than deleted. A file that
+has been wrong about who its readers are should say so.
+
+**Three screens, not one.** `add` is a single command with a `kind` positional,
+which invites one screen with a kind picker. It is three, because only
+`component` takes `--platform`: a single form would offer that field to all
+three kinds and let two of them fail at commit, which is the failure a menu is
+supposed to remove.
+
+**Why R-5.26 exists.** The whole point of the request is the sequence — create a
+platform, then create a component in it — and that sequence crosses a boundary
+nothing else in the catalog crosses: the second screen's choices depend on what
+the first screen just wrote. The catalog is built once per session, so a
+statically-built picker would have shown the reader everything except the
+platform they had just created, with quit-and-relaunch as the only remedy.
+
+R-5.26 is deliberately narrow. It resolves ONE form at open time; it does not
+rebuild the catalog, and the advisor of R-5.18 continues to be computed when the
+TUI opens. A live advisor is a larger change and belongs to its own requirement:
+it would make `Esc` — a key R-5.24 defines as a pure mode change — run the
+detectors, and it would move menu entries under a cursor that is already resting
+on one.
+
+**Consequences accepted.** The mutating half of the catalog is now five screens
+rather than two, and `add team` is reachable from two places: here, and as the
+advisor's `--repair` offer for a team missing scaffolded files. They are
+distinct operations on the same command and their titles say which is which.
 
 ### Amendment 3 — Esc means back (2026-07-27)
 

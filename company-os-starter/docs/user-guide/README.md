@@ -37,6 +37,7 @@ Jump to a how-to:
 | I need to... | Page |
 |---|---|
 | Scaffold a new workspace, or add a platform/team/component to one | [how-to/grow-a-workspace.md](how-to/grow-a-workspace.md) |
+| Browse the workspace interactively, or scaffold without memorising flags | [how-to/browse-and-scaffold-in-the-tui.md](how-to/browse-and-scaffold-in-the-tui.md) |
 | Ship a change: discovery → PRD → done | [how-to/take-a-change-from-discovery-to-done.md](how-to/take-a-change-from-discovery-to-done.md) |
 | Deviate from a rule, or ask for an exception | [how-to/handle-a-deviation-or-exception.md](how-to/handle-a-deviation-or-exception.md) |
 | Check my work against governance before I claim it's ready/done | [how-to/check-your-work-against-governance.md](how-to/check-your-work-against-governance.md) |

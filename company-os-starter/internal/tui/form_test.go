@@ -521,3 +521,92 @@ func TestThisPackageCannotComposeAnInvocation(t *testing.T) {
 		t.Fatal("scanned no source files; the guard is broken, not clean")
 	}
 }
+
+// --------------------------------------------------------- lazily-built forms
+
+// TestFormFnIsResolvedOnEveryOpen. A screen may supply its form through FormFn
+// instead of Form, so its pickers describe the workspace at the moment it is
+// opened rather than at the moment the catalog was built. cmd/company-os uses
+// this for `add component`, whose platform list a reader can change from inside
+// the same session.
+//
+// Resolution therefore has to happen per OPEN. Caching it on first use would
+// reintroduce exactly the staleness the field exists to remove, and would do it
+// invisibly — the first open would be correct and every later one wrong.
+func TestFormFnIsResolvedOnEveryOpen(t *testing.T) {
+	calls := 0
+	choices := []string{"first"}
+	screens := []tui.Screen{{
+		Title: "add something (writes)",
+		FormFn: func() *tui.Form {
+			calls++
+			// Copied, because the model must not be able to see later edits to
+			// the slice it was handed.
+			offer := append([]string(nil), choices...)
+			return &tui.Form{
+				Fields: []tui.Field{{Label: "target", Choices: offer}},
+				Build: func(v []string) (tui.Action, error) {
+					return &spyAction{preview: "PREVIEW target=" + v[0], body: "done"}, nil
+				},
+			}
+		},
+	}}
+
+	m := tui.New(screens, tui.Options{Output: &bytes.Buffer{}, NoColor: true})
+	next, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 30})
+	m = next.(tui.Model)
+
+	if calls != 0 {
+		t.Fatalf("FormFn ran %d time(s) before the screen was opened — building "+
+			"the catalog must not resolve it", calls)
+	}
+
+	m, _ = key(t, m, "enter")
+	if m.Mode() != tui.ModeForm {
+		t.Fatalf("the screen did not open a form, mode %v", m.Mode())
+	}
+	if calls != 1 {
+		t.Fatalf("FormFn ran %d time(s) on the first open, want 1", calls)
+	}
+	if !strings.Contains(m.View(), "first") {
+		t.Errorf("the form does not show the value it was built with:\n%s", m.View())
+	}
+
+	// The world changes while the reader is sitting in the menu.
+	choices = []string{"first", "second"}
+	m, _ = key(t, m, "esc")
+	if m.Mode() != tui.ModeMenu {
+		t.Fatalf("esc did not return to the menu, mode %v", m.Mode())
+	}
+	m, _ = key(t, m, "enter")
+	if calls != 2 {
+		t.Fatalf("FormFn ran %d time(s) across two opens, want 2 — a cached form "+
+			"cannot see a value created since", calls)
+	}
+	m, _ = key(t, m, "right")
+	if !strings.Contains(m.View(), "second") {
+		t.Errorf("the reopened form cannot reach the new value:\n%s", m.View())
+	}
+}
+
+// TestResolveFormPrefersFormFnAndToleratesNeither pins the accessor every caller
+// goes through, including the read-only case: a screen with neither field is not
+// a mutating screen and must not be treated as one.
+func TestResolveFormPrefersFormFnAndToleratesNeither(t *testing.T) {
+	static := &tui.Form{Fields: []tui.Field{{Label: "static"}}}
+	lazy := &tui.Form{Fields: []tui.Field{{Label: "lazy"}}}
+
+	if got := (tui.Screen{}).ResolveForm(); got != nil {
+		t.Errorf("a screen with no form resolved to %v, want nil", got)
+	}
+	if got := (tui.Screen{Form: static}).ResolveForm(); got != static {
+		t.Errorf("Form was not returned when it is the only one set")
+	}
+	if got := (tui.Screen{FormFn: func() *tui.Form { return lazy }}).ResolveForm(); got != lazy {
+		t.Errorf("FormFn was not returned when it is the only one set")
+	}
+	both := tui.Screen{Form: static, FormFn: func() *tui.Form { return lazy }}
+	if got := both.ResolveForm(); got != lazy {
+		t.Errorf("with both set, ResolveForm returned the static form; FormFn must win")
+	}
+}

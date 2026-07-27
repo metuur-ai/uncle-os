@@ -467,9 +467,43 @@ either `workspace sync` or `validate` as the next step.
 
 ---
 
+## `tui`
+
+Interactive terminal UI over the current workspace: ten read-only screens and
+five forms that scaffold artifacts.
+
+```text
+company-os tui
+```
+
+Every read-only screen runs the same code as its equivalent command. Every form
+previews the exact flag-complete `company-os` invocation it is about to run and
+writes nothing until you confirm; the preview is derived from the arguments that
+get executed, so it cannot drift from what actually happens.
+
+`Esc` goes back one level and quits only at the top level. `Ctrl-C` always
+quits. `q` quits except while typing into a field.
+
+The forms cover `discover new`, `prd new`, `add team`, `add platform`, and
+`add component`. There is deliberately no form for `workspace sync` or
+`scratchpad init`: both need values that cannot be derived from the workspace,
+and a form that supplies a plausible-but-wrong repo URL, commit pin, or external
+path is worse than no form.
+
+This subcommand has no `--json` and is not part of the agent contract — it is a
+human surface. Scripts and agents use the underlying commands, where the
+structured envelope and the differentiated exit codes live.
+
+Full walkthrough, including the keys and the create-a-platform-then-a-component
+sequence: [how-to/browse-and-scaffold-in-the-tui.md](../how-to/browse-and-scaffold-in-the-tui.md).
+
+---
+
 ## See also
 
 - [reference/configuration.md](configuration.md) — every file/env var these
   commands actually read.
 - [reference/troubleshooting.md](troubleshooting.md) — symptom → cause →
   fix.
+- [how-to/browse-and-scaffold-in-the-tui.md](../how-to/browse-and-scaffold-in-the-tui.md)
+  — the interactive surface over these commands.

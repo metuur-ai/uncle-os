@@ -59,7 +59,38 @@ type Screen struct {
 	// happens only after the previewed invocation is confirmed. Choices and Run
 	// are unused in that case.
 	Form *Form
+	// FormFn is Form resolved at OPEN time rather than at catalog time, for a
+	// screen whose pickers describe workspace state the reader can change from
+	// inside this same session: `add component` offers the platforms that exist
+	// when it is opened, so a platform created a moment ago is selectable
+	// without relaunching.
+	//
+	// It is a second field rather than a change to Form because the catalog is
+	// built once and most screens have nothing to re-read; making every form
+	// lazy would pay for that everywhere to serve one screen. When both are set
+	// FormFn wins — see ResolveForm, which is the only place the two are
+	// reconciled.
+	FormFn func() *Form
 }
+
+// ResolveForm returns this screen's form, calling FormFn if that is how the
+// screen supplies one. A nil result means the screen is read-only.
+//
+// Every caller goes through here — open, the body subtitle, and the tests that
+// sweep the catalog — so "which of the two fields wins" is answered once.
+func (s Screen) ResolveForm() *Form {
+	if s.FormFn != nil {
+		return s.FormFn()
+	}
+	return s.Form
+}
+
+// mutates reports whether this screen writes, WITHOUT resolving the form.
+//
+// The distinction matters: View runs on every keystroke and a FormFn reads the
+// filesystem, so asking "does this screen write?" must not be answered by
+// building a form. Only open() may resolve.
+func (s Screen) mutates() bool { return s.Form != nil || s.FormFn != nil }
 
 // Options configure a run. Input and Output are supplied by cmd/company-os
 // rather than reached for here: R-2.10 forbids os.Stdout below cmd/, and the
@@ -363,8 +394,11 @@ func (m Model) open(i int) Model {
 		return m
 	}
 	m.active = i
-	if m.screens[i].Form != nil {
-		m.openForm(i)
+	// Resolved once, here: a FormFn that reads the filesystem must not be called
+	// again per keystroke, and the form the reader fills has to be the same value
+	// throughout the screen's life.
+	if f := m.screens[i].ResolveForm(); f != nil {
+		m.openForm(i, f)
 		return m
 	}
 	if len(m.screens[i].Choices) > 0 {
@@ -469,8 +503,12 @@ func (m Model) View() string {
 func (m Model) header() string {
 	switch m.mode {
 	case ModeMenu:
+		// Not "read-only workspace views": the menu has held mutating screens
+		// since R-5.5, and a subtitle claiming otherwise is the same false
+		// statement the body subtitle below is careful not to make. It names the
+		// marker instead, because the marker is what the reader has to act on.
 		return m.sty.title.Render("company-os") + "\n" +
-			m.sty.dim.Render(m.truncate("read-only workspace views"))
+			m.sty.dim.Render(m.truncate("workspace views — (writes) changes the workspace"))
 	case ModePick:
 		s := m.screens[m.active]
 		return m.sty.title.Render(m.truncate(s.Title)) + "\n" +
@@ -489,7 +527,7 @@ func (m Model) header() string {
 		// is the drift R-5.7 exists to forbid. The subtitle carries what the
 		// body cannot — which argument this screen was opened with.
 		sub := "read-only view"
-		if m.screens[m.active].Form != nil {
+		if m.screens[m.active].mutates() {
 			// A body reached through a form is the result of a WRITE, and
 			// labelling it "read-only view" would be the UI's only false
 			// statement — made at the one moment the reader most needs to know

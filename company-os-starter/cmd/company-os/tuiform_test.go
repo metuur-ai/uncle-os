@@ -19,7 +19,10 @@ package main
 // tomorrow is covered tomorrow without anyone remembering to come here.
 
 import (
+	"os"
+	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -255,18 +258,24 @@ func TestCommittedOutputCarriesThePreviewedCommand(t *testing.T) {
 // and forbids forms for `workspace sync` and `scratchpad init`. Both halves are
 // asserted, because the forbidden half is the one that gets added by someone
 // being helpful.
-func TestMutatingScreensAreTheTwoR55Names(t *testing.T) {
+func TestMutatingScreensAreTheR55Names(t *testing.T) {
 	ws := workspace.New(tuiWorkspace(t))
 	got := mutatingScreens(ws, "")
-	if len(got) != 2 {
-		t.Fatalf("%d mutating screens, R-5.5 ships two", len(got))
+	want := []string{
+		"new discovery brief (writes)",
+		"new PRD (writes)",
+		"add team (writes)",
+		"add platform (writes)",
+		"add component (writes)",
 	}
-	for i, want := range []string{
-		"new discovery brief (writes)", "new PRD (writes)"} {
-		if got[i].Title != want {
-			t.Errorf("mutating screen %d is %q, want %q", i, got[i].Title, want)
+	if len(got) != len(want) {
+		t.Fatalf("%d mutating screens, R-5.5 ships %d", len(got), len(want))
+	}
+	for i, w := range want {
+		if got[i].Title != w {
+			t.Errorf("mutating screen %d is %q, want %q", i, got[i].Title, w)
 		}
-		if got[i].Form == nil {
+		if got[i].ResolveForm() == nil {
 			t.Fatalf("screen %q has no form", got[i].Title)
 		}
 	}
@@ -275,10 +284,11 @@ func TestMutatingScreensAreTheTwoR55Names(t *testing.T) {
 	// browsing screen may reach `discover validate`, which rewrites the brief it
 	// is asked about.
 	for _, s := range screensFor(ws, "") {
-		if s.Form == nil {
+		form := s.ResolveForm()
+		if form == nil {
 			continue
 		}
-		action, err := s.Form.Build(sampleValues(s.Form))
+		action, err := form.Build(sampleValues(form))
 		if err != nil {
 			t.Fatalf("%s: build: %v", s.Title, err)
 		}
@@ -299,11 +309,12 @@ func TestMutatingScreensAreTheTwoR55Names(t *testing.T) {
 func TestEveryFormFieldHasAFlagEquivalent(t *testing.T) {
 	ws := workspace.New(tuiWorkspace(t))
 	for _, s := range screensFor(ws, "") {
-		if s.Form == nil {
+		form := s.ResolveForm()
+		if form == nil {
 			continue
 		}
-		values := sampleValues(s.Form)
-		action, err := s.Form.Build(values)
+		values := sampleValues(form)
+		action, err := form.Build(values)
 		if err != nil {
 			t.Fatalf("%s: build: %v", s.Title, err)
 		}
@@ -313,7 +324,7 @@ func TestEveryFormFieldHasAFlagEquivalent(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: the previewed command does not parse: %s (%v)", s.Title, preview, err)
 		}
-		for i, f := range s.Form.Fields {
+		for i, f := range form.Fields {
 			if values[i] == "" {
 				continue
 			}
@@ -324,6 +335,16 @@ func TestEveryFormFieldHasAFlagEquivalent(t *testing.T) {
 			if !argsCarry(back, values[i]) {
 				t.Errorf("%s: field %q survives the preview but not the parse "+
 					"(R-5.10): %s", s.Title, f.Label, preview)
+			}
+			// argsCarry only asks whether SOME string field of *Args holds the
+			// value, so it cannot see two fields wired to each other's flag.
+			// `add component` builds Platform from v[0] and Name from v[1] — an
+			// inversion this loop would otherwise certify as correct. Pin the one
+			// field whose destination is named in the invocation.
+			if f.Label == "platform" && back.Platform != values[i] {
+				t.Errorf("%s: field %q went to a different argument: --platform is "+
+					"%q, want %q (R-5.10): %s",
+					s.Title, f.Label, back.Platform, values[i], preview)
 			}
 		}
 	}
@@ -344,7 +365,10 @@ func TestFormPickersOfferOnlyValuesThatExist(t *testing.T) {
 		platforms[n] = true
 	}
 	for _, s := range mutatingScreens(ws, "") {
-		for _, f := range s.Form.Fields {
+		// ResolveForm, not Form: a screen may supply its form lazily so its
+		// pickers describe the workspace as it is when opened. Reading .Form
+		// here would skip exactly the screen whose choices are dynamic.
+		for _, f := range s.ResolveForm().Fields {
 			for _, c := range f.Choices {
 				switch f.Label {
 				case "team":
@@ -441,14 +465,15 @@ func TestAFormWritesNothingUntilConfirmed(t *testing.T) {
 	before := treeDigest(t, root)
 
 	for _, s := range screensFor(ws, "") {
-		if s.Form == nil {
+		form := s.ResolveForm()
+		if form == nil {
 			continue
 		}
 		keys := []string{
 			"down", "right", "right", "up", "left", "a", "b", " ", "c",
 			"backspace", "tab", "enter", "enter", "enter", "enter", "enter",
 		}
-		if len(s.Form.Fields) == 0 {
+		if len(form.Fields) == 0 {
 			// A field-less OFFER opens on its confirmation, where `enter` and
 			// `y` ARE the confirmation — pressing them is the user agreeing,
 			// not a violation. Everything else must still write nothing, and
@@ -460,6 +485,16 @@ func TestAFormWritesNothingUntilConfirmed(t *testing.T) {
 		m := formModel(t, ws, s.Title)
 		for _, k := range keys {
 			m, _ = tuiKey(t, m, k)
+			// Stop at the confirmation for the same reason the field-less case
+			// above drops `enter` and `y`: from here those keys ARE the
+			// confirmation, and pressing one is the reader agreeing, not the UI
+			// running something unbidden. How few keystrokes it takes to get
+			// here is a property of the form's shape — a one-field form reaches
+			// it on the first `enter` — not of R-5.8, which is about what is on
+			// disk BEFORE the reader agrees. That is asserted on the way out.
+			if m.Mode() == tui.ModeConfirm {
+				break
+			}
 			if m.Mode() == tui.ModeBody {
 				t.Fatalf("%s: %q ran the command without a confirmation (R-5.8)", s.Title, k)
 			}
@@ -468,7 +503,109 @@ func TestAFormWritesNothingUntilConfirmed(t *testing.T) {
 					s.Title, k, diffTrees(t, before, after))
 			}
 		}
+		// Whether the loop ran out of keys or stopped at the confirmation, the
+		// workspace must be untouched: reaching the preview is not a write.
+		if after := treeDigest(t, root); after != before {
+			t.Fatalf("%s: reaching %v changed the workspace (R-5.8):\n%s",
+				s.Title, m.Mode(), diffTrees(t, before, after))
+		}
 	}
+}
+
+// TestAPlatformAddedInThisSessionIsOfferedToAddComponent is the reason `add
+// component` resolves its form lazily.
+//
+// The catalog is built ONCE, up front, and never rebuilt — that is the point.
+// A reader adds a platform and then, without leaving the TUI, adds a component
+// to it. If the picker were fixed at catalog build (as every other form here
+// is) the platform they just created would be missing, and the only way to
+// reach it would be to quit and relaunch.
+//
+// The whole flow runs on one Model over one screens slice, because building a
+// second catalog after the write would prove nothing: a fresh catalog offers the
+// new platform whether or not lazy resolution works.
+func TestAPlatformAddedInThisSessionIsOfferedToAddComponent(t *testing.T) {
+	root := tuiWorkspace(t)
+	ws := workspace.New(root)
+	screens := screensFor(ws, "")
+
+	if got := platformChoices(t, screens); slices.Contains(got, "loyalty") {
+		t.Fatalf("the fixture already has a loyalty platform: %v", got)
+	}
+
+	m := tui.New(screens, tui.Options{Output: &strings.Builder{}, NoColor: true})
+	next, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 30})
+	m = next.(tui.Model)
+	m = openByTitle(t, m, screens, "add platform (writes)")
+
+	m = fillForm(t, m, []string{"loyalty"})
+	if m.Mode() != tui.ModeConfirm {
+		t.Fatalf("the form did not reach a confirmation, mode %v:\n%s", m.Mode(), m.View())
+	}
+	m, _ = tuiKey(t, m, "y")
+	if m.Mode() != tui.ModeBody {
+		t.Fatalf("confirming did not run the command, mode %v:\n%s", m.Mode(), m.View())
+	}
+	if _, err := os.Stat(filepath.Join(root, "platforms", "loyalty", "platform.yaml")); err != nil {
+		t.Fatalf("the platform was not created: %v", err)
+	}
+
+	// Same catalog, same session: the picker must now see it.
+	if got := platformChoices(t, screens); !slices.Contains(got, "loyalty") {
+		t.Errorf("add component still offers %v — a platform created in this "+
+			"session is not offerable without relaunching", got)
+	}
+
+	// And it must be reachable as a value, not merely present in the slice.
+	m, _ = tuiKey(t, m, "esc")
+	m = openByTitle(t, m, screens, "add component (writes)")
+	if !strings.Contains(m.View(), "loyalty") {
+		t.Errorf("the opened form does not show the new platform:\n%s", m.View())
+	}
+}
+
+// platformChoices resolves `add component`'s form and returns what its platform
+// field offers right now.
+func platformChoices(t *testing.T, screens []tui.Screen) []string {
+	t.Helper()
+	form := screenByTitle(t, screens, "add component (writes)").ResolveForm()
+	if form == nil {
+		t.Fatal("add component has no form")
+	}
+	for _, f := range form.Fields {
+		if f.Label == "platform" {
+			return f.Choices
+		}
+	}
+	t.Fatal("add component has no platform field")
+	return nil
+}
+
+// openByTitle walks the menu to a screen and opens it, from wherever the model
+// currently is.
+func openByTitle(t *testing.T, m tui.Model, screens []tui.Screen, title string) tui.Model {
+	t.Helper()
+	if m.Mode() != tui.ModeMenu {
+		t.Fatalf("openByTitle needs the menu, got %v", m.Mode())
+	}
+	at := -1
+	for i, s := range screens {
+		if s.Title == title {
+			at = i
+			break
+		}
+	}
+	if at < 0 {
+		t.Fatalf("no screen titled %q", title)
+	}
+	// "home" puts the cursor at a known place; the menu's position is otherwise
+	// wherever the previous screen left it.
+	m, _ = tuiKey(t, m, "home")
+	for i := 0; i < at; i++ {
+		m, _ = tuiKey(t, m, "down")
+	}
+	m, _ = tuiKey(t, m, "enter")
+	return m
 }
 
 // ------------------------------------------------------------------- helpers

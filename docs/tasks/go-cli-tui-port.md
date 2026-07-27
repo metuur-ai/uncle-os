@@ -2709,3 +2709,63 @@ mutating form is written.
     detection and preview leave the workspace tree hash unchanged; `--repair`
     restores a deleted file byte-identically, skips every file that exists, and
     reports its registry write (`TestRepairReportsARestoredRegistryEntry`).
+
+- [x] 7.8 Scaffolding forms — `add team`, `add platform`, `add component` (deps: 7.5, est: ~4h)
+  - DONE 2026-07-27. Three screens, fifteen in the catalog. **add team (writes)**
+    and **add platform (writes)**: one field, `id`, → the `name` positional with
+    `kind` fixed by the screen. **add component (writes)**: `platform` (picker)
+    → `--platform`, `id` → the `name` positional. Three screens rather than one
+    with a `kind` picker because only `component` takes `--platform`; a single
+    form would offer that field to all three kinds and let two fail at commit.
+    The field is labelled `id`, not `name`, to match what the parser calls the
+    positional, and its `Help` discloses the slugging — `My Team` creates
+    `my-team` — the same way `discover new`'s title field discloses how a brief
+    id is derived. **Empty-slug refusal in `Build`**: `Slugify("###")` is `""`,
+    and the form's own required check only rejects whitespace, so `###` would
+    otherwise reach `scaffold.Add` with an empty id, where `filepath.Join` drops
+    the element and a team's four files land in `teams/` itself. `Build` is the
+    seam designed for this — it runs before any write, keeps the reader in the
+    form with the reason, and needs nothing in `internal/tui`.
+  - **R-5.26, the reason this is not five copies of 7.5**: the requested
+    sequence is create-a-platform-then-a-component-in-it, so the second screen's
+    choices depend on what the first just wrote, and the catalog is built once
+    per session. `Screen.FormFn` resolves ONE form at open time. The narrowness
+    is deliberate: rebuilding the catalog instead would make `Esc` — a pure mode
+    change under R-5.24 — run the advisor's detectors, and would move menu
+    entries under a resting cursor, since `add team` reliably ADDS an advisory
+    (a new team has no `effective-governance.yaml`, and `teamFiles` does not
+    write one). `Screen.mutates()` answers "does this screen write?" without
+    resolving, because `View` asks that on every keystroke and a `FormFn` reads
+    the filesystem.
+  - **Two existing tests were repaired, and the repair is the interesting part.**
+    `TestFormPickersOfferOnlyValuesThatExist` PANICKED rather than failing: it
+    dereferenced `s.Form`, which is nil for a lazily-supplied form. Every
+    catalog-sweeping test now goes through `ResolveForm()`, so the screen with
+    dynamic choices is the one they can no longer skip.
+    `TestAFormWritesNothingUntilConfirmed` failed on a one-field text form: its
+    fixed key script reaches `ModeConfirm` on the first `enter` and commits on
+    the second, which is the reader agreeing, not an unbidden write. The
+    existing two forms survived only by shape — a picker-first form bounces
+    `backspace` to the menu. Fixed structurally, by stopping the script at the
+    confirmation and asserting the tree there, mirroring the carve-out the test
+    already documented for field-less offers; not by widening an exclusion list.
+  - **One test was strengthened.** `TestEveryFormFieldHasAFlagEquivalent` passes
+    with `Name` and `Platform` swapped, because `argsCarry` asks only whether
+    SOME string field holds the value — and `add component` builds `Platform`
+    from `v[0]` and `Name` from `v[1]`, the exact inversion it cannot see. It
+    now pins `--platform` to the value of the field labelled `platform`.
+  - why: requested from the running TUI. The closed set of two rested on a
+    prediction — "nobody is going to scaffold infrastructure through a form
+    instead of typing the command" — and the reader it predicted asked for the
+    opposite. See EARS Amendment 4.
+  - acceptance: R-5.5, R-5.8, R-5.10, R-5.26
+  - verify: `TestAPlatformAddedInThisSessionIsOfferedToAddComponent` drives ONE
+    model over ONE screens slice — building a second catalog would prove nothing,
+    since a fresh one offers the new platform whether or not lazy resolution
+    works. Mutation-checked: reverting the screen to a static form makes it fail
+    with the picker showing only the fixture platform.
+    `TestFormFnIsResolvedOnEveryOpen` pins that resolution happens per open and
+    not at catalog build, so a cached form cannot silently reintroduce the
+    staleness. Every pre-existing sweep — cancellation, write-nothing-until-
+    confirmed, preview round-trip, same-code-path — covers the three new screens
+    without edits.

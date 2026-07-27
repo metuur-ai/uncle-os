@@ -279,7 +279,7 @@ var commandSpecs = []cmdSpec{
 		// there is no way to reach the UI except by typing its name — no bare
 		// invocation, no other subcommand, no environment variable (R-5.2).
 		// A bare `company-os` still prints help and exits 2, as it always has.
-		name: "tui", help: "interactive terminal UI (read-only views)", goOnly: true,
+		name: "tui", help: "interactive terminal UI (browse, and scaffold with confirmation)", goOnly: true,
 	},
 	{
 		name: "workspace", help: "federated multi-repo governance sync/status (Option B)",
