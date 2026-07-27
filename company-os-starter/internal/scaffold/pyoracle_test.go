@@ -1,24 +1,30 @@
 package scaffold
 
 import (
-	"os"
-	"os/exec"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/workspace"
+	"github.com/metuur-ai/uncle-os/company-os-starter/internal/yamlio"
 )
 
 // TestScaffoldedArtifactsMatchPyYAML closes the loop on the documents nobody
-// authored: it re-dumps what `init` and `add` actually wrote and compares to
-// safe_dump. A regression in a scaffold dict — a reordered key, a value that
-// stopped being a string — fails here rather than in the harness.
+// authored: it re-dumps what `init` and `add` actually wrote and asserts the
+// bytes come back unchanged. A regression in a scaffold dict — a reordered key,
+// a value that stopped being a string — fails here rather than in the corpus.
 //
 // The emitter's own corpus lives with the emitter, in internal/yamlio; this test
 // stays here because only this package knows what the scaffolds contain.
+//
+// It used to shell out to the vendored PyYAML and assert
+// `src == safe_dump(safe_load(src))`. R-9.3 deleted that vendor tree, leaving the
+// test able only to skip. The assertion is now the same round trip through the
+// Go emitter, which is not a weaker claim: internal/yamlio's
+// TestEmitterMatchesPyYAML pins PyDump to safe_dump byte for byte against
+// answers frozen from PyYAML 6.0.2, so "fixed point under PyDump" and "fixed
+// point under safe_dump" are the same statement as long as that test passes.
+// The one thing lost is independence — both halves now rest on the same emitter.
 func TestScaffoldedArtifactsMatchPyYAML(t *testing.T) {
-	env := oracleEnv(t)
 	root := initWorkspace(t)
 	if _, err := Add(workspace.New(root), AddComponent, "billing-api", "platform-1", nil); err != nil {
 		t.Fatalf("add component: %v", err)
@@ -33,47 +39,20 @@ func TestScaffoldedArtifactsMatchPyYAML(t *testing.T) {
 		"company-ontology/ids/registry.yaml",
 	} {
 		t.Run(rel, func(t *testing.T) {
-			src := read(t, filepath.Join(root, filepath.FromSlash(rel)))
-			if want := safeDump(t, env, src); src != want {
-				t.Fatalf("not what safe_dump would write\n--- python\n%s--- go\n%s", want, src)
+			path := filepath.Join(root, filepath.FromSlash(rel))
+			src := read(t, path)
+			loaded, err := yamlio.PyLoadFile(path)
+			if err != nil {
+				t.Fatalf("PyLoadFile: %v", err)
+			}
+			redumped, err := yamlio.PyDump(loaded)
+			if err != nil {
+				t.Fatalf("PyDump: %v", err)
+			}
+			if src != redumped {
+				t.Fatalf("scaffolded file is not what the emitter would write\n"+
+					"--- re-dumped\n%s--- on disk\n%s", redumped, src)
 			}
 		})
 	}
-}
-
-// oracleEnv locates the vendored PyYAML and skips when it or python3 is absent.
-func oracleEnv(t *testing.T) []string {
-	t.Helper()
-	if _, err := exec.LookPath("python3"); err != nil {
-		t.Skip("python3 not available; cannot re-run the oracle")
-	}
-	moduleRoot, err := filepath.Abs(filepath.Join("..", ".."))
-	if err != nil {
-		t.Skipf("cannot locate the module root: %v", err)
-	}
-	vendor := filepath.Join(moduleRoot, "vendor")
-	if _, err := os.Stat(filepath.Join(vendor, "yaml")); err != nil {
-		t.Skipf("vendored PyYAML unavailable: %v", err)
-	}
-	return append(os.Environ(), "PYTHONPATH="+vendor)
-}
-
-const safeDumpScript = `
-import sys, yaml
-sys.stdout.write(yaml.safe_dump(yaml.safe_load(sys.stdin.read()),
-                                sort_keys=False, default_flow_style=False))
-`
-
-func safeDump(t *testing.T, env []string, src string) string {
-	t.Helper()
-	cmd := exec.Command("python3", "-c", safeDumpScript)
-	cmd.Env = env
-	cmd.Stdin = strings.NewReader(src)
-	var out, errb strings.Builder
-	cmd.Stdout = &out
-	cmd.Stderr = &errb
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("safe_dump oracle failed: %v\n%s", err, errb.String())
-	}
-	return out.String()
 }

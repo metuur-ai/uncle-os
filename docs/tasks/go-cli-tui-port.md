@@ -1983,6 +1983,137 @@ Ordered by the coupling map in research §4c: most self-contained first.
   - verify: all four `company-os-starter/skills/*/SKILL.md` use `--json` and branch
     on documented exit codes.
 
+- [x] 6.10 Retire the Python parity scaffolding left behind by 6.5 (deps: 6.5, est: ~4h)
+  - DONE 2026-07-26. 6.5 deleted the Python CLI but not the scaffolding built to
+    compare against it, which left **18 test functions — 55 counting subtests —
+    green because they could only SKIP**, against 1236 real passes. This is
+    exactly the failure mode their own comments were written to prevent ("skip,
+    never pass, so a missing oracle can never look like agreement"); it had
+    already happened, permanently, with nothing reporting it. `make differential`
+    was dead too: `PY_CLI` pointed at a path that no longer existed.
+  - The full inventory, since a partial one is how this was missed the first time
+    (an initial `grep` was truncated by a broken pipe and its partial output
+    taken as complete — the count was reported as 4 before being re-measured):
+
+    | Location | Tests | Subtest skips | Needed |
+    |---|---|---|---|
+    | `governance/oracle_test.go` | 4 | 22 | `bin/company-os` |
+    | `skills/gate_oracle_test.go` | 1 | 17 | `bin/company-os` |
+    | `skills/oracle_test.go` | 4 | 12 | `bin/company-os` |
+    | `yamlio/pyemit_test.go`, `pyflow_test.go` | 4 | 4 | vendored PyYAML |
+    | `graph/graph_test.go` | 2 | 2 | both |
+    | `frontmatter`, `workspace` differential tests | 2 | 2 | `bin/company-os` |
+    | `scaffold/pyoracle_test.go` | 1 | 1 | vendored PyYAML |
+    | `governance/governance_test.go` | 1 | 1 | `bin/company-os` |
+
+    Two of them (`graph_test.go`) already skipped with the message "the Python
+    reference is gone; this oracle retires with it" — seen previously and left.
+  - **The corpus was the valuable half, so it was ported rather than deleted.**
+    `examples/differential.py` (1361 lines) is now
+    `company-os-starter/internal/difftest`: the same **288** invocations across
+    all 16 subcommands, each run against a fresh fixture copy, with per-step
+    exit/stdout/stderr and the resulting file tree frozen into `testdata/`. It
+    changed shape from a differential (compare A to B) to a characterization
+    suite (compare to frozen truth), because there is no second implementation
+    left. It now runs in `go test ./...`, so it is in `make check` on every
+    commit instead of being a slow manual step.
+  - The **entire declared-divergence subsystem was deliberately not ported** —
+    the waiver registry, its citation grammar, and all 631 records in
+    `examples/declared-divergences.txt`. Every one of those sanctioned a
+    Python/Go difference; against a golden there is no second implementation, so
+    any difference is a regression and waiving it would defeat the point. That
+    is why the Go port is smaller than the Python it replaces.
+  - **Corpus parity is proved, not asserted.** The id list was captured from
+    `differential.py --list` *before* the file was deleted and pinned as
+    `internal/difftest/testdata/corpus-ids.txt`;
+    `TestCorpusMatchesTheInheritedIDSet` fails if any of the 288 goes missing, so
+    a dropped invocation is a red test rather than silent coverage loss. Note the
+    real count is **288**, not the 227 quoted in task 5.3 — that figure was the
+    subset with a real on-disk fixture.
+  - **The goldens were proved able to fail, which is the only thing that makes
+    them worth having.** A one-word change to a `[warn]` label in
+    `internal/render` reddened 3; a change visible only *inside a written file*
+    (a `##` heading in `internal/scaffold/template.go`) reddened 8. Both halves —
+    stdout capture and tree hashing — demonstrably work.
+  - **One real semantic difference between differential and golden had to be
+    handled.** `workspace sync` records the source `file://` URL in
+    `workspace.lock.yaml`, and the synthetic git repo lives in a per-run temp
+    directory. The Python harness never saw this because it ran both binaries
+    inside ONE temp dir in ONE process, so the path cancelled out. A golden
+    outlives the run, so the normalizer gained `<SRC>` alongside `<WS>`; without
+    it the suite would have failed at random.
+  - **Each skip-only test was decided on its own merits, not swept.** Tag
+    `python-cli-final` — the recovery path 6.3 exists to provide — was checked
+    out to recover both the Python CLI and the vendored PyYAML 6.0.2, so
+    "freeze" was a real option rather than a wish:
+
+    - **Frozen (unique coverage, could not be recovered any other way).**
+      `skills/gate_oracle_test.go`'s 17 synthesized workspaces — skill shadowing,
+      dangling `extends`, and the id-type collisions where Python's `==` spans
+      the numeric tower (`5 == 5.0`, `True == 1`) — exist in NO committed
+      fixture, so `internal/difftest` cannot reach them either. Reference gate-7
+      blocks captured into `testdata/gate7_reference.json`.
+      `internal/yamlio`'s four emitter tests frozen into
+      `testdata/pyyaml_safedump.json` (61 cases, 4 dump modes).
+    - **Converted to self-contained property tests (no oracle needed).**
+      `governance_test.go`'s duplicate-relationship tally now asserts the
+      property directly — the platform appears twice in the list while the
+      requirement counts are unchanged — which was the whole of what the
+      differential checked there. `scaffold/pyoracle_test.go` became a
+      fixed-point check under the Go emitter; not a weaker claim, because
+      `TestEmitterMatchesPyYAML` pins that emitter to `safe_dump` byte for byte.
+      `internal/yamlio/testdata/pathorder_oracle.py`, the last thing in the suite
+      needing `python3` on `PATH`, became `testdata/pathorder_cpython.json`
+      (208 groups, CPython 3.12.11; the group set is seeded, so reproducible).
+    - **Deleted (genuinely redundant with the difftest corpus).**
+      `governance/oracle_test.go`'s and `skills/oracle_test.go`'s eight tests and
+      `graph_test.go`'s two — every one of them compares a command's output over
+      committed fixtures, which the corpus now freezes end to end including a
+      hash of every file in the tree. Their shared helpers were kept; only the
+      oracle-specific ones went.
+
+    Every frozen file was mutation-checked: corrupting two entries in
+    `pyyaml_safedump.json` produces four failures, and one in
+    `gate7_reference.json` produces six. They assert.
+  - **What was NOT ported, and why.**
+    `examples/banking/.../test_settlement_finality.py` stays Python: it is the
+    *governed* artifact, not the governor. Company OS is language-agnostic and
+    the example exists to show a polyglot federation; it also sits inside a
+    federation slice whose bytes are hashed into `workspace.lock.yaml`, so
+    rewriting it would force a re-sync and a gate `[8/8]` re-baseline for nothing.
+    It is the only `.py` left tracked in the repository.
+  - **Regeneration procedure**, since nothing frozen here can be re-derived from
+    the working tree. Check out the tag into a scratch directory:
+
+    ```
+    git archive python-cli-final company-os-starter/bin \
+        company-os-starter/vendor company-os-starter/templates | tar -x -C <dir>
+    ```
+
+    All three paths are required — `bin/company-os:36` resolves `TEMPLATES_DIR`
+    at import, so a bin-only checkout passes `validate` while every scaffolding
+    command fails. `gate7_reference.json` is produced by walking `gateCases`,
+    running `python3 bin/company-os --root <ws> validate` on each synthesized
+    workspace and slicing out the `[7/` block. `pyyaml_safedump.json` needs the
+    four `safe_dump` calls recorded beside the tests that consume them.
+  - **Honest limitations, stated rather than glossed.** A differential proves two
+    implementations agree; a golden only proves behaviour has not changed since
+    someone last read the diff — so a golden accepted without reading it protects
+    nothing. The frozen answers cannot notice if they were wrong when captured,
+    only if behaviour drifts away from them. And `scaffold/pyoracle_test.go` now
+    rests on the same emitter it used to be independent of.
+  - why: a test that can only skip is worse than no test, because a skip reads as
+    a pass in a green summary — and `make check` was reporting green over 55 of
+    them. Deleting them all outright would have been honest but would have
+    dropped both the only end-to-end byte-level coverage for `discover`,
+    `deviation`, `exception`, `check`, `governance`, `today`, `graph`, `ids`,
+    `skills` and `scratchpad` (`acceptance.sh` freezes `validate` alone) and the
+    17 skill-conflict workspaces no fixture contains.
+  - acceptance: R-9.3 (completion), R-7.1 (corpus preserved)
+  - verify: no tracked `.py` outside the banking fixture; **zero** Python-related
+    SKIP in `go test ./... -v` (was 55); `make check` green; the corpus goldens
+    are idempotent across runs AND go red on a deliberate byte flip.
+
 - [x] 6.9 Record the named Go codebase owner (deps: none, est: ~15m)
   - DONE 2026-07-26, **as a blocking placeholder — this task is not closed until
     a human writes a name.** `docs/hld/go-cli-tui-port.md` Stakeholders now

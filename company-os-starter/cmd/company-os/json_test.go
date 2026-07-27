@@ -11,7 +11,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -343,20 +342,16 @@ func TestJSONFlagLeavesTextOutputAlone(t *testing.T) {
 	}
 }
 
-// TestJSONIsNotInTheDifferentialCorpus guards the assumption the parity harness
-// rests on: `--json` is a Go-only flag with no Python counterpart, so an
-// invocation carrying it could never be compared against the oracle. If one ever
-// appears in the corpus the harness is measuring the port against nothing.
-func TestJSONIsNotInTheDifferentialCorpus(t *testing.T) {
-	path, err := filepath.Abs(filepath.Join("..", "..", "..", "examples", "differential.py"))
-	if err != nil {
-		t.Fatalf("resolving corpus: %v", err)
-	}
-	src, err := os.ReadFile(path)
-	if err != nil {
-		t.Skipf("corpus unavailable: %v", err)
-	}
-	if bytes.Contains(src, []byte("--json")) {
-		t.Error("examples/differential.py mentions --json, which the Python CLI does not have")
-	}
-}
+// TestJSONIsNotInTheDifferentialCorpus used to live here. It read
+// examples/differential.py as a FILE and asserted the string "--json" did not
+// appear in it, because `--json` was a Go-only flag with no Python counterpart:
+// an invocation carrying it could not have been compared against the oracle.
+//
+// Both halves of that premise are gone. The Python CLI was deleted by R-9.3, and
+// the corpus now lives in internal/difftest as a golden characterization suite
+// with no second implementation to agree with — so `--json` invocations are not
+// merely permitted there, they are worth ADDING, which is the exact opposite of
+// what this test enforced. It also read the file with a t.Skipf on error, so
+// after the delete it would have skipped in silence rather than failing.
+//
+// Not replaced by an equivalent: there is nothing left to constrain.

@@ -1,10 +1,10 @@
 package yamlio
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -163,18 +163,35 @@ name: "éééééééééééééééééééééééééééééééééééé�
 `},
 }
 
-// TestEmitterMatchesPyYAML re-runs yaml.safe_dump over the same documents and
-// asserts byte equality. It is the only thing standing between this port and a
-// silently different file tree: the differential harness compares file BYTES,
-// and every YAML artifact the scaffolding commands write is produced here.
+// TestEmitterMatchesPyYAML asserts PyDump reproduces yaml.safe_dump byte for
+// byte over the corpus. It is the only thing standing between this port and a
+// silently different file tree: every YAML artifact the scaffolding commands
+// write is produced here, and the difftest corpus compares file bytes.
 //
-// It follows the oracle pattern of internal/frontmatter and internal/workspace —
-// skip, never pass, when python3 or the vendored PyYAML is unavailable.
+// The expected bytes used to be derived live by shelling out to the vendored
+// PyYAML. R-9.3 deleted that vendor tree, which left the test able only to skip
+// — green because it did nothing. The answers are now frozen in
+// testdata/pyyaml_safedump.json, captured from the vendored PyYAML 6.0.2
+// recovered from tag python-cli-final specifically so this coverage survived
+// rather than being deleted with its oracle.
+//
+// The tradeoff is worth naming: this no longer re-derives the answer, so it
+// cannot notice if the frozen bytes were wrong to begin with. It can still
+// notice the thing it exists for — the emitter drifting.
 func TestEmitterMatchesPyYAML(t *testing.T) {
-	env := oracleEnv(t)
-	for _, c := range emitCorpus {
+	frozen := loadFrozenSafeDump(t)
+	if len(frozen.Emit) != len(emitCorpus) {
+		t.Fatalf("frozen answers cover %d documents, corpus has %d; re-capture "+
+			"testdata/pyyaml_safedump.json", len(frozen.Emit), len(emitCorpus))
+	}
+	for i, c := range emitCorpus {
 		t.Run(c.name, func(t *testing.T) {
+			want := frozen.Emit[i]
 			src := strings.TrimLeft(c.yaml, "\n")
+			if want.Name != c.name || want.Src != src {
+				t.Fatalf("frozen answer %d is for a different document (%q) than "+
+					"the corpus holds (%q); re-capture the file", i, want.Name, c.name)
+			}
 			path := filepath.Join(t.TempDir(), "doc.yaml")
 			if err := os.WriteFile(path, []byte(src), 0o666); err != nil {
 				t.Fatal(err)
@@ -187,12 +204,41 @@ func TestEmitterMatchesPyYAML(t *testing.T) {
 			if err != nil {
 				t.Fatalf("PyDump: %v", err)
 			}
-			want := safeDump(t, env, src)
-			if got != want {
-				t.Fatalf("emitter diverged from safe_dump\n--- python\n%s--- go\n%s", want, got)
+			if got != want.Want {
+				t.Fatalf("emitter diverged from safe_dump\n--- python\n%s--- go\n%s",
+					want.Want, got)
 			}
 		})
 	}
+}
+
+// frozenSafeDump is testdata/pyyaml_safedump.json: what the vendored PyYAML
+// 6.0.2 emitted for inputs this package generates.
+type frozenSafeDump struct {
+	Provenance string `json:"provenance"`
+	PyYAML     string `json:"pyyaml"`
+	Emit       []struct {
+		Name string `json:"name"`
+		Src  string `json:"src"`
+		Want string `json:"want"`
+	} `json:"emit"`
+	Fold []struct {
+		Value string `json:"value"`
+		Want  string `json:"want"`
+	} `json:"fold"`
+}
+
+func loadFrozenSafeDump(t *testing.T) frozenSafeDump {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join("testdata", "pyyaml_safedump.json"))
+	if err != nil {
+		t.Fatalf("reading the frozen PyYAML answers: %v", err)
+	}
+	var f frozenSafeDump
+	if err := json.Unmarshal(raw, &f); err != nil {
+		t.Fatalf("decoding the frozen PyYAML answers: %v", err)
+	}
+	return f
 }
 
 // TestEmitterIsAFixedPoint is what `graph build; graph build` and repeated
@@ -265,17 +311,27 @@ func TestWriteDoubleQuotedFoldsAfterEscape(t *testing.T) {
 }
 
 // TestWriteDoubleQuotedFoldMatchesPyYAML pins the bytes, not just the absence of
-// a panic — a fold that lands one character early is still a wrong file.
+// a panic — a fold that lands one character early is still a wrong file. The
+// expected bytes are frozen alongside the emitter corpus; see
+// TestEmitterMatchesPyYAML for why they are frozen rather than re-derived.
 func TestWriteDoubleQuotedFoldMatchesPyYAML(t *testing.T) {
-	env := oracleEnv(t)
-	for n := 70; n <= 90; n++ {
+	frozen := loadFrozenSafeDump(t)
+	if len(frozen.Fold) != 21 {
+		t.Fatalf("frozen answers cover %d fold widths, expected 21 (n=70..90)",
+			len(frozen.Fold))
+	}
+	for i, n := 0, 70; n <= 90; i, n = i+1, n+1 {
 		t.Run(fmt.Sprint(n), func(t *testing.T) {
 			value := strings.Repeat("a", n) + "ébb"
+			if frozen.Fold[i].Value != value {
+				t.Fatalf("frozen answer %d is for a different value; re-capture "+
+					"testdata/pyyaml_safedump.json", i)
+			}
 			got, err := PyDump(PyMap{{K: "name", V: PyStr(value)}})
 			if err != nil {
 				t.Fatalf("PyDump: %v", err)
 			}
-			if want := safeDumpValue(t, env, value); got != want {
+			if want := frozen.Fold[i].Want; got != want {
 				t.Fatalf("fold diverged\n--- python\n%s--- go\n%s", want, got)
 			}
 		})
@@ -532,59 +588,19 @@ func TestPyFalsyAgreesWithIsFalsy(t *testing.T) {
 }
 
 // ---------------------------------------------------------------- oracle
-
-// oracleEnv locates the vendored PyYAML and skips when it or python3 is absent.
-func oracleEnv(t *testing.T) []string {
-	t.Helper()
-	if _, err := exec.LookPath("python3"); err != nil {
-		t.Skip("python3 not available; cannot re-run the oracle")
-	}
-	moduleRoot, err := filepath.Abs(filepath.Join("..", ".."))
-	if err != nil {
-		t.Skipf("cannot locate the module root: %v", err)
-	}
-	vendor := filepath.Join(moduleRoot, "vendor")
-	if _, err := os.Stat(filepath.Join(vendor, "yaml")); err != nil {
-		t.Skipf("vendored PyYAML unavailable: %v", err)
-	}
-	return append(os.Environ(), "PYTHONPATH="+vendor)
-}
-
-const safeDumpScript = `
-import sys, yaml
-sys.stdout.write(yaml.safe_dump(yaml.safe_load(sys.stdin.read()),
-                                sort_keys=False, default_flow_style=False))
-`
-
-func safeDump(t *testing.T, env []string, src string) string {
-	t.Helper()
-	return runOracle(t, env, safeDumpScript, src)
-}
-
-// safeDumpValueScript dumps `{"name": <stdin verbatim>}` so the value reaches
-// PyYAML without a YAML parse in between — the fold cases above carry runes a
-// loader would otherwise be free to re-encode.
-const safeDumpValueScript = `
-import sys, yaml
-sys.stdout.write(yaml.safe_dump({"name": sys.stdin.read()},
-                                sort_keys=False, default_flow_style=False))
-`
-
-func safeDumpValue(t *testing.T, env []string, value string) string {
-	t.Helper()
-	return runOracle(t, env, safeDumpValueScript, value)
-}
-
-func runOracle(t *testing.T, env []string, script, stdin string) string {
-	t.Helper()
-	cmd := exec.Command("python3", "-c", script)
-	cmd.Env = env
-	cmd.Stdin = strings.NewReader(stdin)
-	var out, errb strings.Builder
-	cmd.Stdout = &out
-	cmd.Stderr = &errb
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("safe_dump oracle failed: %v\n%s", err, errb.String())
-	}
-	return out.String()
-}
+//
+// The live oracle helpers that used to live here — oracleEnv, safeDump,
+// safeDumpValue and runOracle — shelled out to `python3` with PYTHONPATH
+// pointing at the vendored PyYAML. R-9.3 deleted that vendor tree, so they could
+// only skip. Their answers were captured from the vendored PyYAML 6.0.2
+// (recovered from tag python-cli-final) into testdata/pyyaml_safedump.json
+// before the helpers were removed, so the assertions above still assert.
+//
+// Regenerating that file requires PyYAML 6.0.2 and the two scripts it was
+// produced with:
+//
+//	yaml.safe_dump(yaml.safe_load(src), sort_keys=False, default_flow_style=False)
+//	yaml.safe_dump({"name": value},     sort_keys=False, default_flow_style=False)
+//
+// The second dumps the value without a YAML parse in between, because the fold
+// cases carry runes a loader would otherwise be free to re-encode.

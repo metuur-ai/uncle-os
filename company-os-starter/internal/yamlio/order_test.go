@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"reflect"
 	"sort"
@@ -461,46 +460,57 @@ func TestPathLessIsATotalOrder(t *testing.T) {
 	}
 }
 
-// TestPathLessAgainstPythonOracle re-derives the ordering live from CPython over
-// the frozen corpus plus a randomly generated one, so a divergence fails here
-// rather than being discovered in a lock diff. Skips, never passes, when Python
-// is unavailable.
-func TestPathLessAgainstPythonOracle(t *testing.T) {
-	oracle := filepath.Join("testdata", "pathorder_oracle.py")
-	if _, err := os.Stat(oracle); err != nil {
-		t.Skipf("oracle unavailable: %v", err)
-	}
-
-	groups := append([][]string(nil), pathOrderCorpus...)
-	groups = append(groups, randomPathGroups(200, 6)...)
-
-	in, err := json.Marshal(groups)
+// TestPathLessMatchesFrozenCPythonOrdering asserts SortPaths reproduces
+// CPython's `sorted(key=PurePosixPath)` over 208 path groups — the hand-written
+// corpus plus 200 seeded random ones biased toward the characters that surround
+// '/' in ASCII, which is exactly where component-wise and byte-wise ordering
+// disagree.
+//
+// This ordering is not cosmetic: hash_tree walked a slice with
+// sorted(Path.rglob("*")), so the order reaches workspace.lock.yaml and, through
+// it, the order of gate [8/8]'s [FAIL] lines.
+//
+// It used to shell out to testdata/pathorder_oracle.py and derive the answer
+// live. That oracle was stdlib-only, so unlike the other Python oracles it still
+// worked after cutover — but it was the last thing in the test suite that needed
+// a Python interpreter on PATH, for an answer that cannot change: it is a
+// property of a CPython version, not of this repository. The answer is now
+// frozen in testdata/pathorder_cpython.json, captured from CPython 3.12.11 in
+// the change that deleted the oracle. The generating command is recorded in that
+// file's `provenance` field, and the group set is seeded, so the capture can be
+// reproduced against a different interpreter if the question is ever reopened.
+func TestPathLessMatchesFrozenCPythonOrdering(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("testdata", "pathorder_cpython.json"))
 	if err != nil {
-		t.Fatalf("marshal corpus: %v", err)
+		t.Fatalf("reading the frozen CPython ordering: %v", err)
 	}
-	cmd := exec.Command("python3", oracle)
-	cmd.Stdin = bytes.NewReader(in)
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-	out, err := cmd.Output()
-	if err != nil {
-		t.Skipf("python3 oracle unavailable: %v (%s)", err, stderr.String())
+	var frozen struct {
+		Provenance string     `json:"provenance"`
+		Python     string     `json:"python"`
+		Groups     [][]string `json:"groups"`
+		Sorted     [][]string `json:"sorted"`
+	}
+	if err := json.Unmarshal(raw, &frozen); err != nil {
+		t.Fatalf("decoding the frozen CPython ordering: %v", err)
+	}
+	if len(frozen.Sorted) != len(frozen.Groups) {
+		t.Fatalf("frozen file is inconsistent: %d groups, %d sorted",
+			len(frozen.Groups), len(frozen.Sorted))
 	}
 
-	var resp struct {
-		Python string     `json:"python"`
-		Sorted [][]string `json:"sorted"`
-	}
-	if err := json.Unmarshal(out, &resp); err != nil {
-		t.Fatalf("decode oracle output: %v", err)
-	}
-	if len(resp.Sorted) != len(groups) {
-		t.Fatalf("oracle returned %d groups, sent %d", len(resp.Sorted), len(groups))
+	// The frozen groups must still be the ones this package generates, or the
+	// captured answer is about a corpus that no longer exists.
+	live := append([][]string(nil), pathOrderCorpus...)
+	live = append(live, randomPathGroups(200, 6)...)
+	if !reflect.DeepEqual(live, frozen.Groups) {
+		t.Fatalf("the corpus changed since the CPython answer was captured "+
+			"(%d live groups vs %d frozen); re-capture it or the comparison is "+
+			"against the wrong inputs", len(live), len(frozen.Groups))
 	}
 
 	mismatches := 0
-	for i, want := range resp.Sorted {
-		got := append([]string(nil), groups[i]...)
+	for i, want := range frozen.Sorted {
+		got := append([]string(nil), frozen.Groups[i]...)
 		SortPaths(got)
 		if !reflect.DeepEqual(got, want) {
 			mismatches++
@@ -510,7 +520,7 @@ func TestPathLessAgainstPythonOracle(t *testing.T) {
 		}
 	}
 	t.Logf("PathLess agrees with CPython %s on %d/%d groups",
-		resp.Python, len(groups)-mismatches, len(groups))
+		frozen.Python, len(frozen.Groups)-mismatches, len(frozen.Groups))
 }
 
 // randomPathGroups builds path sets biased toward the characters that surround

@@ -339,36 +339,62 @@ func TestResolveRefusesAnUnknownPlatform(t *testing.T) {
 // communications]` with the requirement count UNCHANGED. Accumulating the count
 // as the loop runs doubles it, which is why the tally is read back out of the
 // finished entry.
+// It used to assert this by running the Python reference over the same
+// duplicated fixture and diffing stdout. R-9.3 deleted that binary, so the test
+// could only skip. The property does not need an oracle to state, so it is
+// asserted directly instead: the platform appears TWICE in the list and the
+// requirement counts are UNCHANGED from the unduplicated resolve. That is the
+// whole of what the differential was checking here, minus the claim that Python
+// agrees — which nothing can check any more.
 func TestDuplicatePlatformRelationshipTalliesLikeTheOracle(t *testing.T) {
-	dup := func(ws string) {
-		desc := filepath.Join(ws, "platforms", "communications", "components",
-			"customer-notification-service.yaml")
-		text := readFile(t, desc)
-		const block = "- platform: platform://communications\n  relationship: belongs-to\n"
-		if !strings.Contains(text, block) {
-			t.Skipf("fixture no longer carries the expected relationship block:\n%s", text)
+	resolve := func(ws string) string {
+		t.Helper()
+		sections, err := governance.ResolveSections(workspace.New(ws), "customer-engagement")
+		if err != nil {
+			t.Fatalf("ResolveSections: %v", err)
 		}
-		writeFile(t, desc, strings.Replace(text, block, block+block, 1))
+		return renderSections(t, sections)
 	}
 
-	pyWS := copyFixture(t, "workspace")
-	dup(pyWS)
-	pyOut, code := oracleCLI(t, pyWS, "governance", "resolve", "--team", "customer-engagement")
-	if code != 0 {
-		t.Fatalf("oracle exited %d", code)
-	}
-	if !strings.Contains(pyOut, "[communications, communications]") {
-		t.Fatalf("the oracle did not reach the duplicate case:\n%s", pyOut)
+	// Baseline: the fixture as committed.
+	baseline := resolve(copyFixture(t, "workspace"))
+	if !strings.Contains(baseline, "platforms [communications]") {
+		t.Fatalf("fixture no longer renders the expected single relationship:\n%s", baseline)
 	}
 
-	goWS := copyFixture(t, "workspace")
-	dup(goWS)
-	sections, err := governance.ResolveSections(workspace.New(goWS), "customer-engagement")
-	if err != nil {
-		t.Fatalf("ResolveSections: %v", err)
+	// Same fixture with the belongs-to relationship stated twice.
+	dupWS := copyFixture(t, "workspace")
+	desc := filepath.Join(dupWS, "platforms", "communications", "components",
+		"customer-notification-service.yaml")
+	text := readFile(t, desc)
+	const block = "- platform: platform://communications\n  relationship: belongs-to\n"
+	if !strings.Contains(text, block) {
+		t.Fatalf("fixture no longer carries the expected relationship block:\n%s", text)
 	}
-	if got := renderSections(t, sections); got != pyOut {
-		t.Errorf("stdout diverges\n go: %q\npy: %q", got, pyOut)
+	writeFile(t, desc, strings.Replace(text, block, block+block, 1))
+	got := resolve(dupWS)
+
+	// `platforms:` is a list, so the duplicate shows up.
+	if !strings.Contains(got, "[communications, communications]") {
+		t.Fatalf("duplicate relationship did not reach the platforms list:\n%s", got)
+	}
+	// ...but the counts are dict keys, so they must not double. Comparing the
+	// whole tail after the platforms list catches both counts at once.
+	countsOf := func(s string) string {
+		_, after, ok := strings.Cut(s, "platforms [")
+		if !ok {
+			t.Fatalf("no platforms list in:\n%s", s)
+		}
+		_, counts, ok := strings.Cut(after, "], ")
+		if !ok {
+			t.Fatalf("no counts after the platforms list in:\n%s", s)
+		}
+		return counts
+	}
+	if a, b := countsOf(baseline), countsOf(got); a != b {
+		t.Errorf("duplicating the relationship changed the tally\n"+
+			" once  : %q\n twice : %q\nthe counts are dict keys and must be overwritten, "+
+			"not accumulated", a, b)
 	}
 }
 

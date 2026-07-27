@@ -1,25 +1,29 @@
 package frontmatter
 
 import (
-	"encoding/base64"
-	"encoding/json"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 )
 
-// Differential test for R-1.5. Python's frontmatter() (bin/company-os:76) is the
-// oracle. Every expectation below was MEASURED by running it, not reasoned about
-// — see .devlocal/go-port/frontmatter-truth.md for the transcript and the
+// Conformance test for R-1.5. Every expectation below was MEASURED against
+// Python's frontmatter() (bin/company-os:76) while it existed, not reasoned
+// about — see .devlocal/go-port/frontmatter-truth.md for the transcript and the
 // surprises (`---\n---\n` rejects; CRLF accepts because read_text() translates
 // newlines before the regex runs).
 //
-// Two layers assert the same corpus:
-//   1. TestFrozenPythonTruth — the recorded measurement, always runs.
-//   2. TestDifferentialAgainstPythonOracle — re-runs the real Python on the same
-//      corpus, so the frozen table cannot quietly rot.
+// TestFrozenPythonTruth is that recorded measurement and always runs. It used to
+// be backed by a second layer, TestDifferentialAgainstPythonOracle, which
+// re-executed the real Python over the same corpus so the frozen table could not
+// quietly rot. That layer was removed when R-9.3 deleted the Python CLI: its
+// oracle (testdata/oracle.py) loaded bin/company-os as a module, so from the
+// moment of cutover it could only skip. A test that can no longer run is worse
+// than no test, because a skip reads as a pass in a green summary.
+//
+// What this means, stated rather than glossed: the table below is now frozen
+// truth with no live check behind it. It records what Python did; nothing here
+// can still verify that claim.
 
 type doc struct {
 	name string
@@ -162,73 +166,6 @@ func TestFrozenPythonTruth(t *testing.T) {
 	}
 }
 
-// TestDifferentialAgainstPythonOracle runs the real Python frontmatter() over
-// the same corpus and asserts Go made the identical decision for every document.
-// It SKIPS (never silently passes) when python3 or the vendored PyYAML is
-// unavailable, so a green run on a stripped machine is not mistaken for a
-// verified one.
-func TestDifferentialAgainstPythonOracle(t *testing.T) {
-	py, err := exec.LookPath("python3")
-	if err != nil {
-		t.Skip("python3 not on PATH; oracle cannot run")
-	}
-	dir := t.TempDir()
-	for _, d := range corpus {
-		if err := os.WriteFile(filepath.Join(dir, d.name+".md"), d.raw, 0o644); err != nil {
-			t.Fatal(err)
-		}
-	}
-	out, err := exec.Command(py, filepath.Join("testdata", "oracle.py"), dir).Output()
-	if err != nil {
-		if ee, ok := err.(*exec.ExitError); ok {
-			t.Skipf("oracle unavailable (bin/company-os or vendored PyYAML not loadable):\n%s", ee.Stderr)
-		}
-		t.Skipf("oracle unavailable: %v", err)
-	}
-	var oracle map[string]struct {
-		Decision string `json:"decision"`
-		YAMLB64  string `json:"yaml_b64"`
-		BodyB64  string `json:"body_b64"`
-	}
-	if err := json.Unmarshal(out, &oracle); err != nil {
-		t.Fatalf("oracle output not JSON: %v", err)
-	}
-	if len(oracle) != len(corpus) {
-		t.Fatalf("oracle saw %d docs, corpus has %d", len(oracle), len(corpus))
-	}
-	for _, d := range corpus {
-		d := d
-		t.Run(d.name, func(t *testing.T) {
-			o, ok := oracle[d.name]
-			if !ok {
-				t.Fatalf("oracle produced no record for %q", d.name)
-			}
-			got, err := Parse(d.raw)
-			if o.Decision == "decode-error" {
-				if err == nil {
-					t.Fatalf("Python raised on decode; Go returned a document")
-				}
-				return
-			}
-			if err != nil {
-				t.Fatalf("Python decided %q; Go errored: %v", o.Decision, err)
-			}
-			wantAccept := o.Decision == "accept"
-			if got.HasFrontmatter != wantAccept {
-				t.Fatalf("accept: Go=%v Python=%v", got.HasFrontmatter, wantAccept)
-			}
-			if wantAccept {
-				if want := b64(t, o.YAMLB64); string(got.YAML) != want {
-					t.Errorf("yaml block:\n Go     = %q\n Python = %q", got.YAML, want)
-				}
-			}
-			if want := b64(t, o.BodyB64); string(got.Body) != want {
-				t.Errorf("body:\n Go     = %q\n Python = %q", trunc(got.Body), trunc([]byte(want)))
-			}
-		})
-	}
-}
-
 // TestParseFileMatchesParse pins the path-taking entry point to the byte-taking
 // one, since Python's frontmatter() takes a path and its read_text() decode is
 // part of the measured contract.
@@ -254,15 +191,6 @@ func TestParseFileMatchesParse(t *testing.T) {
 			t.Errorf("%s: ParseFile and Parse disagree", d.name)
 		}
 	}
-}
-
-func b64(t *testing.T, s string) string {
-	t.Helper()
-	b, err := base64.StdEncoding.DecodeString(s)
-	if err != nil {
-		t.Fatalf("bad base64 from oracle: %v", err)
-	}
-	return string(b)
 }
 
 func trunc(b []byte) string {

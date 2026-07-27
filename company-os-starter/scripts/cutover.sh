@@ -1,15 +1,23 @@
 #!/usr/bin/env bash
 # Task 6.5 — delete the Python reference implementation (R-9.3).
 #
-# THIS IS THE IRREVERSIBLE STEP. Run it yourself; an agent should not.
-# Recovery is `git checkout python-cli-final -- <three paths>` (see below), but
-# the cross-implementation oracle is gone the moment this runs: examples/
-# differential.py needs two binaries and after this there is one.
+# THIS SCRIPT HAS ALREADY RUN. It is kept as the record of what the cutover
+# checked and removed, not as something to run again — it is a one-shot, and it
+# refuses below if its targets are already gone.
 #
-#   company-os-starter/scripts/cutover.sh --dry-run   # show what would go
-#   company-os-starter/scripts/cutover.sh             # do it, then verify
+# The cutover landed in commit 151f159. A later change removed the last of the
+# Python scaffolding this script leaves behind: examples/differential.py and
+# examples/declared-divergences.txt, which this script's own completion message
+# correctly called "inert" — a differential harness needs two binaries and after
+# the cutover there is one. That corpus now lives in
+# company-os-starter/internal/difftest as a golden characterization suite over
+# the Go binary, so the coverage survived even though the comparison basis
+# changed. `make differential` still runs it.
 #
-# Preconditions, all re-checked below rather than assumed:
+# Recovery of the Python CLI is still
+# `git checkout python-cli-final -- <three paths>` (see the end of this file).
+#
+# Preconditions it checked, all re-checked rather than assumed:
 #   - the parity gate (6.4) is green
 #   - the tag python-cli-final exists and contains a runnable Python CLI
 set -uo pipefail
@@ -18,6 +26,21 @@ ROOT="$(cd "$HERE/../.." && pwd)"
 KIT="$ROOT/company-os-starter"
 DRY=0
 [ "${1:-}" = "--dry-run" ] && DRY=1
+
+# --- 0. refuse if the cutover already happened -------------------------------
+# Without this the script would sail through its preconditions (the tag still
+# carries everything), delete nothing (--ignore-unmatch), and print CUTOVER
+# COMPLETE — a success message for work it did not do.
+if [ ! -e "$KIT/bin/company-os" ] && [ ! -d "$KIT/vendor" ]; then
+  echo "Nothing to do: the Python reference is already gone (cutover ran in 151f159)."
+  echo "This script is one-shot and is kept as the record of what it checked."
+  echo
+  echo "To restore the reference implementation:"
+  echo "  git checkout python-cli-final -- company-os-starter/bin/company-os \\"
+  echo "                                   company-os-starter/vendor \\"
+  echo "                                   company-os-starter/templates"
+  exit 0
+fi
 
 TARGETS=(
   "company-os-starter/bin"            # the 2781-line Python CLI

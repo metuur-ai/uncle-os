@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -14,7 +13,6 @@ import (
 
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/graph"
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/model"
-	"github.com/metuur-ai/uncle-os/company-os-starter/internal/render"
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/workspace"
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/yamlio"
 )
@@ -32,14 +30,21 @@ var fixtures = []string{
 
 // idempotentFixtures are the two workspaces acceptance.sh §4 shasums. They are
 // the ones whose committed state is asserted to be fully derived AND stable
-// under a second build (R-0.6); the rest are not, and deliberately so — see
-// TestBuildConvergesLikePython.
+// under a second build (R-0.6); the rest are not, and deliberately so — the
+// cause is in rewrite_generated_block and is worth naming, because it looks
+// like a port defect and is not. The CREATE and APPEND branches end their write
+// with "\n", while the REPLACE branch splices in `text[ends[0].end():]` and
+// END_RE's trailing `\s*$` has already eaten that newline. So a node that gets
+// its markers from the append branch is rewritten once more on the next build,
+// losing the final newline, and only then settles. `failing-workspace` and
+// `failing-federated` each ship a CLAUDE.md with no markers, so both take that
+// path; the fixtures acceptance.sh §4 covers ship theirs already marked and
+// never do.
 var idempotentFixtures = []string{"workspace", "standalone-team"}
 
 // TestBuildIsIdempotentOnCommittedFixtures is R-0.6, the requirement the whole
-// package is shaped around. It is the Go-side twin of acceptance.sh §4, which
-// asserts the same property against the PYTHON binary — so between the two,
-// both implementations are pinned to the same committed bytes.
+// package is shaped around: the committed state is already fully derived, and a
+// second build changes nothing.
 func TestBuildIsIdempotentOnCommittedFixtures(t *testing.T) {
 	for _, name := range idempotentFixtures {
 		t.Run(name, func(t *testing.T) {
@@ -63,78 +68,24 @@ func TestBuildIsIdempotentOnCommittedFixtures(t *testing.T) {
 	}
 }
 
-// TestBuildConvergesLikePython covers the fixtures where `graph build` is NOT a
-// fixed point after one pass — and pins that Go is not a fixed point in exactly
-// the same places, on exactly the same bytes.
+// TestBuildConvergesLikePython and TestBuildMatchesPythonBinary used to sit
+// here. Both drove company-os-starter/bin/company-os over the same fixtures and
+// compared stdout and the resulting file tree byte for byte. R-9.3 deleted that
+// binary, so both could only skip — and pythonCLI() said so in its own skip
+// message: "the Python reference is gone; this oracle retires with it".
 //
-// The cause is in rewrite_generated_block and is worth naming, because it looks
-// like a port defect and is not: the CREATE and APPEND branches end their write
-// with "\n", while the REPLACE branch splices in `text[ends[0].end():]` and
-// END_RE's trailing `\s*$` has already eaten that newline. So a node that gets
-// its markers from the append branch is rewritten once more on the next build,
-// losing the final newline, and only then settles. `failing-workspace` and
-// `failing-federated` each ship a CLAUDE.md with no markers, so both take that
-// path; the fixtures acceptance.sh §4 covers ship theirs already marked and
-// never do. Python behaves identically — measured, same hashes — and R-0.7
-// makes that the contract.
-func TestBuildConvergesLikePython(t *testing.T) {
-	python := pythonCLI(t)
-	for _, name := range fixtures {
-		t.Run(name, func(t *testing.T) {
-			goWS := copyFixture(t, name)
-			pyWS := copyFixture(t, name)
-			for pass := 1; pass <= 3; pass++ {
-				if _, err := graph.Build(goWS); err != nil {
-					t.Fatalf("go pass %d: %v", pass, err)
-				}
-				runPython(t, python, pyWS.Root)
-				if a, b := treeHash(t, pyWS.Root), treeHash(t, goWS.Root); a != b {
-					t.Fatalf("pass %d: file tree diverged from Python\n%s", pass, diffTrees(a, b))
-				}
-			}
-			// Whatever the first two passes did, the third changes nothing:
-			// convergence is the property that actually matters downstream.
-			before := treeHash(t, goWS.Root)
-			if _, err := graph.Build(goWS); err != nil {
-				t.Fatalf("go pass 4: %v", err)
-			}
-			if after := treeHash(t, goWS.Root); after != before {
-				t.Fatalf("still not converged after three builds:\n%s", diffTrees(before, after))
-			}
-		})
-	}
-}
-
-// TestBuildMatchesPythonBinary is the byte-level oracle: same fixture, both
-// implementations, then compare stdout AND the resulting file tree. Every
-// derivation in this package is reachable from here, which is what makes it
-// worth the subprocess.
-func TestBuildMatchesPythonBinary(t *testing.T) {
-	python := pythonCLI(t)
-	for _, name := range fixtures {
-		t.Run(name, func(t *testing.T) {
-			goWS := copyFixture(t, name)
-			pyWS := copyFixture(t, name)
-
-			sections, err := graph.Build(goWS)
-			if err != nil {
-				t.Fatalf("graph.Build: %v", err)
-			}
-			var got bytes.Buffer
-			if err := render.Graph(&got, sections); err != nil {
-				t.Fatalf("render.Graph: %v", err)
-			}
-
-			out := runPython(t, python, pyWS.Root)
-			if got.String() != string(out) {
-				t.Fatalf("stdout diverged\n--- python\n%s--- go\n%s", out, got.String())
-			}
-			if a, b := treeHash(t, pyWS.Root), treeHash(t, goWS.Root); a != b {
-				t.Fatalf("file tree diverged\n%s", diffTrees(a, b))
-			}
-		})
-	}
-}
+// They were removed rather than frozen because internal/difftest reaches the
+// same ground end to end: graph/build-<fixture> for all six committed
+// workspaces plus the three failure-path ones, graph/build-twice for
+// idempotence, and graph/build-after-discover for a brand-new artifact — each
+// freezing stdout AND a hash of every file in the tree. What is lost is the
+// claim "matches Python"; what remains is "has not changed", which is all any
+// test can assert once the reference is gone.
+//
+// The convergence property the first test pinned is NOT lost: three-pass
+// convergence over the non-idempotent fixtures is exactly what a difftest
+// golden records, and TestBuildIsIdempotentOnCommittedFixtures above still
+// pins the two fixtures that must be fixed points from the start.
 
 // TestWriteFeatureIndexesGuardIsSemantic is task 2.4 stated as a test: an index
 // whose BYTES differ from a fresh render but whose STRUCTURE does not must not
@@ -451,43 +402,4 @@ func reverseTop(t *testing.T, raw []byte) yamlio.PyValue {
 		out = append(out, m[i])
 	}
 	return out
-}
-
-// runPython drives the reference binary over one workspace and returns its
-// combined output.
-func runPython(t *testing.T, cli, root string) []byte {
-	t.Helper()
-	cmd := exec.Command("python3", cli, "--root", root, "graph", "build")
-	cmd.Env = append(os.Environ(), "PYTHONPATH="+vendorDir(t))
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("python graph build: %v\n%s", err, out)
-	}
-	return out
-}
-
-func pythonCLI(t *testing.T) string {
-	t.Helper()
-	if _, err := exec.LookPath("python3"); err != nil {
-		t.Skip("python3 not available; cannot re-run the oracle")
-	}
-	cli, err := filepath.Abs(filepath.Join("..", "..", "bin", "company-os"))
-	if err != nil || !fileExists(cli) {
-		t.Skip("the Python reference is gone; this oracle retires with it")
-	}
-	return cli
-}
-
-func vendorDir(t *testing.T) string {
-	t.Helper()
-	dir, err := filepath.Abs(filepath.Join("..", "..", "vendor"))
-	if err != nil {
-		t.Skipf("cannot locate the vendored PyYAML: %v", err)
-	}
-	return dir
-}
-
-func fileExists(p string) bool {
-	_, err := os.Stat(p)
-	return err == nil
 }

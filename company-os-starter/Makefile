@@ -1,8 +1,10 @@
 # company-os — Go CLI
 #
-# The Go module is rooted here; the parity harnesses (acceptance.sh,
-# differential.py) live in ../examples/ because they predate the port and still
-# drive the Python reference. Targets that need both reach up one level.
+# The Go module is rooted here; acceptance.sh and the fixture workspaces live in
+# ../examples/ because they predate the port. Targets that need both reach up one
+# level. There is no longer a Python reference to drive: R-9.3 deleted it, and
+# the differential harness that compared against it is now the golden
+# characterization suite in ./internal/difftest.
 #
 #   make            # build
 #   make dev        # rebuild + run against the example workspace
@@ -23,13 +25,6 @@ EXAMPLES   := $(REPO_ROOT)/examples
 BIN_OUT    := $(CURDIR)/$(BINARY)
 PREFIX     ?= $(HOME)/.local
 DIST       := $(CURDIR)/dist
-
-# The Python reference implementation. Still the parity oracle until R-9.3
-# deletes it, so `make differential` needs it on PATH.
-PY_CLI     := $(CURDIR)/bin/company-os
-# PyYAML is vendored here (this is the *Python* vendor tree, not a Go one —
-# see go.work for why that distinction matters to the toolchain).
-PY_PATH    := $(CURDIR)/vendor
 
 # The workspace most targets operate on. Override to point elsewhere:
 #   make dev WS=../examples/federated
@@ -76,8 +71,8 @@ DARWIN_ARTIFACTS   = $(DIST)/$(BINARY)_$(VERSION)_darwin_arm64 \
 PLATFORMS  := darwin/arm64 darwin/amd64 linux/amd64
 
 .PHONY: help build install uninstall run dev test test-v cover fmt fmt-check \
-        vet lint check acceptance differential golden clean release tidy \
-        deps-check arch-test repro sign notarize
+        vet lint check acceptance differential differential-update golden \
+        clean release tidy deps-check arch-test repro sign notarize
 
 # --- help ----------------------------------------------------------------
 help: ## Show this help
@@ -151,22 +146,25 @@ vet: ## go vet
 
 lint: fmt-check vet ## fmt-check + vet
 
-# --- parity harnesses ----------------------------------------------------
-# These are the cutover gate (R-7.9). They compare against the Python
-# reference, so they stop being meaningful the moment R-9.3 deletes it.
+# --- behaviour suites ----------------------------------------------------
+# Two frozen-output suites, both now measuring the Go binary against recorded
+# truth rather than against the deleted Python reference (R-9.3). Re-baselining
+# either one is a review step, not a formality: a golden accepted without reading
+# the diff protects nothing.
 
-acceptance: ## Golden-snapshot suite (still drives the Python CLI)
+acceptance: ## Golden-snapshot suite over `validate` (examples/acceptance.sh)
 	@$(EXAMPLES)/acceptance.sh
 
-golden: ## Re-baseline the golden snapshots — review the diff before committing
+golden: ## Re-baseline the acceptance snapshots — review the diff before committing
 	@$(EXAMPLES)/acceptance.sh --update
 
-differential: build ## Diff Python vs Go across all 16 commands (R-7.1)
-	@test -x $(PY_CLI) || { \
-	  echo "no Python reference at $(PY_CLI) — parity cannot be measured"; exit 1; }
-	@PYTHONPATH=$(PY_PATH) python3 $(EXAMPLES)/differential.py $(PY_CLI) $(BIN_OUT) $(ARGS)
+differential: ## The 288-invocation corpus across all 16 commands (internal/difftest)
+	go test ./internal/difftest $(ARGS)
 
-check: lint test acceptance ## Everything CI runs (differential is separate — it is slow)
+differential-update: ## Re-baseline the corpus goldens — review the diff before committing
+	go test ./internal/difftest -update
+
+check: lint test acceptance ## Everything CI runs (`test` includes the difftest corpus)
 
 # --- release -------------------------------------------------------------
 release: ## Cross-compile release artifacts + checksums into ./dist
