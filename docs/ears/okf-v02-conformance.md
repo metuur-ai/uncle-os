@@ -78,7 +78,7 @@ documented enum.
 | R-1.1 | THE SYSTEM SHALL ship a normative document at `company-os-starter/docs/CONFORMANCE.md` containing, as distinct sections: Goals, Non-Goals, Terminology, a conformance clause, a MUST-NOT-reject list, versioning, and "considered and deferred". |
 | R-1.2 | THE SYSTEM SHALL state its conformance clause using RFC-2119 keywords, declaring `type` and an identity field (`id`, or `prd` for outcome reviews, per `bin/company-os:133-135`) as the required floor; `title` and `description` as recommended on all documents; and `resource` as recommended ONLY on documents describing an asset external to the knowledge base, and absent elsewhere. |
 | R-1.3 | THE SYSTEM SHALL enumerate what tooling MUST NOT reject a workspace or document for, covering at minimum: unknown `type` values, unknown frontmatter keys, broken cross-links, missing optional documents, and missing federation roots. |
-| R-1.4 | WHERE the conformance document lists a MUST-NOT-reject item, THE SYSTEM SHALL cite the `bin/company-os` file:line that already honours it. |
+| R-1.4 | **Amended 2026-07-27 — see [Amendment 2](#amendment-2--re-plan-against-the-go-binary-2026-07-27).** WHERE the conformance document lists a MUST-NOT-reject item, THE SYSTEM SHALL cite the implementation site that already honours it. ~~`bin/company-os` file:line~~ — that file was deleted by R-9.3; citations resolve to the Go package, symbol and line instead. |
 | R-1.5 | THE SYSTEM SHALL define `2026.2` as the first methodology version carrying a written conformance clause, SHALL designate everything prior as `unversioned`, and SHALL NOT reconstruct a retroactive `2026.1`. |
 | R-1.6 | THE SYSTEM SHALL define a forward-only bump rule — the version increments when the conformance clause changes what tooling MUST accept or reject; documentation, fixtures, and new non-blocking fields do not bump — and THIS CHANGE SHALL NOT bump it, so the eight fixtures already committing `2026.2` remain correct unedited. |
 | R-1.7 | THE SYSTEM SHALL define the `profile:` enum as `minimal \| standard \| strict`, SHALL correct `docs/01-flexibility-skills-and-role-views.md:121` which currently documents `standard \| strict \| provisional`, and SHALL leave every shipped fixture conformant — including `profile: minimal` at `examples/banking/bank/repos/platform-lending/platform.yaml:4` and `examples/banking/small-company/platforms/product/platform.yaml:4`. |
@@ -89,7 +89,7 @@ documented enum.
 | R-1.12 | THE SYSTEM SHALL reserve `generated:` and `verified:` as inert frontmatter field names in `docs/FRONTMATTER-CORE.md`, following the pattern used for reserved doc types (`:113-118`), stating their intended meaning and pointing at the deferred change. |
 | R-1.13 | THE SYSTEM SHALL verify every SHOULD in the conformance clause against the CLI's blocking field checks (`core_field_errors:128-145`, gate 3 `:975`, `cmd_prd` validate `:627-630`), and SHALL document any field that blocks anywhere as conditionally required — specifically `title`, which is required today for `type: prd`. |
 | R-1.14 | THE SYSTEM SHALL amend `docs/FRONTMATTER-CORE.md:8-12` so that only one document claims to be the interop contract, and SHALL link it to `CONFORMANCE.md`. |
-| R-1.15 | IF a document carries `generated:` or `verified:`, THE SYSTEM SHALL pass validation and preserve both fields unchanged through `graph build`, covered by a check in `examples/selftest.py`. |
+| R-1.15 | **Amended 2026-07-27 — see [Amendment 2](#amendment-2--re-plan-against-the-go-binary-2026-07-27).** IF a document carries `generated:` or `verified:`, THE SYSTEM SHALL pass validation and preserve both fields unchanged through `graph build`, covered by an automated test. ~~a check in `examples/selftest.py`~~ — retired with the file, exactly as R-0.4's C1 was. |
 | R-1.16 | THE SYSTEM SHALL produce no CLI diff in this unit; `bash examples/acceptance.sh` SHALL exit 0 with golden snapshots unchanged. |
 
 ---
@@ -162,6 +162,81 @@ untested content.
 | R-6.1 | THE SYSTEM SHALL exit 0 on `bash examples/acceptance.sh` at the end of every unit, not only at the end of the change. |
 | R-6.2 | IF `examples/banking/` is edited beyond the `profile:` enum reconciliation of R-1.7, THE SYSTEM SHALL first add it to the acceptance harness's validate-exit-code fixture loop. |
 | R-6.3 | IF adding `examples/banking/` to the harness proves larger than this change can absorb, THE SYSTEM SHALL leave that fixture untouched and SHALL record in `CONFORMANCE.md` that it is a prior-version fixture not yet backfilled. |
+
+---
+
+## Amendment 2 — Re-plan against the Go binary (2026-07-27)
+
+**Authority:** R-9.8 of `docs/ears/go-cli-tui-port.md` — "THE SYSTEM SHALL leave
+OKF v0.2 Phases 1–3 unimplemented, to be re-planned against the Go binary as a
+separate change." This is that re-plan. It changes no committed outcome; it
+re-points the evidence those outcomes are written against.
+
+This spec was locked while `company-os-starter/bin/company-os` was the
+implementation. R-9.3 deleted that file. Every `bin/company-os:NNN` citation in
+this document therefore names a line nobody can open, and two requirements
+(R-1.4, R-1.15) named it *normatively* — they could not be satisfied as written.
+
+**Nothing here is re-derived from scratch.** The Go port carried the Python line
+references forward as source comments, so each anchor below was resolved by
+following the comment the port left behind, not by re-reading the requirement and
+guessing where it landed.
+
+### Anchor map — every `bin/company-os` citation in this spec
+
+| Cited in | Python anchor | Go site today |
+| --- | --- | --- |
+| R-0.1, R-0.3 (Unit 0 Why) | `:679-682` done-gate date compare | `internal/product/prd.go:466` and `parseDate` — the comment there quotes the original string comparison |
+| R-1.2 | `:133-135` identity field (`id`, or `prd`) | `internal/product/contract.go` — the `!truthy(meta,"id") && !truthy(meta,"prd")` branch of `CoreFieldErrors` |
+| R-1.13 | `core_field_errors:128-145` | `internal/product/contract.go:65` `CoreFieldErrors` |
+| R-1.13 | gate 3 `:975` | `internal/product/check.go:89` `Gate` (`:975-993`) |
+| R-1.13 | `cmd_prd` validate `:627-630` | `internal/product/prd.go` — the required-field list at `:23` and its validate path |
+| R-1.13 (format checks) | `:171-175` `format_checks_enforced` | `internal/product/contract.go` `FormatChecksEnforced` |
+| R-3.6 | `:701-705` `outcome.md` writer | `internal/product/prd.go:359-360` (call) and `:569-574` `outcomeDoc` (content) |
+| Unit 3 Why | `:1682` `build_claude_node` title fallback | `internal/graph/node.go:319-324` — the comment quotes `meta.get("title") or meta.get("id") or Path(rel).name` |
+| D-2.2 | `cmd_graph:1713`, `rebuild_generated:1746` | `internal/graph/graph.go:59` `Rebuild`. **Note the discrepancy:** the Go source cites `rebuild_generated` as `:1803-1810`, not `:1746`. One of the two is wrong and the file that would settle it is deleted. D-2.2 is deferred, so this is recorded rather than resolved. |
+| D-2.5 | `iter_graph_docs` skip-list | `internal/graph/tags.go:186` `IterGraphDocs` (`:1346-1392`) |
+
+### Clause dispositions
+
+| Clause | Status | Disposition |
+| --- | --- | --- |
+| R-1.4 — cite a `bin/company-os` file:line | **AMENDED** | The outcome — every MUST-NOT-reject item is backed by a citable implementation site rather than an assertion — is unchanged and is the whole point of the requirement. Only the file it names changes. |
+| R-1.15 — the preserve check lives in `examples/selftest.py` | **RETIRED** | Identical to R-0.4's C1 ([Amendment 1](#amendment-1--r-04-partial-retirement-2026-07-27)); the file was deleted by R-9.3. The obligation to cover the behaviour with an automated test is restated, not dropped. |
+| Every other `bin/company-os:NNN` citation | **RE-POINTED, not amended** | These appear in *Why* prose and acceptance evidence, not in normative statements. The anchor map above is the resolution; no requirement text changes. |
+
+### Re-measured facts (2026-07-27)
+
+The spec's *Why* sections quote counts taken while the Python CLI shipped. Three
+moved, and the tasks planned against them are sized wrong until restated:
+
+| Claim as locked | Measured today | Effect |
+| --- | --- | --- |
+| Unit 3: "12 of 17 fixture documents lack `title`" | **14 of 16** documents carrying frontmatter `type:` in `examples/workspace/` + `examples/standalone-team/` lack it | R-3.2's backfill is larger, not smaller — the port added `syncing-knowledge.SKILL.md` and other typed documents |
+| R-1.7: `profile:` enum | **Unchanged and still wrong.** 6 fixtures `standard`, 2 `minimal`; `docs/01-flexibility-skills-and-role-views.md:121` still documents `standard \| strict \| provisional` | R-1.7 stands exactly as written — `minimal` used but undocumented, `provisional` documented but unused, `strict` neither |
+| R-1.6: "eight fixtures commit `2026.2`" | **8.** Unchanged | R-1.6 stands |
+| R-6.2: `examples/banking/` is 38 markdown files | **38.** Unchanged | R-6.2/R-6.3 stand |
+
+### What the port added that this spec predates
+
+R-1.1's conformance document was scoped before the CLI had a machine-readable
+surface or an exit-code contract. Both now exist and belong in it:
+
+- **Exit codes.** `docs/ears/go-cli-tui-port.md` Unit 4 defines a full contract
+  (exit 2 usage, 3 workspace, 7 environment, 8 refuse-to-overwrite). A conformance
+  document that tells an adopter what tooling MUST NOT reject, while saying
+  nothing about what the tool *returns* when it does reject, is half a contract.
+- **`--json`.** Unit 3 made every gate result machine-readable. The MUST-NOT-reject
+  list (R-1.3) should state that it binds the JSON surface identically, or it will
+  be read as applying to human output only.
+- **`knowledge/`.** The synced catalog root did not exist when Unit 1 was written.
+  It is a node root but not a graph-docs root, and R-1.10's Terminology owes it a
+  definition alongside *federation root*.
+
+These are additions to R-1.1's section list, not new units. They are recorded here
+rather than legislated, because adding requirements to a locked spec is a change
+this amendment has no authority to make — R-9.8 authorized a re-plan, not a
+re-scope.
 
 ---
 

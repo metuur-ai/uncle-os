@@ -11,8 +11,71 @@ tags: [kind/tasks, status/draft]
 Source of truth: `docs/ears/okf-v02-conformance.md` (Units 0–3, 5–6 committed).
 Architecture constraints: `docs/lld/okf-v02-conformance.md`.
 Targets: `company-os-starter/docs/`, `company-os-starter/templates/`, the
-`*_TEMPLATE` strings and done-gate in `company-os-starter/bin/company-os`, and the
+built-in template strings and done-gate in `company-os-starter/internal/`, and the
 `examples/workspace` + `examples/standalone-team` fixtures.
+
+## Re-plan against the Go binary (2026-07-27)
+
+**Authority:** R-9.8 of `docs/ears/go-cli-tui-port.md`. This plan was written
+while `company-os-starter/bin/company-os` was the implementation; R-9.3 deleted
+it. The requirement dispositions and the full Python→Go anchor map live in
+[Amendment 2](../ears/okf-v02-conformance.md#amendment-2--re-plan-against-the-go-binary-2026-07-27)
+of the EARS. What follows is what changes for *execution*.
+
+**Phase 0 is closed** (task 0.1, 2026-07-27) — it was the only phase the port
+actually completed, via task 2.6 of the port.
+
+**Four things every remaining task inherits:**
+
+1. **The gate is `make check`, not `bash examples/acceptance.sh` alone.**
+   `make check` is gofmt + `go vet` + `go test ./...` + `acceptance.sh`. The
+   global acceptance below still holds, but a task that runs only the harness now
+   verifies less than the project's own gate. Where a task says "run
+   `acceptance.sh`", run `make check`.
+2. **"No CLI diff" is now a Go diff.** Tasks 1.6 and 4.1 verify with
+   `git diff --stat company-os-starter/bin/company-os`, which can only ever be
+   empty now. The equivalent assertion is
+   `git diff --stat company-os-starter/internal company-os-starter/cmd`.
+3. **Templates live in two places and must move together.** Every scaffolded
+   document is emitted from a built-in string in
+   `internal/scaffold/template.go` *and* has a peer file under
+   `company-os-starter/templates/`. The repo `CLAUDE.md` requires them to stay in
+   sync with the section names the corresponding `validate` greps for. Task 3.2
+   was planned against one file and now touches two — this is the single largest
+   sizing change in the re-plan.
+4. **Gate numbering survived the port; the gate *count* did not.** `validate` is
+   `[1/7]`…`[7/7]` on a monorepo and `[1/8]`…`[8/8]` federated. Gates 3, 4, 5 and
+   8 still mean what this plan says they mean (active PRD contracts, frontmatter
+   core, CLAUDE.md drift, slice integrity), so every gate reference below is
+   still correct — verified against both committed goldens, not assumed.
+
+**Two tasks are resized by re-measurement** (full table in Amendment 2):
+
+- **3.4** — the backfill is **14 of 16** frontmatter documents, not 12 of 17. The
+  port added typed documents. Larger, not smaller.
+- **1.1** — the audit is cheaper than planned. Its evidence table was to be built
+  by reading `bin/company-os`; the Go port carried every cited Python line
+  forward as a source comment, so the map already exists and the audit becomes a
+  verification pass over Amendment 2's anchor map rather than a fresh read.
+
+**One task is now partly satisfied.** 3.3 (`outcome.md` emits `title:`) —
+`outcomeDoc` (`internal/product/prd.go:569-574`) already threads the PRD's title
+through and renders it as the H1. The frontmatter `title:` is still absent, so the
+task stands, but it is an additive one-line change to a writer that already has
+the value in hand, not a plumbing exercise.
+
+**One unresolved risk is unchanged and still blocks 2.3.** The federated fixture
+pins `https://git.example.com/acme/platform-communications.git`, which does not
+resolve, and `examples/federated/workspace.yaml:5` states the fixture is designed
+to pass with no network and no source repo. "Correct at source and re-sync" (R-2.5)
+is still not executable as written. Decide before editing anything.
+
+**What this re-plan did NOT do.** It did not add requirements. Amendment 2 records
+three things the conformance document arguably now owes an adopter — the exit-code
+contract, the `--json` surface, and the `knowledge/` root, none of which existed
+when Unit 1 was locked — but records them as findings, not clauses. R-9.8
+authorized a re-plan, not a re-scope. Deciding whether they enter R-1.1's section
+list is a scoping call for whoever picks up 1.2.
 
 **Global acceptance (must hold after every phase):**
 `bash examples/acceptance.sh` exits 0 (R-6.1), **and** both
@@ -97,12 +160,20 @@ commit as the title backfill (3.4) or the harness's double-build check goes red.
     `type: prd` at gate 3 (`:975`) and `prd validate` (`:627-630`). This audit
     produces the evidence table that 1.2's clause is written against, so it has to
     come first. Read-only; no files change.
+  - **Re-planned 2026-07-27 — cheaper than estimated.** The evidence table was to
+    be built by reading `bin/company-os`, which no longer exists. The port carried
+    every cited Python line forward as a Go source comment, so this becomes a
+    verification pass over Amendment 2's anchor map rather than a fresh read.
+    Re-estimate ~20m. Confirm each Go site says what the map claims; a site whose
+    comment cites a Python line but implements something else is the finding this
+    task exists to catch.
   - acceptance: R-1.13 — every field that blocks anywhere is identified across
-    `core_field_errors:128-145`, gate 3 `:975`, and `cmd_prd` validate `:627-630`;
-    R-1.4 — every candidate MUST-NOT-reject item has a `bin/company-os` file:line
-    that already honours it.
-  - verify: the audit table names a file:line for each entry, and each cited line
-    has been opened and confirmed to say what the table claims — an uncited or
+    `CoreFieldErrors` (`internal/product/contract.go:65`), gate 3
+    (`internal/product/check.go:89`), and the `prd validate` required-field list
+    (`internal/product/prd.go:23`); R-1.4 (as amended) — every candidate
+    MUST-NOT-reject item has a Go package, symbol and line that already honours it.
+  - verify: the audit table names a Go file:line for each entry, and each cited
+    line has been opened and confirmed to say what the table claims — an uncited or
     unverified item is a bug in the claim, not a formatting gap. Record in
     `.devlocal/<user>/1.1/scratchpad.md`.
 
@@ -177,11 +248,11 @@ commit as the title backfill (3.4) or the harness's double-build check goes red.
     following the reserved-doc-types pattern at `:113-118`, with intended meaning
     and a pointer to the deferred change; R-1.14 — `:8-12` amended so only one
     document claims to be the contract, with a link to `CONFORMANCE.md`;
-    R-1.15 — a document carrying both fields validates and survives `graph build`
-    unchanged, covered by a check in `examples/selftest.py`.
-  - verify: `python3 examples/selftest.py` passes including the preserve check;
-    R-1.16 — `git diff --stat company-os-starter/bin/company-os` is empty for this
-    phase apart from the selftest addition, and both goldens are unchanged.
+    R-1.15 (as amended) — a document carrying both fields validates and survives
+    `graph build` unchanged, covered by an automated Go test.
+  - verify: `make check` passes including the new preserve test; R-1.16 —
+    `git diff --stat company-os-starter/internal company-os-starter/cmd` is empty
+    for this phase apart from that test, and both goldens are unchanged.
 
 ---
 
@@ -189,8 +260,11 @@ commit as the title backfill (3.4) or the harness's double-build check goes red.
 
 - [ ] 2.1 Split the unshipped ontology material into `ONTOLOGY-ROADMAP.md` (est: ~60m)
   - why: `ONTOLOGY-GUIDE.md` reads as reference documentation for six capabilities
-    that do not exist — grep of `bin/company-os` returns zero hits for `ears`,
-    `@spec`, and `spec trace`. A reader following it writes `@spec` markers no
+    that do not exist — grep of `company-os-starter/internal` and `cmd` returns
+    **zero** hits for `spec trace`, `@spec`, `validate --ontology` and `ears:`
+    (re-verified against the Go CLI 2026-07-27; the original claim was measured
+    against `bin/company-os`, and it survives the port unchanged). A reader
+    following it writes `@spec` markers no
     scanner will ever read. A banner on a section inside a 368-line document is
     easy to scroll past; a separate file cannot be read by accident.
   - acceptance: R-2.1 — `ears:` blocks, `@spec` markers, `spec trace`,
@@ -256,28 +330,43 @@ commit as the title backfill (3.4) or the harness's double-build check goes red.
 - [ ] 3.2 Emit `title:` and `resource:` from the scaffolding templates (deps: 3.1, est: ~45m, mutex: cli)
   - why: If the shipped scaffolding doesn't emit a field the contract recommends,
     agents following it produce non-conformant documents by construction.
+  - **Re-planned 2026-07-27 — the largest sizing change in the re-plan.** Planned
+    against one emitter; there are now two per document type that must move
+    together: the built-in string in `internal/scaffold/template.go` and its peer
+    file under `company-os-starter/templates/`. The repo `CLAUDE.md` makes the sync
+    a hard constraint — the section names the built-in emits are what `validate`
+    greps for. Re-estimate ~75m.
   - acceptance: R-3.5 — `prd new`, `discover new`, and `reality new` emit `title:`,
-    with `reality new` additionally emitting `resource:`; `templates/*.md` and the
-    CLI's `*_TEMPLATE` strings stay in sync per the repo `CLAUDE.md`.
+    with `reality new` additionally emitting `resource:`; `internal/scaffold/template.go`
+    and `templates/*.md` stay in sync per the repo `CLAUDE.md`.
   - verify: scaffold each document type into a scratch workspace and confirm the
-    fields are present and the result passes `validate`.
+    fields are present and the result passes `validate`; `make check` green, which
+    is what catches a built-in string drifting from its template peer.
 
 - [ ] 3.3 Emit `title:` from the `outcome.md` writer (deps: 3.1, est: ~25m, mutex: cli)
   - why: The fourth document-emitting path is easy to miss — `prd complete` writes
-    `outcome.md` inline at `:701-705` with no `title:` and no `id:`. Without this,
-    3.4 backfills the fixture's committed copy and the very next `prd complete`
-    emits a non-conformant one. It is also what makes an `archive/prds/<id>/` index
-    worth generating in the deferred change.
+    `outcome.md` inline with no `title:` and no `id:`. Without this, 3.4 backfills
+    the fixture's committed copy and the very next `prd complete` emits a
+    non-conformant one. It is also what makes an `archive/prds/<id>/` index worth
+    generating in the deferred change.
+  - **Re-planned 2026-07-27 — partly satisfied already.** `outcomeDoc`
+    (`internal/product/prd.go:569-574`, called from `:359-360`) already receives
+    the PRD's title and renders it as the H1. What is missing is the frontmatter
+    field, so this is an additive change to a writer that already holds the value —
+    not the plumbing exercise the estimate assumed. `templates/outcome-review.md`
+    must move with it (see re-plan note 3).
   - acceptance: R-3.6 — the writer emits `title:`, keeps `prd:` as the identity
-    field per `core_field_errors:132-135`, and no title-fallback path assumes `id:`
-    exists.
+    field per `CoreFieldErrors` (`internal/product/contract.go:65`), and no
+    title-fallback path assumes `id:` exists.
   - verify: run `prd complete` on a scratch workspace and confirm the emitted
     `outcome.md` validates and carries a title.
 
 - [ ] 3.4 Backfill `title:` across the two fixtures (deps: 3.2, 3.3, est: ~50m, mutex: fixtures)
-  - why: 12 of 17 fixture documents lack `title:`, so `build_claude_node` falls
-    back to `id` or filename (`:1682`) and the generated context nodes read as a
-    file listing. This is the change with a consumer today.
+  - why: **14 of 16** fixture documents carrying frontmatter `type:` lack `title:`
+    (re-measured 2026-07-27; was "12 of 17" against the pre-port tree), so the
+    node builder falls back to `id` or filename
+    (`internal/graph/node.go:319-324`) and the generated context nodes read as a
+    file listing. This is the change with a consumer today. Re-estimate ~60m.
   - acceptance: R-3.2 — every document in `examples/workspace/` and
     `examples/standalone-team/` that lacks a title has one.
   - verify: `grep -rL "^title:" examples/workspace examples/standalone-team
@@ -328,10 +417,11 @@ commit as the title backfill (3.4) or the harness's double-build check goes red.
     R-5.5 — the tier model untouched; R-5.6 — both goldens byte-identical across
     the entire change and `--update` never run; R-5.7 — nothing written into a
     materialized slice.
-  - verify: `bash examples/acceptance.sh` exits 0 on all three fixtures;
-    `git log -p` for the change contains no `acceptance.sh --update`; `git diff`
-    against the merge base shows no change under `examples/federated/` except what
-    2.3 resolved.
+  - verify: `make check` exits 0 (gofmt, vet, `go test ./...`, and the harness on
+    all three fixtures); `git log -p` for the change contains no
+    `acceptance.sh --update`; `git diff` against the merge base shows no change
+    under `examples/federated/` except what 2.3 resolved, and none under
+    `company-os-starter/internal` or `cmd` beyond the emitters 3.2 and 3.3 touch.
 
 - [ ] 4.2 Decide the `examples/banking/` fixture question (deps: 1.3, est: ~30m)
   - why: Banking is the largest fixture (38 markdown files) and the acceptance
