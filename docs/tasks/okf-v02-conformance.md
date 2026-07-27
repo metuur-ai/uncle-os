@@ -250,6 +250,22 @@ commit as the title backfill (3.4) or the harness's double-build check goes red.
     document claims to be the contract, with a link to `CONFORMANCE.md`;
     R-1.15 (as amended) — a document carrying both fields validates and survives
     `graph build` unchanged, covered by an automated Go test.
+  - **Re-planned 2026-07-27 — R-1.15 is NEW work, not a preserved guarantee.** The
+    retired `selftest.py` clause named a check that never existed, and `verified`
+    appears nowhere in Go source or tests today. The generic
+    `TestRewriteFrontmatterTagsPreservesUnknownKeys` does not cover this: it uses a
+    plain string scalar, while D-1.1 defines `generated:` as a mapping `{by, at}`
+    and `verified:` as a sequence of mappings. Nested collections round-trip
+    through `PyDumpAutoFlow` (`internal/graph/tags.go:302`), the site of
+    R-0.7a(g)'s flow/block re-layout divergence — so the untested shape is the one
+    the requirement is about. Write the test against D-1.1's actual shapes.
+    Re-estimate ~60m.
+  - **R-1.16 tension, recorded rather than patched here.** R-1.16 says this unit
+    produces no CLI diff; re-plan note 2 defines that as an empty diff of
+    `internal/` and `cmd/`; and the R-1.15 test lands in `internal/`. The carve-out
+    below used to be the only place that was resolved, which put a requirement
+    change in a verify line. It is now recorded in
+    [Amendment 2](../ears/okf-v02-conformance.md#amendment-2--re-plan-against-the-go-binary-2026-07-27).
   - verify: `make check` passes including the new preserve test; R-1.16 —
     `git diff --stat company-os-starter/internal company-os-starter/cmd` is empty
     for this phase apart from that test, and both goldens are unchanged.

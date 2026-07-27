@@ -44,18 +44,17 @@ func titles(ds []diagnosis) string {
 // generated block that no longer matches what the workspace would produce, which
 // previously surfaced only as a [FAIL] line at the end of `validate`.
 //
-// The drift is induced here rather than taken from a fresh `init`, because a
-// fresh `init` does not drift. An earlier version of this comment asserted the
-// opposite — that `company-os init && company-os validate` exits 1 against the
-// real binary while the same init through run() comes out in sync, and that the
-// difference was not understood. Re-measured 2026-07-26 across three builds
-// (working tree, the committed binary, the installed one) and both invocation
-// forms (cwd and --root): every one exits 0. There is no divergence; the
-// original claim was wrong. See task 6.11.
+// The drift is induced here rather than taken from a fresh `init`, because
+// whether a fresh `init` drifts depends on where the workspace lives: under a
+// path with a `scratchpad` ancestor it does (tags.go:215-222 skips every
+// document), anywhere else it does not. t.TempDir() is not such a path, so a
+// fixture built on fresh-init drift would pass or fail for a reason unrelated to
+// what this test is about.
 //
-// So this test induces the condition directly, which is what it should have
-// done regardless: the drifted-block path is reached by editing a generated
-// block, not by scaffolding a workspace.
+// Two rounds of comments here got that wrong in opposite directions before it
+// was understood; task 6.11 records the sequence and 6.12 the open decision.
+// Inducing the condition directly is what this test should have done regardless
+// — the drifted-block path is reached by editing a generated block.
 func TestAdviseOffersGraphBuildForADriftedBlock(t *testing.T) {
 	ws := freshWorkspace(t)
 	node := filepath.Join(ws.Root, "teams", "core", "CLAUDE.md")
@@ -114,11 +113,14 @@ func TestAdviseIsSilentOnAHealthyWorkspace(t *testing.T) {
 	}
 }
 
-// TestAdviceHeadsTheCatalog is R-5.18's ordering clause. It also pins what a
-// freshly scaffolded workspace actually looks like: `init` writes no
-// teams/<t>/generated/, so governance is unresolved and the advisor is NOT
-// empty there — while `validate` still exits 0 (GPF-R-1.7). Those two facts
-// together are the ones an earlier round of comments got backwards.
+// TestAdviceHeadsTheCatalog is R-5.18's ordering clause, and pins one fact about
+// a freshly scaffolded workspace: `init` writes no teams/<t>/generated/, so
+// governance is unresolved and the advisor is NOT empty there.
+//
+// It does NOT assert anything about `validate`'s exit code and must not be cited
+// as if it did — task 6.11's first close made exactly that mistake. The test that
+// pins fresh-init validate is TestInitFreshWorkspaceValidatesGreen in
+// selftest_test.go, and it holds only outside a `scratchpad` path (task 6.12).
 func TestAdviceHeadsTheCatalog(t *testing.T) {
 	ws := freshWorkspace(t)
 	ds := advise(ws, ws.Root)

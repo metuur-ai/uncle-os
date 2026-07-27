@@ -47,7 +47,7 @@ the consequence for R-0.4 and unblocks task 0.1.
 | Clause | Status | Disposition |
 | --- | --- | --- |
 | C1 — the R-0.2 check lives in `examples/selftest.py` | **RETIRED** 2026-07-27 | The file does not exist; R-9.3 deleted it along with the Python reference implementation. A requirement naming a deleted file cannot be met, and cannot be failed either — which is worse, because it holds a task open without testing anything. |
-| C2 — R-0.2 is covered by an automated test | **IN FORCE — restated, not retired** | Covered in Go by `TestDoneGateNamesAMalformedDate` and `TestParseDate` in `internal/product/product_test.go`. C1 named a location; C2 is the outcome C1 existed to secure, and it survives the port. |
+| C2 — R-0.2 is covered by an automated test | **IN FORCE — met by NEW work, not by continuity** | Covered in Go by `TestDoneGateNamesAMalformedDate` and `TestParseDate` in `internal/product/product_test.go`. **Corrected 2026-07-27:** an earlier version of this row said the coverage "survives the port." It does not — nothing survived. `python-cli-final:examples/selftest.py` has 86 `check()` sites and **none** of them tests the done-gate date, consistent with task 0.1's own record that the Python side was never fixed. The Go tests are new work delivered under port task 2.6. The outcome is genuinely met; the continuity was not. |
 | C3 — `bash examples/acceptance.sh` exits 0 | **IN FORCE — unchanged** | `acceptance.sh` was not deleted and is still the acceptance half of `make check`. |
 
 **Verified on the binary, not inferred from the test names (2026-07-27).** A
@@ -177,10 +177,23 @@ implementation. R-9.3 deleted that file. Every `bin/company-os:NNN` citation in
 this document therefore names a line nobody can open, and two requirements
 (R-1.4, R-1.15) named it *normatively* — they could not be satisfied as written.
 
-**Nothing here is re-derived from scratch.** The Go port carried the Python line
-references forward as source comments, so each anchor below was resolved by
-following the comment the port left behind, not by re-reading the requirement and
-guessing where it landed.
+**How the anchors were resolved — corrected 2026-07-27 after review.** The first
+version of this amendment claimed each anchor was resolved "by following the
+comment the port left behind." That is only true of some rows. The Go comments
+carry Python line references, but those references and this spec's disagree by up
+to 57 lines, and in at least two cases both are stale — `:1682` for
+`build_claude_node` lands inside `iter_knowledge_docs` in the tagged Python
+source, and the Go citation `:1346-1392` for `iter_graph_docs` starts inside
+`rewrite_frontmatter_tags`. Those rows were resolved by matching the quoted
+expression or the symbol, not the line.
+
+**The authoritative source is available and was used for the correction.** R-9.2
+required tagging the final Python commit; the tag `python-cli-final` exists and
+`git show python-cli-final:company-os-starter/bin/company-os` returns all 2781
+lines. An earlier version of this amendment stated that "the file that would
+settle it is deleted." That was **wrong** — the spec family made this settleable
+on purpose, and the amendment forgot its own recovery path. Every line number
+below marked *(settled)* was read from that tag.
 
 ### Anchor map — every `bin/company-os` citation in this spec
 
@@ -193,17 +206,34 @@ guessing where it landed.
 | R-1.13 | `cmd_prd` validate `:627-630` | `internal/product/prd.go` — the required-field list at `:23` and its validate path |
 | R-1.13 (format checks) | `:171-175` `format_checks_enforced` | `internal/product/contract.go` `FormatChecksEnforced` |
 | R-3.6 | `:701-705` `outcome.md` writer | `internal/product/prd.go:359-360` (call) and `:569-574` `outcomeDoc` (content) |
-| Unit 3 Why | `:1682` `build_claude_node` title fallback | `internal/graph/node.go:319-324` — the comment quotes `meta.get("title") or meta.get("id") or Path(rel).name` |
-| D-2.2 | `cmd_graph:1713`, `rebuild_generated:1746` | `internal/graph/graph.go:59` `Rebuild`. **Note the discrepancy:** the Go source cites `rebuild_generated` as `:1803-1810`, not `:1746`. One of the two is wrong and the file that would settle it is deleted. D-2.2 is deferred, so this is recorded rather than resolved. |
-| D-2.5 | `iter_graph_docs` skip-list | `internal/graph/tags.go:186` `IterGraphDocs` (`:1346-1392`) |
+| Unit 3 Why | `:1682` `build_claude_node` title fallback — **stale; the function begins at `:1709` (settled)** and `:1682` is inside `iter_knowledge_docs`, a different title-derivation site | `internal/graph/node.go:319-324` — resolved by matching the quoted expression `meta.get("title") or meta.get("id") or Path(rel).name`, not by line |
+| D-2.2 | `cmd_graph:1713` → **`:1770` (settled)**; `rebuild_generated:1746` → **`:1803` (settled)** | **Two distinct symbols, not one.** `cmd_graph` is `internal/graph/graph.go:16` `Build`; `rebuild_generated` is `internal/graph/graph.go:59` `Rebuild`. D-2.2 is specifically about generating from *both* paths, so an earlier version of this row — which mapped both names onto `Rebuild` — erased the requirement's subject. Both of this spec's line numbers are stale by 57; the Go comment's `:1803` is correct. |
+| D-2.5 | `iter_graph_docs` skip-list — **`:1361` (settled)**; the Go source's `:1346-1392` range starts inside `rewrite_frontmatter_tags` | `internal/graph/tags.go:186` `IterGraphDocs` |
 
 ### Clause dispositions
 
 | Clause | Status | Disposition |
 | --- | --- | --- |
 | R-1.4 — cite a `bin/company-os` file:line | **AMENDED** | The outcome — every MUST-NOT-reject item is backed by a citable implementation site rather than an assertion — is unchanged and is the whole point of the requirement. Only the file it names changes. |
-| R-1.15 — the preserve check lives in `examples/selftest.py` | **RETIRED** | Identical to R-0.4's C1 ([Amendment 1](#amendment-1--r-04-partial-retirement-2026-07-27)); the file was deleted by R-9.3. The obligation to cover the behaviour with an automated test is restated, not dropped. |
+| R-1.15 — the preserve check lives in `examples/selftest.py` | **RETIRED, and the restated obligation is UNMET** | The file was deleted by R-9.3, as with R-0.4's C1. **But the outcomes differ and an earlier version of this row wrongly called them identical.** R-0.4's obligation is met by a real Go test; R-1.15's is not. `python-cli-final:examples/selftest.py` never carried a `generated:`/`verified:` check, and `verified` appears **nowhere** in Go source or tests today. What exists is generic — `TestRewriteFrontmatterTagsPreservesUnknownKeys` — and it uses a plain string scalar, whereas D-1.1 defines `generated:` as a mapping `{by, at}` and `verified:` as a sequence of mappings `[{by, at}]`. Nested collections round-trip through `PyDumpAutoFlow` (`internal/graph/tags.go:302`), which is exactly where R-0.7a(g)'s flow/block re-layout divergence lives — so the untested case is the case R-1.15 is about. **This is new work in Phase 1, not a preserved guarantee.** Task 1.6 carries it. |
 | Every other `bin/company-os:NNN` citation | **RE-POINTED, not amended** | These appear in *Why* prose and acceptance evidence, not in normative statements. The anchor map above is the resolution; no requirement text changes. |
+
+### R-1.15 vs R-1.16 — a contradiction this amendment creates
+
+R-1.15 as amended requires an automated test. R-1.16 requires that this unit
+"produce no CLI diff," which the re-plan defines as an empty diff of
+`company-os-starter/internal` and `cmd`. A Go test for graph-build field
+preservation lands in `internal/`. **Both cannot hold as literally written.**
+
+**Ruling:** R-1.16's subject is *shipped CLI behaviour*, not the repository tree —
+it exists so this unit cannot change what the tool does, which is why its own
+statement pairs it with "`acceptance.sh` SHALL exit 0 with golden snapshots
+unchanged." A test adds no behaviour and moves no golden. R-1.16 is therefore not
+engaged by test-only additions, and `_test.go` files are outside its subject.
+
+Recorded here rather than in a task's verify line, where it first lived: a
+carve-out to a locked requirement is a requirement change, and this project's
+arrow of intent puts those in the spec.
 
 ### Re-measured facts (2026-07-27)
 

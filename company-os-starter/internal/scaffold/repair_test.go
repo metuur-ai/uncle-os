@@ -78,8 +78,10 @@ func TestRepairRestoresOnlyWhatIsMissing(t *testing.T) {
 		!strings.HasSuffix(res.Written[0], "definition-of-ready.md") {
 		t.Errorf("Written = %v, want exactly the one missing file", res.Written)
 	}
-	if len(res.Skipped) != 3 {
-		t.Errorf("Skipped = %v, want the three files that were present", res.Skipped)
+	// Three surviving scaffolded files plus the id registry, which is present and
+	// therefore skipped rather than silently passed over.
+	if len(res.Skipped) != 4 {
+		t.Errorf("Skipped = %v, want the three surviving files and the registry", res.Skipped)
 	}
 }
 
@@ -97,14 +99,68 @@ func TestRepairIsANoopWhenNothingIsMissing(t *testing.T) {
 	if len(res.Written) != 0 {
 		t.Errorf("Written = %v, want none", res.Written)
 	}
-	if len(res.Skipped) != 4 {
-		t.Errorf("Skipped = %v, want all four scaffolded files", res.Skipped)
+	// Four scaffolded files plus the id registry, which is inspected on every
+	// repair and so has to be reported on every repair (GPF-R-1.9b).
+	if len(res.Skipped) != 5 {
+		t.Errorf("Skipped = %v, want the four scaffolded files and the registry", res.Skipped)
 	}
 	if len(res.Generated) != 0 {
 		t.Errorf("Generated = %v; a no-op repair must not rebuild", res.Generated)
 	}
 	if after := treeHash(t, root); after != before {
 		t.Error("a no-op repair modified the workspace")
+	}
+}
+
+// TestRepairReportsARestoredRegistryEntry is the case that had no test and was
+// therefore wrong: every scaffolded file intact, but the team's id dropped from
+// company-ontology/ids/registry.yaml.
+//
+// RepairTeam calls registerID unconditionally, so it restored the entry — while
+// reporting "nothing to repair" and skipping the rebuild, leaving derived
+// aggregates stale against a registry that had just changed. The written/skipped
+// lists are what GPF-R-1.9b offers as evidence that nothing was touched; a write
+// missing from both makes that evidence a lie.
+//
+// The existing no-op test could not reach this: it builds the team through Add,
+// which registers the id.
+func TestRepairReportsARestoredRegistryEntry(t *testing.T) {
+	root := initWorkspace(t)
+	reg := filepath.Join(root, "company-ontology", "ids", "registry.yaml")
+
+	body, err := os.ReadFile(reg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var kept []string
+	for _, line := range strings.Split(string(body), "\n") {
+		if !strings.Contains(line, "team://core") {
+			kept = append(kept, line)
+		}
+	}
+	if len(kept) == len(strings.Split(string(body), "\n")) {
+		t.Fatal("no team://core entry in the fresh registry; the fixture changed shape")
+	}
+	if err := os.WriteFile(reg, []byte(strings.Join(kept, "\n")), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	res, err := RepairTeam(workspace.New(root), "core", nil)
+	if err != nil {
+		t.Fatalf("RepairTeam: %v", err)
+	}
+
+	var reported bool
+	for _, w := range res.Written {
+		if strings.Contains(w, "registry.yaml") {
+			reported = true
+		}
+	}
+	if !reported {
+		t.Errorf("the registry was rewritten but is not in Written = %v", res.Written)
+	}
+	if after, _ := os.ReadFile(reg); !strings.Contains(string(after), "team://core") {
+		t.Error("the registry entry was not restored")
 	}
 }
 

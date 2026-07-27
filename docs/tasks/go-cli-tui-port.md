@@ -2234,7 +2234,56 @@ Ordered by the coupling map in research §4c: most self-contained first.
   - verify: owner named in the HLD Stakeholders section.
 
 - [x] 6.11 Re-measure the claimed `init` → `validate` divergence (deps: 6.5, est: ~1h)
-  - **CLOSED 2026-07-26. The claim was false. There is no divergence.**
+  - **CLOSED 2026-07-26, then REOPENED and re-closed 2026-07-27. The original
+    claim was RIGHT. The retraction below was wrong and is itself retracted.**
+  - **What is true (2026-07-27, reproduced 5/5).** A workspace whose ABSOLUTE path
+    contains an ancestor directory named `scratchpad` fails `validate` on a fresh
+    `init`, with exactly the message the original claim reported:
+    `[FAIL] teams/core/CLAUDE.md: generated block drifted — run: company-os graph
+    build`. Outside such a path it exits 0. Measured on all three builds and both
+    invocation forms:
+
+    | Path | `init` → `validate` |
+    |---|---|
+    | `…/scratchpad/h1` | **rc=1** |
+    | `…/notscratch/h2` | rc=0 |
+    | `…/scratchpad/deep/deeper/h3` | **rc=1** |
+
+  - **The mechanism was documented in this repository the whole time.**
+    `internal/graph/tags.go:215-222` skips any document whose absolute path has a
+    component named `scratchpad`, faithfully reproducing the Python oracle, with a
+    comment calling it "a real trap — a checkout living under a directory named
+    scratchpad skips every document." `graph build` then writes a context node
+    derived from zero documents, and gate `[5/7]` correctly reports drift.
+    Preserved deliberately under R-0.7; not a port defect.
+  - **Why the first re-measurement missed it — the transferable lesson.** It varied
+    build (3) and invocation form (2) and held the path family constant: every
+    workspace was created under `mktemp -d`, i.e. `/var/folders/…`. The path is the
+    variable that decides the outcome, so "six combinations, all exit 0" was true
+    and was not evidence for "there is no divergence." Six samples of one condition
+    is one sample. The original observation was almost certainly taken inside an
+    agent session scratchpad directory — precisely the failing case.
+  - **This is a GPF-R-1.7 violation and it is not hypothetical.** The project ships
+    `company-os scratchpad init`, so users are told to create directories with that
+    name. Tracked as task 6.12: whether to keep honouring the oracle here is a
+    decision, not a surprise.
+  - **What was wrong in the retraction.** Three defects, beyond the conclusion
+    itself: it asserted "there is no divergence" from a design that could not have
+    found one; it offered a conflation with the missing `effective-governance.yaml`
+    as "what the original observation most likely was", stated as a conclusion when
+    it was an untested hypothesis; and it claimed `TestAdviceHeadsTheCatalog` pins
+    `validate` exiting 0 on a fresh workspace, which that test does not do — it
+    never runs `validate`. The test that does is
+    `TestInitFreshWorkspaceValidatesGreen` (`cmd/company-os/selftest_test.go`),
+    and it passes only because the Go test tree is not under a `scratchpad` path.
+  - **Found by review, not by the author** (`@uncle-dev:uncle-po`, reviewing the
+    retraction). Recorded because "the re-measurement was thorough" is exactly what
+    made the wrong conclusion feel safe.
+  - The text below is the first close, kept verbatim so the error stays legible.
+
+  ---
+
+  - ~~**CLOSED 2026-07-26. The claim was false. There is no divergence.**~~
   - During task 7.7 a comment was written into `cmd/company-os/tuiadvise.go` and
     `tuiadvise_test.go` asserting that `company-os init && company-os validate`
     exits 1 with `teams/<t>/CLAUDE.md: generated block drifted` against the real
@@ -2265,9 +2314,46 @@ Ordered by the coupling map in research §4c: most self-contained first.
     would undermine every in-process test in the package. It turned out to be a
     misreading, which is a better outcome than the one that was recorded — but
     only if the record is corrected rather than inherited.
-  - acceptance: GPF-R-1.7 (verified, not merely assumed)
+  - acceptance: GPF-R-1.7 (**NOT met** — see task 6.12)
   - verify: `init` then `validate` exits 0 from the cwd and via `--root`, on a
-    working-tree build and on the last two released ones.
+    working-tree build and on the last two released ones, **and from a path with a
+    `scratchpad` ancestor** — the condition the first pass omitted.
+
+- [ ] 6.12 Decide the `scratchpad`-ancestor GPF-R-1.7 violation (deps: 6.11, est: ~2h)
+  - **OPEN 2026-07-27.** `company-os init` produces a workspace failing its own
+    `validate` whenever the workspace's absolute path contains a directory
+    component named `scratchpad`. Reproduced 5/5 on three builds and both
+    invocation forms; evidence and mechanism in task 6.11.
+  - **Root cause, deliberate and documented.** `internal/graph/tags.go:215-222`
+    tests the ABSOLUTE path for a `scratchpad` component and skips the document.
+    It reproduces `bin/company-os`'s `"scratchpad" in md.parts`, whose own comment
+    (`python-cli-final:…:1673`) already flagged the trap. R-0.7 made the Python
+    behaviour the contract, and the port chose faithful reproduction over quietly
+    ingesting more documents than the oracle — which was the right call *for the
+    port* and is now a shipped defect that outlived its justification.
+  - **Why it matters rather than being a curiosity:** the product ships
+    `company-os scratchpad init` and documents a per-repo `scratchpad/` working
+    area, so the name is one the tool itself teaches users to create. Anyone whose
+    checkout sits under such a directory gets a workspace that fails its own gate
+    on day one, with a message telling them to run a command that will not fix it.
+  - **The decision, which is the deliverable — not a patch.** The skip exists to
+    keep a team's private scratchpad out of the graph, and that intent is right.
+    Three options, in preference order:
+    1. Scope the test to the workspace-RELATIVE path. Preserves the intent exactly,
+       fixes the bug, and diverges from the retired oracle in a case the oracle's
+       own author had already called a trap. Needs a recorded R-0.7 carve-out.
+    2. Keep absolute matching, detect it, and refuse at `init` with a named error.
+       Honest, cheap, and leaves the user stuck.
+    3. Keep it and document it. Cheapest, and the least defensible now that R-0.7's
+       oracle no longer exists to be diverged from.
+  - why: GPF-R-1.7 is the promise that a new user's first two commands succeed. It
+    is the only requirement in the golden-path spec whose failure the user meets
+    before they have learned anything else about the system.
+  - acceptance: GPF-R-1.7 holds for a workspace at any path, or the violation is
+    recorded as an accepted, documented limitation with a named owner.
+  - verify: `init` then `validate` exits 0 from a path with a `scratchpad`
+    ancestor; a regression test pins the chosen behaviour at a path that would
+    previously have failed.
 
 ---
 

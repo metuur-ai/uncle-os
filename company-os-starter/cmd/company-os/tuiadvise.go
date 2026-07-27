@@ -22,13 +22,16 @@ import (
 // the end of `validate`. Both name their fix; neither is seen by someone who
 // has not yet learned which command to run.
 //
-// A fresh `init` does NOT leave a drifted block behind — measured 2026-07-26
-// across three builds and both invocation forms, `init` then `validate` exits 0
-// (GPF-R-1.7 holds). What a fresh workspace does hit is the second diagnosis
+// A fresh `init` leaves a drifted block behind in one real case: when the
+// workspace's ABSOLUTE path contains a directory named `scratchpad`, tags.go
+// skips every document, `graph build` derives a node from nothing, and gate
+// [5/7] reports drift. Elsewhere `init` then `validate` exits 0. Both halves of
+// that sentence were got wrong in turn — see task 6.11 for the sequence and
+// 6.12 for the open decision.
+//
+// The fresh-workspace case a user hits at ANY path is the second diagnosis
 // below: `init` writes no teams/<t>/generated/, so governance is unresolved
-// until `governance resolve` runs. An earlier version of this comment claimed
-// the drifted-block case was the fresh-workspace case; it is not, and the
-// re-measurement is recorded in task 6.11.
+// until `governance resolve` runs.
 //
 // Every offer is a real invocation routed through the existing Form/Action path,
 // so the guarantees are the ones already proved: the preview is flag-complete
@@ -67,9 +70,12 @@ func advise(ws *workspace.Workspace, root string) []diagnosis {
 				Detail: "These files carry a company-os:generated block that no longer\n" +
 					"matches what the workspace would produce:\n\n  " +
 					strings.Join(drifted, "\n  ") +
-					"\n\nA freshly created workspace always starts here: `init` scaffolds,\n" +
-					"it does not derive. `graph build` is idempotent — running it when\n" +
-					"nothing has drifted changes nothing.",
+					"\n\n`graph build` is idempotent — running it when nothing has\n" +
+					"drifted changes nothing.\n\n" +
+					"If this is a workspace you just created, check whether its path\n" +
+					"contains a directory named `scratchpad`: documents under one are\n" +
+					"skipped when tags are derived, so the block is built from nothing\n" +
+					"and `graph build` will not settle it.",
 				Fix: &Args{Root: root, Cmd: "graph", Action: "build"},
 			})
 		}

@@ -8,6 +8,7 @@ package scaffold
 // Nothing here prints, so the same call is reusable from the TUI.
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"strings"
@@ -322,8 +323,29 @@ func RepairTeam(ws *workspace.Workspace, name string, rebuild Rebuild) (*RepairR
 
 	// The id registry is idempotent for an entry that is already present, so
 	// this is safe to re-run and repairs a registry a team was dropped from.
+	//
+	// That repair is a WRITE and has to be reported like any other (GPF-R-1.9b).
+	// Until 2026-07-27 it was not: a team with every file intact but no registry
+	// entry got its entry restored while the command printed "nothing to repair",
+	// and the write landed in neither the written nor the skipped list — so the
+	// one output that is supposed to be the evidence nothing was touched said so
+	// while something was. It also skipped the rebuild below, leaving derived
+	// aggregates stale against a registry that had just changed.
+	//
+	// Detected by comparing the file's bytes rather than by re-parsing: registerID
+	// either returns early without writing or writes, so a byte difference is an
+	// exact answer to "did this change anything", and it stays correct if that
+	// function's internals move. Found in review by @uncle-dev:uncle-lead.
+	regRel := filepath.Join("company-ontology", "ids", "registry.yaml")
+	regBefore, _ := os.ReadFile(filepath.Join(ws.Root, regRel))
 	if err := registerID(ws.Root, "team://"+tid, "teams/"+tid+"/team.yaml"); err != nil {
 		return nil, err
+	}
+	regAfter, _ := os.ReadFile(filepath.Join(ws.Root, regRel))
+	if !bytes.Equal(regBefore, regAfter) {
+		res.Written = append(res.Written, regRel)
+	} else {
+		res.Skipped = append(res.Skipped, regRel)
 	}
 
 	// Only rebuild when something changed. A no-op repair that still rewrote
