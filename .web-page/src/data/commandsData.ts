@@ -629,4 +629,42 @@ updated .gitignore`,
 }`,
     exitCodesPossible: [0, 2],
   },
+  {
+    id: 'tui',
+    name: 'tui',
+    syntax: 'company-os tui',
+    category: 'Utility',
+    description: 'Interactive terminal UI over the current workspace: 10 read-only screens and 5 forms that scaffold artifacts. Every form previews the exact company-os command it will run and writes nothing until you confirm.',
+    flags: [],
+    example: 'company-os tui',
+    expectedOutput: `company-os — workspace overview
+
+  > workspace overview
+    today (role view)
+    validate results
+    component browser
+    PRD browser
+    discovery browser
+    governance explain
+    skills list
+    ids list
+    workspace status
+    new discovery brief (writes)
+    new PRD (writes)
+    add team (writes)
+    add platform (writes)
+    add component (writes)
+
+  ↑↓/kj move · enter open · esc back · q quit`,
+    jsonOutput: `// company-os tui has no --json.
+//
+// It is a human surface and is deliberately outside the agent contract.
+// Agents and scripts call the underlying subcommands, where the structured
+// envelope and the differentiated exit codes live.
+//
+// The TUI runs those same commands: each read-only screen executes the
+// equivalent subcommand, and each (writes) form previews the exact
+// flag-complete invocation before running it.`,
+    exitCodesPossible: [0, 2, 7],
+  },
 ];

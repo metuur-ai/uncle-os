@@ -15,9 +15,19 @@ cd examples/workspace
 company-os tui
 ```
 
-The TUI needs a workspace root like every other command except `init` and
-`scratchpad init`. It resolves one the same way: `--root`, then
-`$COMPANY_OS_WORKSPACE_ROOT`, then the current directory.
+Two things make `tui` behave unlike the other subcommands.
+
+**It needs a real terminal.** Both stdin and stdout must be a TTY. Pipe it,
+redirect it, or run it in CI and it refuses with exit `7` and a message naming
+which half of your command line to change — plus what to run instead, since
+every other subcommand works without a terminal and `validate` gives the same
+findings as text.
+
+**It does not require a workspace root.** Every command except `init`,
+`scratchpad init`, and this one fails immediately outside a workspace. The TUI
+opens anyway, on a recovery menu with a workspace picker; choose a root there
+and the catalog rebuilds against it. So `company-os tui` is a reasonable thing
+to type when you are not sure where you are.
 
 ## Keys
 

@@ -106,11 +106,17 @@ export const DIRECTORY_CATEGORIES_DATA: DirectoryCategoryData[] = [
     id: 'cli',
     categoryName: '3. Terminal CLI Commands & Tools',
     iconName: 'Terminal',
-    description: 'Explore all 16 CLI subcommands, exit code contracts (0-8), and JSON envelopes.',
+    description: 'Explore all 17 CLI subcommands, the interactive TUI, exit code contracts (0-8), and JSON envelopes.',
     items: [
       {
         title: 'CLI Terminal Explorer',
         description: 'Simulate company-os CLI commands in a live retro terminal window.',
+        targetTab: 'cli',
+        tag: 'Interactive Tool',
+      },
+      {
+        title: 'Interactive TUI: company-os tui',
+        description: 'Browse 10 read-only screens and scaffold via 5 confirm-first forms, without memorising flags.',
         targetTab: 'cli',
         tag: 'Interactive Tool',
       },

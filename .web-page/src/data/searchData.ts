@@ -111,6 +111,15 @@ export const STATIC_SEARCH_ITEMS: SearchResultItemData[] = [
     keywords: ['validate', 'cli', 'terminal', 'gate', 'safety', 'command', 'exit code', 'check'],
   },
   {
+    id: 'cli-tui',
+    title: 'company-os tui — interactive terminal UI',
+    category: 'CLI Terminal',
+    snippet: 'Browse the workspace and scaffold artifacts interactively; every write is previewed as a command and confirmed first.',
+    targetTab: 'cli',
+    iconName: 'Terminal',
+    keywords: ['tui', 'interactive', 'terminal', 'ui', 'browse', 'scaffold', 'form', 'menu', 'esc', 'keyboard', 'add team', 'add platform', 'add component'],
+  },
+  {
     id: 'cli-prd-create',
     title: 'company-os prd create / release',
     category: 'CLI Terminal',
