@@ -31,7 +31,38 @@ line, no dependents, no snapshot delta — land it first.
 | R-0.1 | WHEN `prd complete` compares a reality document's `updated:` against a PRD's `created:`, THE SYSTEM SHALL parse both values as ISO-8601 calendar dates and compare the parsed dates, never their string forms. |
 | R-0.2 | IF either value is absent, empty, or not parseable as an ISO-8601 date, THE SYSTEM SHALL record a done-check error naming the offending file and value, and SHALL NOT raise an unhandled exception. |
 | R-0.3 | WHERE both dates are well-formed, THE SYSTEM SHALL produce the same accept/refuse outcome as before this change. |
-| R-0.4 | THE SYSTEM SHALL cover R-0.2 with a check in `examples/selftest.py`, and `bash examples/acceptance.sh` SHALL exit 0. |
+| R-0.4 | **Amended 2026-07-27 — see [Amendment 1](#amendment-1--r-04-partial-retirement-2026-07-27).** THE SYSTEM SHALL cover R-0.2 with an automated test, and `bash examples/acceptance.sh` SHALL exit 0. The clause naming `examples/selftest.py` as that test's location is retired. |
+
+### Amendment 1 — R-0.4 partial retirement (2026-07-27)
+
+**Authority:** R-9.3 of `docs/ears/go-cli-tui-port.md`, which required the
+deletion of `examples/selftest.py`, executed by task 6.5. This amendment records
+the consequence for R-0.4 and unblocks task 0.1.
+
+**Statement as originally locked:**
+
+> R-0.4 | THE SYSTEM SHALL cover R-0.2 with a check in `examples/selftest.py`,
+> and `bash examples/acceptance.sh` SHALL exit 0.
+
+| Clause | Status | Disposition |
+| --- | --- | --- |
+| C1 — the R-0.2 check lives in `examples/selftest.py` | **RETIRED** 2026-07-27 | The file does not exist; R-9.3 deleted it along with the Python reference implementation. A requirement naming a deleted file cannot be met, and cannot be failed either — which is worse, because it holds a task open without testing anything. |
+| C2 — R-0.2 is covered by an automated test | **IN FORCE — restated, not retired** | Covered in Go by `TestDoneGateNamesAMalformedDate` and `TestParseDate` in `internal/product/product_test.go`. C1 named a location; C2 is the outcome C1 existed to secure, and it survives the port. |
+| C3 — `bash examples/acceptance.sh` exits 0 | **IN FORCE — unchanged** | `acceptance.sh` was not deleted and is still the acceptance half of `make check`. |
+
+**Verified on the binary, not inferred from the test names (2026-07-27).** A
+reality document carrying `updated: 18/07/2026` — the exact malformed case R-0.2
+names — makes `prd complete` refuse with
+`cannot compare dates: platforms/web/reality/components/billing.md has
+'updated: 18/07/2026', which is not an ISO-8601 date (YYYY-MM-DD)`. File named,
+offending value named, no unhandled exception, no silent pass.
+
+**Why this is a retirement and not a quiet reinterpretation.** Task 0.1 recorded
+its own exit condition — it stays open "until either the Python side is fixed or
+R-9.3 deletes it." R-9.3 deleted it. Closing the task without amending R-0.4
+would leave a locked requirement pointing at a file nobody can restore, and the
+next reader would have no way to tell whether it had been met, waived, or
+forgotten.
 
 ---
 

@@ -37,7 +37,25 @@ commit as the title backfill (3.4) or the harness's double-build check goes red.
 
 ## Phase 0 — Done-gate date correctness (Unit 0)
 
-- [ ] 0.1 Parse dates in the `prd complete` done-gate (est: ~30m)
+- [x] 0.1 Parse dates in the `prd complete` done-gate (est: ~30m)
+  - **CLOSED 2026-07-27.** The task recorded its own exit condition — open "until
+    either the Python side is fixed or R-9.3 deletes it." R-9.3 deleted it:
+    `examples/selftest.py` and `company-os-starter/bin/company-os` are both gone
+    (tasks 6.5, 6.10). The only clause holding this open named a file that no
+    longer exists, so it was retired as
+    [Amendment 1](../ears/okf-v02-conformance.md#amendment-1--r-04-partial-retirement-2026-07-27)
+    rather than silently treated as satisfied. R-0.4's other half — `acceptance.sh`
+    exits 0 — is unchanged and still enforced by `make check`.
+  - **Re-verified against the binary before closing, not taken from the note
+    below.** `TestParseDate` and `TestDoneGateNamesAMalformedDate` pass, and a
+    reality doc carrying `updated: 18/07/2026` makes `prd complete` refuse with
+    `cannot compare dates: … has 'updated: 18/07/2026', which is not an ISO-8601
+    date (YYYY-MM-DD)` — file named, value named, no traceback, no silent pass.
+    R-0.1, R-0.2 and R-0.3 are met on the shipped implementation.
+  - The original PARTIALLY DONE note is kept below verbatim, because it is the
+    record of *why* this sat open for a day: the divergence it describes between
+    the Go and Python gates was real at the time and was resolved by deleting one
+    of the two, not by reconciling them.
   - PARTIALLY DONE 2026-07-26, in Go only. Task 2.6 of the Go port landed R-0.1,
     R-0.2 and R-0.3 in `company-os-starter/internal/product/prd.go` (`parseDate`,
     `CodeDoneRealityDateInvalid`): both values are parsed as ISO-8601 and
@@ -62,11 +80,12 @@ commit as the title backfill (3.4) or the harness's double-build check goes red.
     compare parsed values; R-0.2 — a malformed/absent value produces a done-check
     error naming the file and the offending value, never an unhandled exception;
     R-0.3 — well-formed input yields the same accept/refuse outcome as today;
-    R-0.4 — a check in `examples/selftest.py` covers R-0.2.
-  - verify: `python3 examples/selftest.py` passes including the new check; feed a
-    reality doc `updated: 18/07/2026` and confirm a named error rather than a
-    traceback or a silent pass; `bash examples/acceptance.sh` exits 0 with both
-    goldens unchanged.
+    R-0.4 — an automated test covers R-0.2 (~~a check in `examples/selftest.py`~~,
+    retired 2026-07-27 with the file itself).
+  - verify: `go test ./internal/product/` passes including
+    `TestDoneGateNamesAMalformedDate`; feed a reality doc `updated: 18/07/2026`
+    and confirm a named error rather than a traceback or a silent pass;
+    `bash examples/acceptance.sh` exits 0 with both goldens unchanged.
 
 ---
 
