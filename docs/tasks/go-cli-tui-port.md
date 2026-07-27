@@ -1634,11 +1634,10 @@ Ordered by the coupling map in research §4c: most self-contained first.
     | `raw.githubusercontent.com/…/main/company-os-starter/install.sh` | **200 — serves the PYTHON-era installer** |
     | `github.com/…/releases/latest/download/company-os-darwin-arm64` | 404 — no releases exist |
 
-    All of this work is on branch `go-cli`, 14 commits ahead of `main`. `main`
-    still carries the pre-port tree, so the one-liner documented in GOLDEN-PATH,
-    the first-day tutorial and the procedure below currently installs the
-    deleted Python CLI and its vendored PyYAML. That is a silent wrong answer,
-    not an error.
+    All of this work was on branch `go-cli`, 16 commits ahead of `main`. `main`
+    carried the pre-port tree, so the one-liner documented in GOLDEN-PATH, the
+    first-day tutorial and the procedure below installed the deleted Python CLI
+    and its vendored PyYAML. That is a silent wrong answer, not an error.
 
     **Two things clear it, both outside this task:** merge `go-cli` to `main`,
     and publish one release. `.github/workflows/release.yml` was added so the
@@ -1648,6 +1647,17 @@ Ordered by the coupling map in research §4c: most self-contained first.
     resolves. Until both happen, `install.sh` fails with an explicit "no release
     has been published yet" message pointing at `make install` from source,
     rather than a bare download error.
+
+    **Status 2026-07-27 — the first of the two is done locally, the second is
+    not.** `go-cli` was fast-forwarded into `main` (verified as a fast-forward:
+    `main` was 0 commits ahead), so the tree on `main` is now the Go one and the
+    Python-era `install.sh` is gone from it. **This does not yet change what any
+    URL serves:** `raw.githubusercontent.com/…/main/…` reflects `origin/main`,
+    so the silent wrong answer above persists until `main` is pushed. No tag was
+    created and no release exists, which is deliberate — it was not authorized
+    as part of this step. The `releases/latest/download/…` row of the table
+    above therefore still reads 404, and `install.sh`'s explicit
+    "no release has been published yet" message is still the path a user hits.
   - **No longer gated on 5.2.** The dependency was "the macOS half is only
     meaningful once notarization is done"; `install.sh` removed that — a
     `curl`-fetched binary is never quarantined, so the unsigned artifact is the
