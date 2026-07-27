@@ -34,13 +34,30 @@ export const DIRECTORY_CATEGORIES_DATA: DirectoryCategoryData[] = [
     id: 'arch',
     categoryName: '1. Architecture & Folder Structure',
     iconName: 'FolderTree',
-    description: 'Explore the workspace directory, Git-based Markdown files, and architectural layers.',
+    description: 'Explore the workspace directory, Git-based Markdown files, architectural layers, and multi-repo federation.',
     items: [
       {
         title: 'Workspace Architecture Explorer',
         description: 'Browse workspace tree (discovery/, prds/, reality/, teams/) with live inspector.',
         targetTab: 'architecture',
         tag: 'Core View',
+      },
+      {
+        title: 'Federated Mode: One Tree from Several GitHub Repos',
+        description: 'Compose the same directory tree from many pinned repositories with a workspace.yaml manifest. Includes the source-to-destination map, slices: for one repo feeding several targets, and sample sync output.',
+        targetTab: 'architecture',
+        tag: 'Multi-Repo',
+      },
+      {
+        title: 'Read-Only Slices & workspace.lock.yaml',
+        description: 'Why synced content is materialized 0444, how the lock records resolved commits plus per-file hashes, and the six rules the CLI enforces on a manifest.',
+        targetTab: 'architecture',
+      },
+      {
+        title: 'GitHub MCP Boundary: Read vs Write',
+        description: 'Company OS ships no MCP server. What an agent may read, what only the CLI may write, and what no agent may ever touch.',
+        targetTab: 'architecture',
+        tag: 'Agent Tooling',
       },
       {
         title: 'Company OS Root Layer (company-os.yaml)',
@@ -99,6 +116,12 @@ export const DIRECTORY_CATEGORIES_DATA: DirectoryCategoryData[] = [
         description: 'Walk through Discovery Brief -> Draft PRD -> Safety Gate Check -> Federated Release.',
         targetTab: 'workflows',
         tag: 'Simulator',
+      },
+      {
+        title: 'Scenario 5: Multi-repo Federation & Knowledge Slices',
+        description: 'Four steps: scout the source repo with the GitHub MCP, declare the workspace.yaml entry, run workspace sync, then verify slice integrity at Gate 8.',
+        targetTab: 'workflows',
+        tag: 'Federation',
       }
     ]
   },
@@ -124,8 +147,8 @@ export const DIRECTORY_CATEGORIES_DATA: DirectoryCategoryData[] = [
         targetTab: 'validation',
       },
       {
-        title: 'Gate 8: Multi-Repo Federation Gate',
-        description: 'Checks cross-team dependencies in Federated Company OS mode.',
+        title: 'Gate 8: Federated Slice Integrity',
+        description: 'Only runs when workspace.yaml is present. Re-hashes every synced slice against workspace.lock.yaml to catch hand-edits and moved targets.',
         targetTab: 'validation',
       }
     ]
@@ -166,6 +189,12 @@ export const DIRECTORY_CATEGORIES_DATA: DirectoryCategoryData[] = [
         description: 'Instant offline Markdown search indexed into a local SQLite database for AI agents.',
         targetTab: 'search-agent',
         tag: 'Search Engine',
+      },
+      {
+        title: 'External Agent Tooling: the GitHub MCP',
+        description: 'How an MCP server relates to skills, the read/write split mapped onto skill://governance/syncing-knowledge, and a copyable MCP-assisted prompt that keeps the agent on the read half.',
+        targetTab: 'search-agent',
+        tag: 'MCP',
       }
     ]
   },

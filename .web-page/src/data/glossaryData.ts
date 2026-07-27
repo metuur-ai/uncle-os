@@ -21,6 +21,11 @@ export const GLOSSARY_ITEMS: GlossaryTerm[] = [
   { term: 'Mandatory Rule', plain: 'A strict rule (like security) that everyone must follow with zero exceptions unless approved.' },
   { term: 'Deviation', plain: 'An official explanation recorded when a team chooses not to follow a default guideline.' },
   { term: 'Monorepo vs Federated', plain: 'Monorepo means everything is stored in one single folder; Federated means projects are stored in separate folders linked together.' },
+  { term: 'workspace.yaml (Manifest)', plain: 'A shopping list saying which other GitHub repositories to pull folders from, and where each one lands on your computer. Having this file at all is what turns on federated mode.' },
+  { term: 'Slice', plain: 'A copy of a few folders taken from someone else\'s repository. It arrives locked as read-only, so you fix problems in the original repo, never in the copy.' },
+  { term: 'Pin', plain: 'The exact version (a tag or a commit) of another repo you agreed to use. Pinning means nobody can change your rules behind your back — you upgrade on purpose.' },
+  { term: 'workspace.lock.yaml (Lock)', plain: 'An automatic receipt listing exactly which files arrived and their fingerprints. Validation re-checks the fingerprints, so an accidental edit to a copied file is caught immediately.' },
+  { term: 'MCP (Model Context Protocol)', plain: 'A way for an AI assistant to plug into outside tools like GitHub. Company OS does not ship one — it belongs to your assistant, and it may read things, but only the company-os command is allowed to change your workspace.' },
 ];
 
 export const ROLE_GUIDES: RoleGuide[] = [

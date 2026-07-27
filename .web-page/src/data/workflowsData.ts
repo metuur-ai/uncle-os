@@ -209,6 +209,24 @@ note: mandatory rules require approval by the rule owner before this is valid.`
     steps: [
       {
         stepNumber: 1,
+        title: 'Scout the Source Repo (optional, agent-assisted)',
+        command: '# in your agent: "use the GitHub MCP to read acme/component-library"',
+        description: 'Before writing the manifest, have an agent browse the source repo through the GitHub MCP: where the docs live, which tags exist, and what a pin bump would bring in. This is a read, and it happens entirely outside the workspace.',
+        keyRule: 'Company OS ships no MCP server or client — this is your agent\'s tool. Reading is fine; the CLI still performs every write, and no MCP path may fetch content into the workspace or write the lock.',
+        mockTerminalOutput: `# agent, via GitHub MCP (no company-os command runs here)
+repo acme/component-library
+  docs/sdd/            42 files   <- documentation lives here
+  architecture/         8 files
+  src/                 —          <- never cloned; not in paths:
+  tags: v1.1.0, v1.1.4, v1.2.0 (latest, 2026-07-14)
+
+diff v1.1.0..v1.2.0 — 6 doc files changed, 2 added
+
+suggestion: paths: [docs/sdd], pin: {tag: v1.2.0}
+-> now write it into workspace.yaml yourself; sync does the fetching.`
+      },
+      {
+        stepNumber: 2,
         title: 'Define workspace.yaml Slices',
         command: 'cat workspace.yaml',
         description: 'Declare external git repository, commit/tag pin, and target localDirectory under knowledge/.',
@@ -223,7 +241,7 @@ repos:
       - {paths: [docs/sdd], localDirectory: knowledge/components/component-library}`
       },
       {
-        stepNumber: 2,
+        stepNumber: 3,
         title: 'Synchronize Federated Workspace',
         command: 'company-os workspace sync',
         description: 'Downloads specified paths, writes 0444 read-only files, and records hashes in workspace.lock.yaml.',
@@ -234,7 +252,7 @@ wrote workspace.lock.yaml (sha256 verified)
 next: company-os graph build && company-os validate`
       },
       {
-        stepNumber: 3,
+        stepNumber: 4,
         title: 'Validate Federated Slice Integrity (Gate 8)',
         command: 'company-os validate',
         description: 'Gate 8 activates automatically when workspace.yaml is present to ensure no synced files were hand-edited.',

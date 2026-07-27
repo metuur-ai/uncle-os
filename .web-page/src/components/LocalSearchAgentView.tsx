@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
-import { Search, Code, Cpu, BookOpen, CheckCircle2, ArrowRight, Layers, Bot, Terminal, ShieldAlert, Sparkles, FileCode, CheckSquare, GitBranch, Info, MessageSquareCode, Copy, Check } from 'lucide-react';
+import { Search, Code, Cpu, BookOpen, CheckCircle2, ArrowRight, Layers, Bot, Terminal, ShieldAlert, Sparkles, FileCode, CheckSquare, GitBranch, Info, MessageSquareCode, Copy, Check, Plug, XCircle } from 'lucide-react';
 import { Tooltip } from './Tooltip';
-import { 
-  SKILL_LAYERS, 
-  STEP_TIERS, 
-  REFERENCE_SKILLS, 
-  AUTHORING_RULES, 
-  MOCK_SKILLS_CLI_TEXT, 
+import {
+  SKILL_LAYERS,
+  STEP_TIERS,
+  REFERENCE_SKILLS,
+  AUTHORING_RULES,
+  MOCK_SKILLS_CLI_TEXT,
   MOCK_SKILLS_JSON_TEXT,
   SAMPLE_PROMPTS,
   PROMPTING_RULES
 } from '../data/skillsData';
+import { MCP_SKILL_STEPS, MCP_ASSISTED_PROMPT, MCP_BOUNDARY } from '../data/federationData';
 
 export const LocalSearchAgentView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'search' | 'skills'>('skills');
@@ -296,6 +297,170 @@ export const LocalSearchAgentView: React.FC = () => {
                   </p>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* External agent tooling: the GitHub MCP */}
+          <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Plug className="w-5 h-5 text-indigo-600" />
+                  <h3 className="text-base font-bold text-slate-900">
+                    External Agent Tooling: the GitHub MCP
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-600 mt-1">
+                  How MCP servers relate to skills — and why the skill layer is the only door they come
+                  through.
+                </p>
+              </div>
+              <span className="text-xs font-mono text-rose-700 font-bold bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-100 self-start sm:self-center shrink-0">
+                Ships 0 MCP servers
+              </span>
+            </div>
+
+            {/* The premise */}
+            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+              <p className="text-xs text-slate-700 leading-relaxed">
+                <strong>Company OS ships no MCP server and no MCP client.</strong> There is no{' '}
+                <code className="font-mono text-[11px] px-1 rounded bg-slate-200/70">.mcp.json</code> anywhere
+                in the repo, and no <code className="font-mono text-[11px]">company-os</code> command talks to
+                the GitHub API — <code className="font-mono text-[11px]">workspace sync</code> is eight plain
+                git invocations with no <code className="font-mono text-[11px]">push</code>,{' '}
+                <code className="font-mono text-[11px]">commit</code>, or HTTP call anywhere.
+              </p>
+              <p className="text-xs text-slate-700 leading-relaxed">
+                So the GitHub MCP is <strong>your agent's</strong> tool, configured in your agent; Company OS
+                neither knows nor cares that it exists. It becomes part of a governed workflow only when a{' '}
+                <strong>skill</strong> tells the agent when to reach for it. That inherits the constraint
+                from <em>No Execution Authority</em> above: a skill describes how to author an artifact, so
+                no skill — and therefore no MCP call it suggests — can grant permission to bypass a
+                mandatory gate, edit <code className="font-mono text-[11px]">generated/</code>, or modify a{' '}
+                <code className="font-mono text-[11px]">0444</code> synced slice.
+              </p>
+            </div>
+
+            {/* Step-by-step split against syncing-knowledge */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+                <GitBranch className="w-4 h-4 text-indigo-600" />
+                <span>
+                  Applied to{' '}
+                  <code className="font-mono text-[11px] text-indigo-800">
+                    skill://governance/syncing-knowledge
+                  </code>
+                </span>
+              </div>
+              <p className="text-xs text-slate-600">
+                The skill's three mandatory steps are all CLI. MCP helps <em>around</em> them, never inside
+                them:
+              </p>
+
+              <div className="overflow-x-auto rounded-xl border border-slate-200">
+                <table className="w-full text-xs min-w-[720px]">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-200">
+                      <th className="text-left font-bold text-slate-700 px-3 py-2 w-[26%]">Moment</th>
+                      <th className="text-left font-bold text-emerald-800 px-3 py-2 w-[37%]">
+                        GitHub MCP (read)
+                      </th>
+                      <th className="text-left font-bold text-indigo-800 px-3 py-2 w-[37%]">
+                        company-os CLI (write)
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {MCP_SKILL_STEPS.map((step, i) => (
+                      <tr
+                        key={step.id}
+                        className={`border-b border-slate-100 last:border-0 ${i % 2 ? 'bg-slate-50/50' : 'bg-white'}`}
+                      >
+                        <td className="px-3 py-2 font-semibold text-slate-800 align-top leading-relaxed">
+                          {step.moment}
+                        </td>
+                        <td
+                          className={`px-3 py-2 align-top leading-relaxed ${
+                            step.mcp === '—' ? 'text-slate-300 text-center' : 'text-slate-600'
+                          }`}
+                        >
+                          {step.mcp}
+                        </td>
+                        <td
+                          className={`px-3 py-2 align-top leading-relaxed ${
+                            step.cli === '—' ? 'text-slate-300 text-center' : 'text-slate-600'
+                          }`}
+                        >
+                          {step.cli}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* The three nevers */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-xs font-bold text-rose-900">
+                <XCircle className="w-4 h-4 text-rose-600" />
+                <span>{MCP_BOUNDARY[2].title}</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                {MCP_BOUNDARY[2].items.map((item, i) => (
+                  <div
+                    key={i}
+                    className="p-3 bg-rose-50/60 border border-rose-200 rounded-xl text-[11px] text-slate-700 leading-relaxed"
+                  >
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* The MCP-assisted prompt */}
+            <div className="space-y-2 pt-1">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+                <MessageSquareCode className="w-4 h-4 text-indigo-600" />
+                <span>MCP-assisted variant of the Sync Knowledge Catalog prompt</span>
+              </div>
+              <p className="text-xs text-slate-600">
+                Same skill, same gates — the prompt just uses MCP for the read half and names the boundary
+                out loud so the agent cannot drift across it:
+              </p>
+              <div className="p-3 bg-slate-900 rounded-lg text-xs font-mono text-slate-200 leading-relaxed border border-slate-800 shadow-inner">
+                {MCP_ASSISTED_PROMPT}
+              </div>
+              <button
+                onClick={() => handleCopyPrompt('mcp-assisted', MCP_ASSISTED_PROMPT)}
+                className={`w-full py-1.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                  copiedPromptId === 'mcp-assisted'
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 shadow-2xs'
+                }`}
+              >
+                {copiedPromptId === 'mcp-assisted' ? (
+                  <>
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Prompt Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>Copy Prompt for AI Agent</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-start gap-2 text-xs text-slate-200">
+              <ShieldAlert className="w-4 h-4 shrink-0 text-amber-400 mt-0.5" />
+              <span className="leading-relaxed">
+                <strong className="text-white">An agent may read anything, but the CLI writes the
+                workspace and the lock is the oracle.</strong>{' '}
+                An MCP server that respects that boundary is a convenience. One that crosses it produces a
+                workspace whose validation results are no longer evidence of anything.
+              </span>
             </div>
           </div>
 

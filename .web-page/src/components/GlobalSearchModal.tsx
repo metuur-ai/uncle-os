@@ -12,7 +12,9 @@ import {
   Command,
   FileText,
   Layers,
-  Bot
+  Bot,
+  GitBranch,
+  Plug
 } from 'lucide-react';
 import { TabType } from '../types';
 import { STATIC_SEARCH_ITEMS, SearchResultItemData } from '../data/searchData';
@@ -41,6 +43,8 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
       case 'FileText': return FileText;
       case 'Award': return Award;
       case 'Bot': return Bot;
+      case 'GitBranch': return GitBranch;
+      case 'Plug': return Plug;
       default: return Search;
     }
   };
@@ -109,7 +113,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
             <div className="py-12 text-center text-slate-500 space-y-2">
               <Search className="w-8 h-8 text-slate-300 mx-auto" />
               <p className="text-sm font-semibold text-slate-700">No static results for "{query}"</p>
-              <p className="text-xs text-slate-400">Try searching "PRD", "CLI", "Gate", "Governance", "Quiz" or "Exit code"</p>
+              <p className="text-xs text-slate-400">Try searching "PRD", "CLI", "Gate", "Governance", "Federation", "MCP", "Quiz" or "Exit code"</p>
             </div>
           ) : (
             searchResults.map((item) => {
