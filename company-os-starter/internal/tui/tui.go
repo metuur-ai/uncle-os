@@ -20,6 +20,7 @@
 package tui
 
 import (
+	"errors"
 	"io"
 	"strings"
 
@@ -155,6 +156,11 @@ type Model struct {
 	width, height int
 	sty           styles
 	quitting      bool
+	// handOff records that a screen returned ErrHandOff, so Update quits
+	// without rendering. Separate from quitting because the two answer
+	// different questions: quitting is "the user asked to leave", handOff is
+	// "a screen ended this run on the caller's behalf".
+	handOff bool
 }
 
 // defaultWidth and defaultHeight apply until the first WindowSizeMsg arrives.
@@ -249,7 +255,11 @@ func (m Model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		case "end", "G":
 			m.menu = len(m.screens) - 1
 		case "enter", " ", "right", "l":
-			return m.open(m.menu), nil
+			opened := m.open(m.menu)
+			if opened.handOff {
+				return opened, tea.Quit
+			}
+			return opened, nil
 		}
 		return m, nil
 
@@ -269,6 +279,9 @@ func (m Model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		case "enter", " ", "right", "l":
 			if len(choices) > 0 {
 				m.load(m.active, choices[m.pick])
+				if m.handOff {
+					return m, tea.Quit
+				}
 			}
 		}
 		return m, nil
@@ -315,6 +328,17 @@ func (m Model) open(i int) Model {
 	return m
 }
 
+// ErrHandOff, returned by a Screen's Run, ends the program cleanly instead of
+// rendering a body or an error.
+//
+// It is an exit path, not a mode: this package still knows nothing about what
+// the caller wants to do next. The one use is the recovery menu's
+// "open a workspace found nearby" — the caller records the chosen root in its
+// own closure and restarts the TUI against it. Showing "switching…" in a
+// viewport the caller is about to replace would be a frame of noise, and
+// leaving the program running after the catalog is obsolete would be worse.
+var ErrHandOff = errors.New("tui: screen handed control back to the caller")
+
 // load runs a screen and puts the result in the viewport.
 //
 // The pointer receiver is deliberate: load mutates the viewport, and a value
@@ -325,6 +349,11 @@ func (m *Model) load(i int, choice string) {
 	m.choice = choice
 	m.fail = ""
 	body, err := s.Run(choice)
+	if errors.Is(err, ErrHandOff) {
+		m.handOff = true
+		m.quitting = true
+		return
+	}
 	if err != nil {
 		m.fail = err.Error()
 	}

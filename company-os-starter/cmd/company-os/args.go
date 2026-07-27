@@ -37,6 +37,7 @@ type Args struct {
 	Title         string
 	FromDiscovery string
 	Force         bool
+	Repair        bool
 	Rationale     string
 	Component     string
 	Expires       string
@@ -120,6 +121,11 @@ var commandSpecs = []cmdSpec{
 		flags: []flagSpec{
 			{name: "platform", help: "target platform (required for add component)",
 				str: func(a *Args) *string { return &a.Platform }},
+			// `add team <id> --repair` fills in scaffolded files an existing team
+			// is missing. Without it there is no path back: `add team` refuses
+			// once the directory exists, so one deleted standards file could only
+			// be recovered by hand.
+			boolFlag("repair", func(a *Args) *bool { return &a.Repair }),
 		},
 	},
 	{

@@ -40,6 +40,7 @@ Jump to a how-to:
 | Ship a change: discovery → PRD → done | [how-to/take-a-change-from-discovery-to-done.md](how-to/take-a-change-from-discovery-to-done.md) |
 | Deviate from a rule, or ask for an exception | [how-to/handle-a-deviation-or-exception.md](how-to/handle-a-deviation-or-exception.md) |
 | Check my work against governance before I claim it's ready/done | [how-to/check-your-work-against-governance.md](how-to/check-your-work-against-governance.md) |
+| See which agent skills apply to me, or write one of my own | [how-to/use-the-agent-skills.md](how-to/use-the-agent-skills.md) |
 | Understand why `company-os validate` failed, or wire it into CI | [how-to/run-the-validation-gate.md](how-to/run-the-validation-gate.md) |
 | Pull a repo's docs into the knowledge catalog, without its source code | [how-to/sync-a-knowledge-catalog.md](how-to/sync-a-knowledge-catalog.md) |
 | Keep Local Search's index fresh and scoped correctly | [how-to/keep-search-fresh.md](how-to/keep-search-fresh.md) |
@@ -48,6 +49,7 @@ Jump to a how-to:
 ## I want the bigger picture
 
 - **[explanation/how-it-fits-together.md](explanation/how-it-fits-together.md)** — how Company OS, Team OS, Local Search, and Claude skills cooperate.
+- **[explanation/github-mcp-and-automation.md](explanation/github-mcp-and-automation.md)** — why sync is plain git rather than a GitHub MCP integration, what that means if you use GitHub MCP anyway, and where the boundary is.
 - **[explanation/observer-roadmap.md](explanation/observer-roadmap.md)** — where the knowledge-graph vision (codename Observer) is headed. **Not shipped yet** — read this as roadmap, not a manual.
 
 ## I have a quick question

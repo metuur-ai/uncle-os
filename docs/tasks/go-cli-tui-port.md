@@ -2223,6 +2223,42 @@ Ordered by the coupling map in research §4c: most self-contained first.
   - acceptance: R-9.9 (met late — see above)
   - verify: owner named in the HLD Stakeholders section.
 
+- [x] 6.11 Re-measure the claimed `init` → `validate` divergence (deps: 6.5, est: ~1h)
+  - **CLOSED 2026-07-26. The claim was false. There is no divergence.**
+  - During task 7.7 a comment was written into `cmd/company-os/tuiadvise.go` and
+    `tuiadvise_test.go` asserting that `company-os init && company-os validate`
+    exits 1 with `teams/<t>/CLAUDE.md: generated block drifted` against the real
+    binary — "measured twice, with and without `--root`" — while the same `init`
+    driven in-process through `run()` came out in sync, and that the reason was
+    not understood. It was carried as a live loose end.
+  - **Re-measured across three builds and both invocation forms. All six
+    combinations exit 0:** a binary built from the working tree, the committed
+    `company-os-starter/company-os` (`de085be`), and the installed
+    `~/.local/bin/company-os` (`117ff23`), each run from inside the new workspace
+    and again from its parent with `--root`. Gate `[5/7]` reports every context
+    node in sync in every case. **GPF-R-1.7 holds.**
+  - **What the original observation most likely was.** A fresh `init` *does*
+    leave one thing undone — it writes no `teams/<t>/generated/`, so
+    `effective-governance.yaml` is absent and `today --role` warns about it.
+    That is a real fresh-workspace finding and it is the one the advisor's second
+    diagnosis fires on. It is not a drifted block, and `validate` does not fail
+    on it. The two were conflated.
+  - **What was corrected rather than left standing:** the file comment in
+    `tuiadvise.go`, the comment on `TestAdviseOffersGraphBuildForADriftedBlock`,
+    and the `freshWorkspace` helper's account of why it drives `run()`. A false
+    claim in a comment outlives the session that wrote it and is worse than no
+    comment, because the next reader has no reason to doubt it.
+  - `cmd/company-os/zz_probe_test.go` is the untracked probe written to chase
+    this. It is a no-op without `PROBE_ROOT` and is left in place pending a
+    decision to keep or delete it — it is not part of the suite's meaning.
+  - why: an unexplained divergence between the binary and its own test harness
+    would undermine every in-process test in the package. It turned out to be a
+    misreading, which is a better outcome than the one that was recorded — but
+    only if the record is corrected rather than inherited.
+  - acceptance: GPF-R-1.7 (verified, not merely assumed)
+  - verify: `init` then `validate` exits 0 from the cwd and via `--root`, on a
+    working-tree build and on the last two released ones.
+
 ---
 
 ## Phase 7 — TUI, gated on Phase 6 (Unit 5)
@@ -2426,3 +2462,73 @@ mutating form is written.
   - verify: a product owner, given only the published install line and no prior use, reads
     workspace status, opens a component's governance, and inspects a validate
     failure — unassisted, without prior shell configuration.
+
+- [x] 7.7 Recovery menu, advisor, and `add team --repair` (deps: 7.5, est: ~6h)
+  - DONE 2026-07-26. Three behaviours, one theme: the TUI stops being a viewer
+    for workspaces that are already correct and starts being usable from the
+    states people are actually in. New EARS: R-5.17 – R-5.22 and
+    GPF-R-1.9a – GPF-R-1.9c.
+  - **Recovery menu (R-5.17).** `tui` outside a workspace root used to return
+    `RequireRoot`'s error and exit 3. Measured standing in
+    `examples/banking/bank/workspaces/` — a directory holding *two* workspace
+    roots — it refused and printed the root-resolution order, which is the wrong
+    answer to "I am one directory too high" when both right answers are in the
+    directory being read. It now opens a menu: roots found at or one level below,
+    a previewed `init` here, and the old error's content shown rather than fatal.
+    Depth is one level on purpose (`TestNearbyRootsStopsAtOneLevel`) — a
+    recursive scan of `/` or `$HOME` is slow where it matters and surprising
+    everywhere. **This exempts `tui` from R-4.4**, recorded as
+    [Amendment 1](../ears/go-cli-tui-port.md#amendment-1--r-44-exemption-for-tui-2026-07-26);
+    the visible surface is that quitting the menu exits 0, not 3. R-5.3 is
+    untouched: the TTY gate still runs first, so no TTY is still exit 7 with no
+    filesystem change, whether or not a root is present.
+  - **Advisor (R-5.18 – R-5.22).** Heads the catalog, empty on a healthy
+    workspace. Detects drifted generated blocks (via `graph.NodeGate`, the same
+    check `validate` runs, so advisor and gate cannot disagree), a missing
+    `effective-governance.yaml`, and missing scaffolded team files (via
+    `scaffold.MissingTeamFiles`, which reads the same definition `RepairTeam`
+    writes from — a detector answering a different question from the fixer is how
+    an offer starts lying). Each offer is a field-less `Form` opening straight on
+    the previewed command, so R-5.6/5.7/5.8 hold through the machinery 7.4
+    already proved rather than through new promises. **A missing
+    `workspace.yaml` is explained and never offered** (R-5.22): a manifest needs
+    repo URLs and commit pins nothing can infer, and a form that writes a
+    plausible-but-wrong one is worse than the missing file.
+  - **`add team --repair` (GPF-R-1.9a–c).** GPF-R-1.9 refuses once the unit
+    exists, which left a team missing one standards file with no path back short
+    of hand-copying from another team. `--repair` writes only what is absent,
+    from the same `teamFiles()` definition `scaffoldTeam` uses, and reports
+    written and skipped per file — the skipped list *is* the evidence nothing was
+    overwritten. A no-op repair does not rebuild generated blocks, which is what
+    makes it safe to run speculatively.
+  - **Four defects the tests caught, worth recording because three were in the
+    new code and one was in the test:**
+    1. `AllTeams()` returns directory paths, not ids — the offers were building
+       `--team /abs/path/teams/core`, which parses and addresses nothing.
+       `baseNames` is what the rest of the catalog already does.
+    2. The round-trip test needed `tokens[1:]`: `screenCommand` includes the
+       program name.
+    3. Backing out of a field-less confirm returned to an empty form and panicked
+       on an index out of range. Fixed in both `confirmKey` and `formKey`.
+    4. `TestAFormWritesNothingUntilConfirmed` pressed enter on an offer and
+       called it an R-5.8 violation — but on a confirmation, enter *is* the
+       confirmation. The key set was narrowed for field-less forms rather than
+       the property weakened.
+  - **One claim from this session was found false and is retracted**, not
+    inherited: that a fresh `init` leaves a drifted block behind. See task 6.11.
+    `TestAdviceHeadsTheCatalog` now pins the true fresh-workspace state —
+    `validate` exits 0, and the advisor is non-empty because governance is
+    unresolved.
+  - why: the two states a new user is most likely to be in — standing one
+    directory too high, and holding a workspace whose derived files have not been
+    generated — were the two the TUI handled worst. One exited 3 with a
+    resolution order; the other required knowing which of eleven subcommands to
+    run next.
+  - acceptance: R-5.17, R-5.18, R-5.19, R-5.20, R-5.21, R-5.22, GPF-R-1.9a,
+    GPF-R-1.9b, GPF-R-1.9c
+  - verify: `tui` from a directory holding two roots offers both and exits 0 on
+    quit; `tui` with no TTY still exits 7; the advisor is empty on
+    `examples/workspace` and heads the catalog when it is not; every offered fix
+    round-trips through the real parser into the same `*Args`; detection and
+    preview leave the workspace tree hash unchanged; `--repair` restores a
+    deleted file byte-identically and skips every file that exists.

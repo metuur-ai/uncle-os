@@ -77,18 +77,35 @@ func cmdTUI(ws *workspace.Workspace, args *Args, out io.Writer) ([]model.GateRes
 				"`company-os --help` lists them, `company-os validate` gives the "+
 				"same findings as text, and --json gives them to a program.")
 	}
-	if err := ws.RequireRoot(); err != nil {
-		return nil, err
+	opts := tui.Options{Input: stdin, Output: out, NoColor: noColorRequested()}
+
+	// Outside a workspace the TUI opens anyway, on a recovery menu (R-5.17).
+	// The loop exists for one transition: the recovery menu's workspace picker
+	// hands back a root, and the catalog is rebuilt against it. It runs at most
+	// twice — the normal catalog has no hand-off — but is written as a loop
+	// rather than a special case because a bounded `for` states that without a
+	// comment claiming it.
+	root := args.Root
+	for {
+		if !ws.IsRoot() {
+			var selected string
+			if err := tui.Run(recoveryScreens(ws.Root, &selected), opts); err != nil {
+				return nil, err
+			}
+			if selected == "" {
+				return nil, nil // the reader quit; nothing was chosen
+			}
+			// The picked path becomes --root, so every preview from here on
+			// reproduces the invocation the reader could have typed.
+			ws, root = workspace.New(selected), selected
+			continue
+		}
+		// args.Root, not ws.Root: the previews must reproduce what the reader
+		// typed. If they relied on the cwd or on $COMPANY_OS_WORKSPACE_ROOT, the
+		// previewed command reproduces from the same place, and interpolating
+		// the resolved absolute path instead would print a flag they did not use.
+		return nil, tui.Run(screensFor(ws, root), opts)
 	}
-	// args.Root, not ws.Root: the previews must reproduce what the reader typed.
-	// If they relied on the cwd or on $COMPANY_OS_WORKSPACE_ROOT, the previewed
-	// command reproduces from the same place, and interpolating the resolved
-	// absolute path instead would print a flag they did not use.
-	return nil, tui.Run(screensFor(ws, args.Root), tui.Options{
-		Input:   stdin,
-		Output:  out,
-		NoColor: noColorRequested(),
-	})
 }
 
 // noColorRequested implements the NO_COLOR convention as published: the variable
@@ -184,8 +201,16 @@ func readOnlyScreens(ws *workspace.Workspace, root string) []tui.Screen {
 // The order is the requirement's and is load-bearing for more than tidiness —
 // the read-only screens are what a reader lands on, and the two that write are
 // below them, marked, and reachable only through a preview and a confirmation.
+// screensFor is the catalog. Advice comes FIRST: when a workspace has a drifted
+// generated block, that is the thing standing between the reader and a clean
+// `validate`, and burying it under ten browsing screens is how the current
+// behaviour (a [FAIL] line at the end of `validate` output) already fails them.
+// The list is empty for a healthy workspace, so a good workspace looks exactly
+// as it did before.
 func screensFor(ws *workspace.Workspace, root string) []tui.Screen {
-	return append(readOnlyScreens(ws, root), mutatingScreens(ws, root)...)
+	screens := adviceScreens(ws, root)
+	screens = append(screens, readOnlyScreens(ws, root)...)
+	return append(screens, mutatingScreens(ws, root)...)
 }
 
 // runScreen executes one subcommand exactly as run() does and returns its text.

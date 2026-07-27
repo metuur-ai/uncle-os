@@ -142,7 +142,7 @@ non-zero path returns 1" is false and is corrected here.
 | R-4.1 | WHEN a command succeeds, THE SYSTEM SHALL exit 0. |
 | R-4.2 | WHEN `validate` reports one or more `[FAIL]` findings, THE SYSTEM SHALL exit 1. |
 | R-4.3 | WHEN invocation is malformed — unknown subcommand, bad flag, missing required argument, bare invocation — THE SYSTEM SHALL exit 2, preserving argparse's existing behavior. |
-| R-4.4 | WHEN the workspace root is absent or a required workspace object does not exist — platform (`:238`), team (`:244`), component (`:367`), and the lookups at `:430`, `:584`, `:636`, `:676`, `:2561` — THE SYSTEM SHALL exit 3, because the invocation was well-formed and the workspace did not contain the object. |
+| R-4.4 | **Amended 2026-07-26 — `tui` is exempt when a TTY is attached; see [Amendment 1](#amendment-1--r-44-exemption-for-tui-2026-07-26).** WHEN the workspace root is absent or a required workspace object does not exist — platform (`:238`), team (`:244`), component (`:367`), and the lookups at `:430`, `:584`, `:636`, `:676`, `:2561` — THE SYSTEM SHALL exit 3, because the invocation was well-formed and the workspace did not contain the object. |
 | R-4.5 | WHEN a YAML document, frontmatter block, or schema-governed artifact is malformed, THE SYSTEM SHALL exit 4. |
 | R-4.6 | WHEN a precondition gate refuses — a done-check with unchecked items or stale reality (`:703`), or a PRD sourced from an unvalidated discovery brief — THE SYSTEM SHALL exit 5. NOTE: a deviation aimed at a mandatory rule is **not** a code-5 site; `resolve_team_governance` (`:317-319`) records `deviationRejected` and continues, surfacing the refusal as a `validate` gate failure (exit 1), and `deviation declare` validates nothing. Enforcing at declare time would break R-9.1 parity. |
 | R-4.7 | WHEN an external tool is unavailable or fails — git absent, git older than 2.27, clone or sparse-checkout failure, `--frozen` lock reconciliation failure (`:2564`-`:2594`) — THE SYSTEM SHALL exit 6. |
@@ -182,6 +182,36 @@ friction F5 (35-40 domain terms) and F6 (EARS and `@spec` syntax) are untouched.
 | R-5.14 | THE SYSTEM SHALL exit the TUI on `q`, `Esc`, or `Ctrl-C` from any screen, leaving no partial write. |
 | R-5.15 | THE SYSTEM SHALL honour `NO_COLOR` within the TUI and SHALL degrade legibly on a terminal narrower than 80 columns and on resize. |
 | R-5.16 | THE SYSTEM SHALL NOT require a TTY, a terminal size, or any interactive capability for any subcommand other than `tui`. |
+| R-5.17 | WHEN `tui` is invoked with a TTY attached from a directory that is not a workspace root, THE SYSTEM SHALL open a recovery menu rather than exiting — the workspace roots found at or one level below that directory, a previewed `init` for the current directory, and an explanation of what a root is — and WHEN a root is selected SHALL re-enter the normal catalog with that path as `--root`. The scan SHALL NOT descend more than one level, because a root surfacing from four levels down is not predictable from where the reader is standing. Added 2026-07-26; exempts `tui` from R-4.4 — see [Amendment 1](#amendment-1--r-44-exemption-for-tui-2026-07-26). |
+| R-5.18 | WHEN the TUI opens on a workspace, THE SYSTEM SHALL present, ahead of every other screen, each derived artifact that is missing or stale together with the command that produces it, because each is otherwise reported only where the reader must already be looking: an unresolved `effective-governance.yaml` as a `[warn]` line inside `today --role`, a drifted generated block as a `[FAIL]` line at the end of `validate`. |
+| R-5.19 | THE SYSTEM SHALL derive that list from the same checks `validate` runs, so the advisor and the gate cannot disagree about whether something is wrong; WHERE nothing is wrong the list SHALL be empty, so a healthy workspace presents the catalog it presented before this requirement existed. |
+| R-5.20 | WHILE the advisor is detecting problems, and WHILE a reader is opening an offer to read its preview, THE SYSTEM SHALL make no filesystem change — detection runs on every TUI start, so it must be incapable of altering what it inspects. |
+| R-5.21 | THE SYSTEM SHALL express every offered fix as a single flag-complete `company-os` invocation executed through the preview-and-confirm path of R-5.6–R-5.8, such that the previewed line parses back into the invocation that runs (R-5.10). |
+| R-5.22 | IF a detected problem cannot be resolved by an invocation the system can construct — a missing federation manifest needs repo URLs and commit pins nothing can infer — THE SYSTEM SHALL report and explain it and SHALL NOT offer a fix, because a form that writes a plausible-but-wrong manifest is worse than the missing file. |
+
+### Amendment 1 — R-4.4 exemption for `tui` (2026-07-26)
+
+**Authority:** R-5.17, specified and added 2026-07-26. Executed by task 7.7 of
+`docs/tasks/go-cli-tui-port.md`.
+
+R-4.4 requires exit 3 when the workspace root is absent, and until this date
+`tui` obeyed it: `cmdTUI` called `RequireRoot` and returned exit 3 with the
+root-resolution order printed. R-5.17 replaces that path for `tui` alone.
+
+| Aspect | Disposition |
+| --- | --- |
+| Every subcommand other than `tui` | **Unchanged.** R-4.4 holds as written. |
+| `tui` with no TTY | **Unchanged.** R-5.3's exit 7 is decided before the root question is asked, so the non-interactive contract is untouched and no filesystem change occurs. |
+| `tui` with a TTY, outside a root | **Exempted.** Opens the recovery menu instead of exiting 3. |
+| Exit code when the reader quits that menu without choosing | **0, not 3.** This is the observable surface of the exemption and the part a caller could branch on under R-4.10. |
+
+**Why the exemption rather than better error text.** The behaviour was measured
+standing in `examples/banking/bank/workspaces/`, a directory holding two
+workspace roots: `tui` refused and printed the resolution order. For an audience
+defined as blocked on terminal fluency, printing a resolution order is the wrong
+answer to "I am one directory too high" when both correct answers are in the
+directory being read. The content of the old error was not deleted — it is the
+menu's third entry (`rootHelp`), shown rather than fatal.
 
 ---
 

@@ -96,6 +96,15 @@ func (m *Model) openForm(i int) {
 		m.values[j] = initialValue(f)
 	}
 	m.mode = ModeForm
+	if len(s.Form.Fields) == 0 {
+		// A form with nothing to collect is an OFFER: a fixed invocation the
+		// reader either confirms or declines. Go straight to the preview so the
+		// confirmation is the whole interaction, rather than showing an empty
+		// field list that cannot be advanced (m.field would index nothing).
+		// preview() still calls Build, so R-5.6/R-5.7 hold identically — the
+		// previewed line is derived, not written for this screen.
+		*m = m.preview()
+	}
 }
 
 func initialValue(f Field) string {
@@ -134,6 +143,13 @@ func (m *Model) setValue(i int, v string) {
 // formKey drives the collect step.
 func (m Model) formKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	fields := m.form.Fields
+	// A field-less form is only ever passed through on the way to its
+	// confirmation; if a keystroke reaches here with nothing to edit, the only
+	// coherent thing to do is leave. Indexing fields[0] would panic.
+	if len(fields) == 0 {
+		m.mode = ModeMenu
+		return m, nil
+	}
 	f := fields[m.field]
 	switch msg.String() {
 	case "up":
@@ -239,6 +255,14 @@ func (m Model) confirmKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.commit()
 		return m, nil
 	case "n", "backspace", "left":
+		// Declining an OFFER goes back to the menu, not to the form: a
+		// field-less form has nothing to return to, and landing there would
+		// leave a mode whose only state is an empty field list.
+		if m.form != nil && len(m.form.Fields) == 0 {
+			m.mode = ModeMenu
+			m.action = nil
+			return m, nil
+		}
 		m.mode = ModeForm
 		return m, nil
 	}

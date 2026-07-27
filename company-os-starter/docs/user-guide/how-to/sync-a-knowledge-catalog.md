@@ -131,4 +131,6 @@ variant.
 - [FEDERATION-RUNBOOK.md](../../FEDERATION-RUNBOOK.md) — the full federation model
 - [reference/company-os-cli.md](../reference/company-os-cli.md) — `workspace` command reference
 - [how-to/run-the-validation-gate.md](run-the-validation-gate.md) — what each gate checks
+- [explanation/github-mcp-and-automation.md](../explanation/github-mcp-and-automation.md) — why this is plain git, and what a GitHub MCP server may and may not touch
 - `skill://governance/syncing-knowledge` — the canonical skill for this workflow
+  ([how-to/use-the-agent-skills.md](use-the-agent-skills.md) explains how skills resolve)

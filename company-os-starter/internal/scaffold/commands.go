@@ -250,6 +250,95 @@ type AddResult struct {
 	Generated []string
 }
 
+// RepairResult reports what a repair did, per file. Both halves matter: a
+// repair that wrote nothing must say so rather than printing an empty section,
+// and a repair that skipped files must name them, because "skipped" is the
+// evidence that nothing was overwritten.
+type RepairResult struct {
+	ID        string
+	Written   []string // workspace-relative
+	Skipped   []string // workspace-relative, already present
+	Generated []string
+}
+
+// MissingTeamFiles lists the scaffolded files a team should have and does not,
+// workspace-relative and in scaffold order. Empty means nothing to repair.
+//
+// It reads the same teamFiles() definition RepairTeam writes from, so what this
+// reports missing is exactly what a repair would create — a detector answering
+// a different question from the fixer is how an offer starts lying.
+func MissingTeamFiles(ws *workspace.Workspace, tid string) ([]string, error) {
+	files, err := teamFiles(ws.Root, tid)
+	if err != nil {
+		return nil, err
+	}
+	var missing []string
+	for _, f := range files {
+		if _, err := os.Stat(f.Path); err != nil {
+			missing = append(missing, f.Rel)
+		}
+	}
+	return missing, nil
+}
+
+// RepairTeam writes the scaffolded team files that are ABSENT and never touches
+// one that exists (GPF-R-1.9a).
+//
+// It exists because `add team` refuses outright once the team directory is
+// there, which left a team missing a single standards file with no path back
+// short of hand-copying from another team. Repair reads the same teamFiles()
+// definition scaffoldTeam does, so a repaired file is byte-identical to what
+// creation would have produced.
+//
+// The team must already exist: repairing a team that was never added is
+// `add team`, and silently creating one here would make the two commands
+// interchangeable in a way that hides which happened.
+func RepairTeam(ws *workspace.Workspace, name string, rebuild Rebuild) (*RepairResult, error) {
+	tid := Slugify(name)
+	dir := filepath.Join(ws.Root, "teams", tid)
+	if fi, err := os.Stat(dir); err != nil || !fi.IsDir() {
+		// Exit 3 (workspace), matching every other "this unit is not here"
+		// lookup — TeamDir and PlatformDir both resolve to it.
+		return nil, model.Errorf(model.ExitWorkspace,
+			"team '%s' does not exist — use `company-os add team %s` to create it; "+
+				"--repair only fills in files a team is missing", tid, tid)
+	}
+
+	files, err := teamFiles(ws.Root, tid)
+	if err != nil {
+		return nil, err
+	}
+	res := &RepairResult{ID: tid}
+	for _, f := range files {
+		if _, err := os.Stat(f.Path); err == nil {
+			res.Skipped = append(res.Skipped, f.Rel)
+			continue
+		}
+		if err := writeNew(f.Path, f.Text); err != nil {
+			return nil, err
+		}
+		res.Written = append(res.Written, f.Rel)
+	}
+
+	// The id registry is idempotent for an entry that is already present, so
+	// this is safe to re-run and repairs a registry a team was dropped from.
+	if err := registerID(ws.Root, "team://"+tid, "teams/"+tid+"/team.yaml"); err != nil {
+		return nil, err
+	}
+
+	// Only rebuild when something changed. A no-op repair that still rewrote
+	// generated blocks would make `--repair` unsafe to run speculatively, which
+	// is exactly how it is meant to be used.
+	if len(res.Written) > 0 {
+		lines, err := runRebuild(ws, rebuild)
+		if err != nil {
+			return nil, err
+		}
+		res.Generated = lines
+	}
+	return res, nil
+}
+
 // Add grows an existing workspace (bin/company-os:1997-2027, GPF-R-1.9). The
 // unit is scaffolded from the same writers `init` uses, so the two cannot
 // drift, and every writer still refuses to overwrite.

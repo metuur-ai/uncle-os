@@ -1,0 +1,159 @@
+package main
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/metuur-ai/uncle-os/company-os-starter/internal/graph"
+	"github.com/metuur-ai/uncle-os/company-os-starter/internal/model"
+	"github.com/metuur-ai/uncle-os/company-os-starter/internal/scaffold"
+	"github.com/metuur-ai/uncle-os/company-os-starter/internal/tui"
+	"github.com/metuur-ai/uncle-os/company-os-starter/internal/workspace"
+)
+
+// The advisor: derived artifacts that are missing or stale, and the command that
+// fixes each (R-5.18 – R-5.22).
+//
+// It exists because each of these is already reported somewhere the reader has
+// to be looking already: an unresolved effective-governance.yaml is a [warn]
+// line inside `today --role`, and a drifted generated block is a [FAIL] line at
+// the end of `validate`. Both name their fix; neither is seen by someone who
+// has not yet learned which command to run.
+//
+// A fresh `init` does NOT leave a drifted block behind — measured 2026-07-26
+// across three builds and both invocation forms, `init` then `validate` exits 0
+// (GPF-R-1.7 holds). What a fresh workspace does hit is the second diagnosis
+// below: `init` writes no teams/<t>/generated/, so governance is unresolved
+// until `governance resolve` runs. An earlier version of this comment claimed
+// the drifted-block case was the fresh-workspace case; it is not, and the
+// re-measurement is recorded in task 6.11.
+//
+// Every offer is a real invocation routed through the existing Form/Action path,
+// so the guarantees are the ones already proved: the preview is flag-complete
+// and derived (R-5.6, R-5.7), and nothing is written before the confirmation
+// (R-5.8). An offer this package could not express as an *Args is an offer it
+// does not make.
+
+// diagnosis is one detected problem. Fix is nil when the problem is real but has
+// no command that can safely resolve it — those are shown and explained, never
+// offered, because a button that writes a guess is worse than a sentence.
+type diagnosis struct {
+	Title  string
+	Detail string
+	Fix    *Args
+}
+
+// advise inspects a workspace and returns what is wrong with it, in the order a
+// reader should deal with it: derived state first, because `graph build` is
+// cheap and clears the most common failure, then per-team gaps.
+func advise(ws *workspace.Workspace, root string) []diagnosis {
+	var out []diagnosis
+
+	// 1. Generated context blocks. NodeGate is the same check `validate` runs,
+	//    so the advisor cannot disagree with the gate about whether this is a
+	//    problem.
+	if g, err := graph.NodeGate(ws, 5); err == nil {
+		var drifted []string
+		for _, f := range g.Findings {
+			if f.Severity == model.SevFail {
+				drifted = append(drifted, f.Subject)
+			}
+		}
+		if len(drifted) > 0 {
+			out = append(out, diagnosis{
+				Title: fmt.Sprintf("fix %d drifted generated block(s)", len(drifted)),
+				Detail: "These files carry a company-os:generated block that no longer\n" +
+					"matches what the workspace would produce:\n\n  " +
+					strings.Join(drifted, "\n  ") +
+					"\n\nA freshly created workspace always starts here: `init` scaffolds,\n" +
+					"it does not derive. `graph build` is idempotent — running it when\n" +
+					"nothing has drifted changes nothing.",
+				Fix: &Args{Root: root, Cmd: "graph", Action: "build"},
+			})
+		}
+	}
+
+	// AllTeams returns DIRECTORIES, not ids. Using the path as a team id builds
+	// invocations like `--team /abs/path/teams/core`, which parse but address
+	// nothing — baseNames is what the rest of the catalog already does.
+	for _, team := range baseNames(ws.AllTeams()) {
+		tdir := filepath.Join(ws.Teams, team)
+
+		// 2. Resolved governance. `today` warns about this; the warning names
+		//    the command but the reader has to be running `today` to see it.
+		eff := filepath.Join(tdir, "generated", "effective-governance.yaml")
+		if _, err := os.Stat(eff); err != nil {
+			out = append(out, diagnosis{
+				Title: "resolve governance for team " + team,
+				Detail: "teams/" + team + "/generated/effective-governance.yaml does not\n" +
+					"exist. It is derived from the company baseline, the platform\n" +
+					"requirements, and this team's deviations — nothing reads the\n" +
+					"team's effective rules until it is generated.",
+				Fix: &Args{Root: root, Cmd: "governance", Action: "resolve", Team: team},
+			})
+		}
+
+		// 3. Scaffolded team files. Detected from the same definition the repair
+		//    writes from, so the count shown is the count that will be created.
+		if missing, err := scaffold.MissingTeamFiles(ws, team); err == nil && len(missing) > 0 {
+			out = append(out, diagnosis{
+				Title: fmt.Sprintf("restore %d missing file(s) for team %s", len(missing), team),
+				Detail: "These files belong to a scaffolded team and are absent:\n\n  " +
+					strings.Join(missing, "\n  ") +
+					"\n\n--repair writes only what is missing and never touches a file\n" +
+					"that exists, so an edited definition-of-done is safe.",
+				Fix: &Args{Root: root, Cmd: "add", Kind: "team", Name: team, Repair: true},
+			})
+		}
+	}
+
+	// 4. Federation manifest. Detected, explained, NOT offered: a manifest needs
+	//    repo URLs and commit pins that nothing here can guess, and a form that
+	//    produced a plausible-but-wrong manifest would be worse than the missing
+	//    file. Only surfaced when the workspace looks federated already, so a
+	//    plain monorepo is not nagged about a feature it does not use.
+	if _, err := os.Stat(filepath.Join(ws.Root, workspace.ManifestName)); err != nil {
+		if _, lockErr := os.Stat(filepath.Join(ws.Root, "workspace.lock.yaml")); lockErr == nil {
+			out = append(out, diagnosis{
+				Title: "missing " + workspace.ManifestName + " (no fix offered)",
+				Detail: "This workspace has a workspace.lock.yaml but no " +
+					workspace.ManifestName + ".\nThe lock records what was synced; the manifest " +
+					"records what SHOULD be\nsynced, and only the manifest can be authored.\n\n" +
+					"No fix is offered here on purpose: a manifest needs repo URLs and\n" +
+					"commit pins that nothing can infer. Restore it from version control,\n" +
+					"or write it following docs/FEDERATION-RUNBOOK.md.",
+			})
+		}
+	}
+	return out
+}
+
+// adviceScreens turns diagnoses into screens.
+//
+// A diagnosis WITH a fix becomes a field-less form: opening it goes straight to
+// the previewed invocation, and `y` runs it. A diagnosis without one is a plain
+// body — readable, and incapable of writing anything.
+func adviceScreens(ws *workspace.Workspace, root string) []tui.Screen {
+	var screens []tui.Screen
+	for _, d := range advise(ws, root) {
+		d := d
+		if d.Fix == nil {
+			screens = append(screens, tui.Screen{
+				Title: d.Title,
+				Run:   func(string) (string, error) { return d.Detail + "\n", nil },
+			})
+			continue
+		}
+		screens = append(screens, tui.Screen{
+			Title: d.Title,
+			Form: &tui.Form{
+				Build: func([]string) (tui.Action, error) {
+					return &invocation{ws: ws, args: d.Fix}, nil
+				},
+			},
+		})
+	}
+	return screens
+}

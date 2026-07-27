@@ -211,10 +211,23 @@ func scaffoldPlatform(root, pid string) error {
 		})
 }
 
-// scaffoldTeam is bin/company-os:1861-1876.
-func scaffoldTeam(root, tid string) error {
+// teamFile is one file a team's scaffold owns: where it goes and what is in it.
+type teamFile struct {
+	// Rel is workspace-relative, so callers can report it without re-deriving.
+	Rel  string
+	Path string
+	Text string
+}
+
+// teamFiles is the SINGLE definition of what a scaffolded team consists of.
+//
+// Both scaffoldTeam and RepairTeam read it, which is what makes repair safe to
+// offer: a repaired file cannot differ from what creation would have written,
+// because there is only one generator. Two functions producing "the same"
+// content is precisely the drift this avoids.
+func teamFiles(root, tid string) ([]teamFile, error) {
 	tname := titleCase(strings.ReplaceAll(tid, "-", " "))
-	err := writeNewYAML(filepath.Join(root, "teams", tid, "team.yaml"), pyMap{
+	teamYAML, err := pyDump(pyMap{
 		{K: "schemaVersion", V: pyStr("1.0")},
 		{K: "kind", V: pyStr("Team")},
 		{K: "metadata", V: pyMap{{K: "id", V: pyStr(tid)}, {K: "name", V: pyStr(tname)}}},
@@ -228,21 +241,45 @@ func scaffoldTeam(root, tid string) error {
 		{K: "tags", V: strs("kind/team", "team/"+tid)},
 	})
 	if err != nil {
-		return err
+		return nil, model.Errorf(model.ExitArtifact,
+			"cannot serialize teams/%s/team.yaml: %v", tid, err)
 	}
-	if err := writeNew(
-		filepath.Join(root, "teams", tid, "standards", "definition-of-ready.md"),
-		strings.ReplaceAll(dorTemplate, "{tid}", tid)); err != nil {
-		return err
-	}
-	if err := writeNew(
-		filepath.Join(root, "teams", tid, "standards", "definition-of-done.md"),
-		strings.ReplaceAll(dodTemplate, "{tid}", tid)); err != nil {
-		return err
-	}
+
 	onboarding := strings.ReplaceAll(onboardingTemplate, "{tid}", tid)
 	onboarding = strings.ReplaceAll(onboarding, "{tname}", tname)
-	return writeNew(filepath.Join(root, "teams", tid, "onboarding", "developer.md"), onboarding)
+
+	// Order is scaffoldTeam's original write order (bin/company-os:1861-1876),
+	// preserved because it is the order failures surface in.
+	specs := []struct{ rel, text string }{
+		{filepath.Join("teams", tid, "team.yaml"), teamYAML},
+		{filepath.Join("teams", tid, "standards", "definition-of-ready.md"),
+			strings.ReplaceAll(dorTemplate, "{tid}", tid)},
+		{filepath.Join("teams", tid, "standards", "definition-of-done.md"),
+			strings.ReplaceAll(dodTemplate, "{tid}", tid)},
+		{filepath.Join("teams", tid, "onboarding", "developer.md"), onboarding},
+	}
+	out := make([]teamFile, 0, len(specs))
+	for _, s := range specs {
+		out = append(out, teamFile{Rel: filepath.ToSlash(s.rel),
+			Path: filepath.Join(root, s.rel), Text: s.text})
+	}
+	return out, nil
+}
+
+// scaffoldTeam is bin/company-os:1861-1876. Unchanged in behaviour: every file
+// is written with writeNew, so an existing one is a conflict and the whole
+// command fails rather than half-creating a team.
+func scaffoldTeam(root, tid string) error {
+	files, err := teamFiles(root, tid)
+	if err != nil {
+		return err
+	}
+	for _, f := range files {
+		if err := writeNew(f.Path, f.Text); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // scaffoldComponent is bin/company-os:1879-1891.

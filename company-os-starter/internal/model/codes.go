@@ -469,6 +469,15 @@ const (
 	CodeAddCreated = "add.created"
 	CodeAddNext    = "add.next"
 
+	// `add team <id> --repair`. Three codes, not one, because the useful
+	// question is which files it touched: CodeAddRepairWrote per file created,
+	// CodeAddRepairSkipped per file left alone (the evidence that nothing was
+	// overwritten), and CodeAddRepairNoop when everything was already present —
+	// a repair that printed nothing would read as a failure.
+	CodeAddRepairWrote   = "add.repair-wrote"
+	CodeAddRepairSkipped = "add.repair-skipped"
+	CodeAddRepairNoop    = "add.repair-noop"
+
 	// CodeRealityCreated is `:2055`, CodeRealityTemplate `:2056` and
 	// CodeRealityNext `:2057`.
 	CodeRealityCreated  = "reality.created"

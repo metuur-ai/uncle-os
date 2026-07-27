@@ -102,8 +102,21 @@ the relevant discovery briefs and reality docs (Local Search), then follow
 the canonical skill for producing a compliant PRD (Company OS) — without a
 human relaying context between two disconnected tools.
 
+`company-os skills list` shows the merged four-layer view; see
+[how-to/use-the-agent-skills.md](../how-to/use-the-agent-skills.md) for the
+precedence rule, the `extends:` mechanism, and the `--json` shape an agent
+consumes.
+
 ## What's not in this picture yet
 
 Observer — a shared knowledge graph across all of this, with typed edges
 instead of just search results — is vision only. See
 [explanation/observer-roadmap.md](observer-roadmap.md).
+
+Also absent, and on purpose rather than pending: any live integration with an
+external service. There is no MCP server, no MCP client, and no GitHub API call
+in the CLI — `workspace sync` is plain git, and it is the only command that
+touches the network at all. See
+[explanation/github-mcp-and-automation.md](github-mcp-and-automation.md) for what
+that rules out, and how to use the GitHub MCP server alongside a workspace
+without breaking the guarantees.

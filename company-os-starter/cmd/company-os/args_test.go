@@ -241,6 +241,13 @@ const topUsage = "usage: company-os [-h] [--root ROOT] [--json] [--version] " +
 // R-0.7a(i) waives argparse's COLUMNS-dependent wrapping of the `usage:` line,
 // so `wantUsage` is asserted against the Go renderer's own unwrapped line rather
 // than against argparse's bytes. The error line is asserted exactly.
+//
+// One `usage:` line has since DIVERGED from Python on purpose: `add` carries
+// `[--repair]`, a Go-only flag with no Python counterpart (GPF-R-1.9a). The
+// error lines below are still verbatim Python. A usage line growing a flag the
+// reference never had is the expected consequence of adding surface, not drift —
+// but it does mean these four strings are no longer transcriptions, and a future
+// reader should not treat them as evidence of what Python printed.
 func TestArgumentErrorDiagnostics(t *testing.T) {
 	cases := []struct {
 		name      string
@@ -355,7 +362,7 @@ func TestArgumentErrorDiagnostics(t *testing.T) {
 		},
 		{
 			"add kind", []string{"add", "widget", "x"},
-			"usage: company-os add [-h] [--platform PLATFORM] " +
+			"usage: company-os add [-h] [--platform PLATFORM] [--repair] " +
 				"{platform,team,component} name",
 			"company-os add: error: argument kind: invalid choice: 'widget' " +
 				"(choose from platform, team, component)",
@@ -377,7 +384,7 @@ func TestArgumentErrorDiagnostics(t *testing.T) {
 		},
 		{
 			"bad choice outranks the missing required positional", []string{"add", "bad-kind"},
-			"usage: company-os add [-h] [--platform PLATFORM] " +
+			"usage: company-os add [-h] [--platform PLATFORM] [--repair] " +
 				"{platform,team,component} name",
 			"company-os add: error: argument kind: invalid choice: 'bad-kind' " +
 				"(choose from platform, team, component)",
@@ -454,7 +461,7 @@ func TestArgumentErrorDiagnostics(t *testing.T) {
 		// --- missing required positionals ---
 		{
 			"missing add name", []string{"add", "platform"},
-			"usage: company-os add [-h] [--platform PLATFORM] " +
+			"usage: company-os add [-h] [--platform PLATFORM] [--repair] " +
 				"{platform,team,component} name",
 			"company-os add: error: the following arguments are required: name",
 		},
@@ -481,7 +488,7 @@ func TestArgumentErrorDiagnostics(t *testing.T) {
 		},
 		{
 			"two positionals missing", []string{"add"},
-			"usage: company-os add [-h] [--platform PLATFORM] " +
+			"usage: company-os add [-h] [--platform PLATFORM] [--repair] " +
 				"{platform,team,component} name",
 			"company-os add: error: the following arguments are required: kind, name",
 		},

@@ -207,6 +207,7 @@ is broken.
    company-os --help
    mkdir demo && cd demo
    company-os init --company Acme --team core --platform web
+   company-os graph build                    # init scaffolds; this derives
    company-os validate                       # exits 0
    company-os add platform api
    company-os add team payments

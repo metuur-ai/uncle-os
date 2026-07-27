@@ -444,11 +444,21 @@ func TestAFormWritesNothingUntilConfirmed(t *testing.T) {
 		if s.Form == nil {
 			continue
 		}
-		m := formModel(t, ws, s.Title)
-		for _, k := range []string{
+		keys := []string{
 			"down", "right", "right", "up", "left", "a", "b", " ", "c",
 			"backspace", "tab", "enter", "enter", "enter", "enter", "enter",
-		} {
+		}
+		if len(s.Form.Fields) == 0 {
+			// A field-less OFFER opens on its confirmation, where `enter` and
+			// `y` ARE the confirmation — pressing them is the user agreeing,
+			// not a violation. Everything else must still write nothing, and
+			// `n` must leave without running. Excluding the two confirming keys
+			// keeps this test about the property it names.
+			keys = []string{"down", "right", "up", "left", "a", "b", " ",
+				"backspace", "tab", "n", "left", "backspace"}
+		}
+		m := formModel(t, ws, s.Title)
+		for _, k := range keys {
 			m, _ = tuiKey(t, m, k)
 			if m.Mode() == tui.ModeBody {
 				t.Fatalf("%s: %q ran the command without a confirmation (R-5.8)", s.Title, k)
@@ -511,8 +521,12 @@ func formModel(t *testing.T, ws *workspace.Workspace, title string) tui.Model {
 		m, _ = tuiKey(t, m, "down")
 	}
 	m, _ = tuiKey(t, m, "enter")
-	if m.Mode() != tui.ModeForm {
-		t.Fatalf("%q did not open a form, mode %v", title, m.Mode())
+	// A field-less form is an OFFER — a fixed invocation with nothing to
+	// collect — so it opens straight on the confirmation. Both are legitimate
+	// opening states; what neither may do is reach ModeBody, which would mean
+	// the command ran unconfirmed, and that is what the callers assert.
+	if m.Mode() != tui.ModeForm && m.Mode() != tui.ModeConfirm {
+		t.Fatalf("%q did not open a form or a confirmation, mode %v", title, m.Mode())
 	}
 	return m
 }

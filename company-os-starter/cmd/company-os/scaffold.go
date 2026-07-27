@@ -111,6 +111,9 @@ func stdinPrompt(out io.Writer) scaffold.Prompt {
 
 // cmdAdd is cmd_add (bin/company-os:1997-2027).
 func cmdAdd(ws *workspace.Workspace, args *Args, _ io.Writer) ([]model.GateResult, error) {
+	if args.Repair {
+		return cmdAddRepair(ws, args)
+	}
 	res, err := scaffold.Add(ws, scaffold.AddKind(args.Kind), args.Name, args.Platform, rebuildGenerated)
 	if err != nil {
 		return nil, err
@@ -196,6 +199,44 @@ func generatedSection(lines []string) []model.GateResult {
 // line builds one whole-line record. Message is the finished line — see the file
 // comment for why these five commands freeze their bytes at the producer rather
 // than at the renderer.
+// cmdAddRepair is `add team <id> --repair`.
+//
+// Reports per file rather than in aggregate: "wrote 2 files" does not tell you
+// whether the third was skipped because it was fine or because something went
+// wrong, and the skipped list is the evidence that nothing was overwritten.
+func cmdAddRepair(ws *workspace.Workspace, args *Args) ([]model.GateResult, error) {
+	if scaffold.AddKind(args.Kind) != scaffold.AddTeam {
+		// Exit 2: this is a flag/positional combination the parser accepts but
+		// the command does not implement, which is a usage error, not a
+		// workspace one. Named explicitly so `add platform x --repair` cannot
+		// look like it repaired something.
+		return nil, model.Errorf(model.ExitUsage,
+			"--repair is only supported for `add team` (got kind %q)", args.Kind)
+	}
+	res, err := scaffold.RepairTeam(ws, args.Name, rebuildGenerated)
+	if err != nil {
+		return nil, err
+	}
+
+	findings := make([]model.Finding, 0, len(res.Written)+len(res.Skipped)+1)
+	for _, rel := range res.Written {
+		findings = append(findings, line(model.CodeAddRepairWrote, "wrote "+rel,
+			model.Fields{"path": rel}))
+	}
+	for _, rel := range res.Skipped {
+		findings = append(findings, line(model.CodeAddRepairSkipped,
+			"skipped "+rel+" (already present)", model.Fields{"path": rel}))
+	}
+	if len(res.Written) == 0 {
+		findings = append(findings, line(model.CodeAddRepairNoop,
+			"nothing to repair: team '"+res.ID+"' has every scaffolded file",
+			model.Fields{"id": res.ID}))
+	}
+	return append(generatedSection(res.Generated), model.GateResult{
+		Ordinal: 1, Slug: model.SlugAdd, Title: res.ID, Findings: findings,
+	}), nil
+}
+
 func line(code, message string, f model.Fields) model.Finding {
 	if f == nil {
 		f = model.Fields{}

@@ -402,7 +402,13 @@ $ company-os skills list
 
 Layers that don't exist yet (e.g. no company or platform root in a
 standalone-team workspace) simply show as empty — this command never errors
-on absence.
+on absence. A freshly `init`ed workspace has no skills at all and reports
+`0 skill(s) across 0 populated layer(s)`.
+
+Discovery is one level deep and matches `*.SKILL.md`, except for the personal
+layer (`teams/<t>/scratchpad/personal-rules/*.md`, git-ignored). Precedence,
+authoring, and the `extends:` mechanism:
+[how-to/use-the-agent-skills.md](../how-to/use-the-agent-skills.md).
 
 ## `workspace`
 
