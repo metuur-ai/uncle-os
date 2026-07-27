@@ -80,16 +80,20 @@ is Python's strongest suit; Go is estimated at 4500–6000 lines against today's
 binding constraint. The Go codebase needs a named owner before Phase 1 starts —
 there is no Go precedent in this repository.
 
-**Go codebase owner (R-9.9):** `TBD — must be filled before cutover`
+**Go codebase owner (R-9.9):** javierbenavides
 
-> This field is deliberately unfilled and is a **blocking** item, not a
-> formality. Task 6.5 deletes the Python reference implementation; after that
-> point 4500–6000 lines of Go are the only implementation, and a defect found
-> later has no runnable oracle to generate a golden from. `local-search` being
-> written in Go is precedent for the ecosystem, not evidence that anyone here
-> has committed to maintaining this. Naming a person is a human decision and
-> cannot be inferred from the repository — it requires someone to accept the
-> responsibility, not an agent to record a plausible name.
+> Accepted 2026-07-26. Scope of the responsibility: review of `internal/**` and
+> `cmd/**`, the `go.mod` toolchain pin, and being the person a defect lands on.
+>
+> **Recorded late, and the risk it guards was already live.** R-9.9 says "before
+> implementation begins"; this was filled after the port shipped and after task
+> 6.5 deleted the Python reference in `151f159`. From that commit onward
+> 4500–6000 lines of Go are the only implementation, and a defect found now has
+> no runnable oracle to generate a golden from — `python-cli-final` can be
+> checked out, but that is an archaeology exercise, not a working reference.
+> Task 6.10 then retired the differential corpus, so ten commands have no
+> end-to-end byte coverage either. The ordering was wrong; the acceptance is
+> real.
 >
 > The named owner is accountable for: reviewing changes to
 > `company-os-starter/internal/**` and `cmd/**`, keeping the toolchain pin in
@@ -174,9 +178,10 @@ there is no Go precedent in this repository.
 
 **Phase 2**
 
-9. Given only a download link and no prior use of the tool, a product owner on a
-   fresh macOS machine reads workspace status, opens a component's governance, and
-   inspects a validate failure — unassisted and without prior shell configuration.
+9. Given only the published install line and no prior use of the tool, a product
+   owner on a fresh macOS machine reads workspace status, opens a component's
+   governance, and inspects a validate failure — unassisted and without prior
+   shell configuration.
    If nobody will run this test, Phase 2's PO justification is struck and the TUI
    is re-justified on engineer value alone.
 10. `company-os tui` with no TTY attached exits 7, prints an explanatory message,
@@ -186,15 +191,39 @@ there is no Go precedent in this repository.
 
 ## Accepted Costs
 
-### macOS first run requires `xattr -d com.apple.quarantine`
+### macOS artifacts ship unsigned; the install path, not a certificate, satisfies R-6.3
 
-R-6.3 asks for Developer-ID-signed, notarized darwin artifacts and provides a
-fallback if notarization is not performed. **The fallback is in force.**
-Notarization requires an Apple Developer account and App Store Connect
-credentials that this project does not have, so darwin releases ship
-un-notarized and the workaround is documented in
-`company-os-starter/docs/user-guide/tutorials/01-first-day-with-company-os.md`.
-This section is the record R-6.3 requires.
+**Superseded 2026-07-26.** This section previously recorded "every macOS user
+runs one undocumented `xattr` command against a silent hang" as an accepted
+cost, and concluded the port's headline justification inverted on macOS. That
+conclusion was drawn from the browser-download path alone, and the browser is
+not the only way to get a file.
+
+`com.apple.quarantine` is applied by the **downloading application** —
+Safari, Chrome, Mail — not by `curl`, `wget` or `tar`. Gatekeeper adjudicates
+only files that carry the attribute. `company-os-starter/install.sh` fetches
+with `curl`, so the binary it installs has no quarantine attribute and executes
+immediately, unsigned, with no prompt and no workaround.
+
+Verified rather than reasoned: a binary installed through `install.sh` on
+macOS 15 / arm64 carries only `com.apple.provenance` and runs `validate` to
+exit 0. That is the identical attribute profile of the `local-search` CLI,
+which ships unsigned on the same basis and is already in use here.
+
+`spctl -a` still reports `rejected`, and that is expected rather than a residual
+defect: `spctl` answers "would Gatekeeper admit this?", which is not the
+question "will this execute?" for an unquarantined file.
+
+**The remaining cost is much smaller and is stated plainly:** a user who
+downloads the artifact in a browser instead of using the installer still gets
+the quarantined path, which hangs silently. The mitigation is that the published
+install instruction is the one-liner everywhere it appears — GOLDEN-PATH, the
+first-day tutorial, and the `make release` output all say "publish the install
+line, never a download link" — and the browser path is documented with its
+`xattr` fix at the point of failure.
+
+The measurements below stand and are why signing was not pursued as a partial
+step.
 
 What was measured, on macOS 15 / arm64, rather than assumed:
 
@@ -210,24 +239,30 @@ What was measured, on macOS 15 / arm64, rather than assumed:
   Application certificate, hardened runtime and secure timestamp, is still
   rejected — `spctl` reports `source=Unnotarized Developer ID` — and still
   hangs when quarantined. Signing without notarization buys nothing a user can
-  perceive, so `make sign` is not a partial mitigation and is not presented as
-  one.
+  perceive, so it was never shipped as a partial mitigation.
 
-The cost this accepts, honestly stated: **the headline justification for the
-port inverts on macOS for downloaded artifacts.** The change was argued on "a
-user copies a binary into `~/.local/bin` and starts working," measured against
-`pip install pyyaml`. One undocumented `xattr` invocation against a silent hang
-is worse than one `pip install` that prints what it is doing. The cost is
-accepted on three conditions, all met:
+With the installer as the published path, the port's headline justification
+holds on macOS: `curl … | bash` and start working, against `pip install pyyaml`.
+No interpreter, no workaround, no prompt. The conditions this rests on:
 
-1. The step is documented at the exact point of failure in the install
-   tutorial, not in a troubleshooting appendix.
-2. The failure mode — a hang, not an error — is named explicitly, because a
-   user who does not know that will look everywhere except Gatekeeper.
-3. `make sign` and `make notarize` exist and fail loudly without credentials,
-   so the day an Apple account exists the remaining work is credentials, not
-   engineering.
+1. The one-liner is the install instruction in every place installation is
+   documented, and `make release` prints "publish the install line, never a
+   download link" so a maintainer cannot forget.
+2. The browser path is still documented with its `xattr` fix at the point of
+   failure, and the failure mode — a hang, not an error — is named explicitly,
+   because a user who does not know that will look everywhere except Gatekeeper.
+3. `install.sh` verifies by running `--version` and fails loudly if the binary
+   does not execute, so an install that silently did not work is not reported as
+   success.
+4. No Apple Developer account is required by anything in the release or install
+   path. The `sign` / `notarize` targets and their `CODESIGN_IDENTITY` /
+   `NOTARY_PROFILE` variables were **removed**, because keeping ~170 lines of
+   unused signing machinery implied a prerequisite that does not exist. The
+   three findings that make re-deciding this cheap — signing alone is not a
+   partial fix, a bare Mach-O cannot be stapled, pass the cert SHA-1 not the
+   name — are preserved in
+   `company-os-starter/docs/user-guide/how-to/release-and-upgrade.md`.
 
-This cost is retired the moment task 5.2's notarization half is unblocked. It
-does not apply to Linux, to `make install` from source, or to a binary fetched
-with `curl` rather than a browser.
+The residual cost applies to exactly one path: a binary a user downloads in a
+browser. It does not apply to Linux, to `make install` from source, or to a
+binary fetched with `curl` — which is the published route.

@@ -1,0 +1,78 @@
+# Publish the company-os release artifacts that install.sh downloads.
+#
+# install.sh resolves
+#   https://github.com/<repo>/releases/latest/download/company-os-<os>-<arch>
+# so the artifact names must stay unversioned and the release must be marked
+# "latest". Both are handled below; `make release` owns the naming.
+#
+# Trigger: push a tag.
+#     git tag v0.1.0 && git push origin v0.1.0
+#
+# Nothing is signed and no Apple Developer account is involved — see
+# company-os-starter/docs/user-guide/how-to/release-and-upgrade.md for why that
+# is sufficient.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to build and publish (must already exist)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # `make release` stamps VERSION from `git describe --tags`, which
+          # needs the tags and enough history to find them.
+          fetch-depth: 0
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: company-os-starter/go.mod
+          cache-dependency-path: company-os-starter/go.sum
+
+      # The gate runs before anything is published. A release that fails its own
+      # test suite is worse than a missing release: it is a broken install line
+      # that looks live.
+      - name: Gate
+        working-directory: company-os-starter
+        run: make check
+
+      - name: Build artifacts
+        working-directory: company-os-starter
+        run: make release
+
+      # Prove the artifacts are what they claim before publishing them, not
+      # after someone reports that they are not.
+      - name: Verify artifacts depend on nothing
+        working-directory: company-os-starter
+        run: make deps-check
+
+      # install.sh is downloaded from the repo, not the release, but shipping it
+      # alongside means a release is a self-contained bundle.
+      - name: Publish
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          # `latest` is what install.sh's URL resolves to. A prerelease would
+          # not be picked up and the install line would silently keep serving
+          # the previous version.
+          prerelease: false
+          make_latest: true
+          generate_release_notes: true
+          files: |
+            company-os-starter/dist/company-os-darwin-arm64
+            company-os-starter/dist/company-os-darwin-amd64
+            company-os-starter/dist/company-os-linux-amd64
+            company-os-starter/dist/SHA256SUMS
+            company-os-starter/dist/install.sh

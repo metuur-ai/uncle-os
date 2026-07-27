@@ -28,9 +28,7 @@ interpreter, no libraries, no package manager. Download it, make it
 executable, put it on your `PATH`:
 
 ```bash
-curl -fsSLo company-os <release-url>/company-os_<version>_<os>_<arch>
-chmod +x company-os
-mkdir -p ~/.local/bin && mv company-os ~/.local/bin/
+curl -fsSL https://raw.githubusercontent.com/metuur-ai/uncle-os/main/company-os-starter/install.sh | bash
 export PATH="$HOME/.local/bin:$PATH"   # so `company-os` is on PATH
 company-os --help                      # sanity check
 ```
@@ -39,11 +37,12 @@ company-os --help                      # sanity check
      5.2 and lands in tutorials/01-first-day-with-company-os.md. Link, don't
      duplicate. -->
 
-**On macOS, a downloaded binary needs one extra step** before it will run —
-releases are not yet notarized, so Gatekeeper blocks the first exec and the
-process simply hangs with nothing printed. Run
-`xattr -d com.apple.quarantine ~/.local/bin/company-os` once. Full explanation:
-[user-guide/tutorials/01-first-day-with-company-os.md](user-guide/tutorials/01-first-day-with-company-os.md#macos-the-first-run-will-be-blocked).
+**Use the installer, not a download link.** The artifacts are unsigned, and on
+macOS that only matters for browser downloads: `com.apple.quarantine` is set by
+Safari/Chrome/Mail, never by `curl`. A curl-fetched binary runs with no prompt
+and no extra step. Download the same bytes in a browser and the first exec hangs
+with nothing printed. Full explanation:
+[user-guide/tutorials/01-first-day-with-company-os.md](user-guide/tutorials/01-first-day-with-company-os.md#macos-why-the-installer-and-not-a-download-link).
 
 Building from source instead? From `company-os-starter/`: `make install`
 (builds and copies to `~/.local/bin`; `PREFIX=` overrides the destination).

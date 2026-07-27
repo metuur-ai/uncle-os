@@ -74,18 +74,17 @@ func TestBuildIsIdempotentOnCommittedFixtures(t *testing.T) {
 // binary, so both could only skip — and pythonCLI() said so in its own skip
 // message: "the Python reference is gone; this oracle retires with it".
 //
-// They were removed rather than frozen because internal/difftest reaches the
-// same ground end to end: graph/build-<fixture> for all six committed
-// workspaces plus the three failure-path ones, graph/build-twice for
-// idempotence, and graph/build-after-discover for a brand-new artifact — each
-// freezing stdout AND a hash of every file in the tree. What is lost is the
-// claim "matches Python"; what remains is "has not changed", which is all any
-// test can assert once the reference is gone.
+// They were removed because their oracle is gone and cannot come back. See task
+// 6.10 in docs/tasks/go-cli-tui-port.md for the measurement behind accepting the
+// resulting gap: `graph build` has no end-to-end byte-level coverage, so a
+// change to what it PRINTS is not caught here.
 //
-// The convergence property the first test pinned is NOT lost: three-pass
-// convergence over the non-idempotent fixtures is exactly what a difftest
-// golden records, and TestBuildIsIdempotentOnCommittedFixtures above still
-// pins the two fixtures that must be fixed points from the start.
+// What it WRITES is still pinned, and that is the half that matters most:
+// TestBuildIsIdempotentOnCommittedFixtures above hashes the whole tree before
+// and after two builds over the two fixtures that must be fixed points, and
+// acceptance.sh §4 shasums the same property from the outside. The three-pass
+// convergence the deleted test pinned over the non-idempotent fixtures is NOT
+// covered by anything.
 
 // TestWriteFeatureIndexesGuardIsSemantic is task 2.4 stated as a test: an index
 // whose BYTES differ from a fresh render but whose STRUCTURE does not must not

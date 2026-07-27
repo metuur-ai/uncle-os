@@ -348,10 +348,9 @@ func TestJSONFlagLeavesTextOutputAlone(t *testing.T) {
 // an invocation carrying it could not have been compared against the oracle.
 //
 // Both halves of that premise are gone. The Python CLI was deleted by R-9.3, and
-// the corpus now lives in internal/difftest as a golden characterization suite
-// with no second implementation to agree with — so `--json` invocations are not
-// merely permitted there, they are worth ADDING, which is the exact opposite of
-// what this test enforced. It also read the file with a t.Skipf on error, so
-// after the delete it would have skipped in silence rather than failing.
+// the corpus it was compared against no longer exists either — so there is no
+// longer anything for `--json` to be excluded from. It also read the file with a
+// t.Skipf on error, so after the delete it would have skipped in silence rather
+// than failing.
 //
 // Not replaced by an equivalent: there is nothing left to constrain.

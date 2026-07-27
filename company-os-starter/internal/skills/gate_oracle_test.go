@@ -27,8 +27,8 @@ import (
 // file able only to SKIP — 17 subtests reporting green while asserting nothing.
 // The reference was recovered from tag python-cli-final and its answers frozen
 // into testdata/gate7_reference.json rather than let this coverage go: these 17
-// workspaces are synthesized here and exist in no committed fixture, so
-// internal/difftest cannot reach them either.
+// workspaces are synthesized here and exist in no committed fixture, so no
+// fixture-driven suite could reach them however broad it was.
 //
 // The tradeoff, stated rather than glossed: the answers can no longer be
 // re-derived in-tree. What they still catch is gate 7 drifting away from the

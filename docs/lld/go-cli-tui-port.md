@@ -479,22 +479,34 @@ leaves the same partial state the flag CLI would.
 
 ### Distribution
 
-`install.sh` (`company-os-starter/install.sh:69-93`) and
-`company-os-starter/vendor/` (536K of PyYAML) are deleted.
+The Python-era `install.sh` and `company-os-starter/vendor/` (536K of PyYAML)
+are deleted. A new `company-os-starter/install.sh` replaces the former: it
+installs one static binary and nothing else.
 
-Release artifacts: `company-os_<version>_darwin_arm64`,
-`company-os_<version>_darwin_amd64`, `company-os_<version>_linux_amd64`, built
-with `CGO_ENABLED=0`, plus checksums.
+Release artifacts: `company-os-darwin-arm64`, `company-os-darwin-amd64`,
+`company-os-linux-amd64`, built with `CGO_ENABLED=0`, plus `install.sh` and
+checksums. The names are unversioned so
+`/releases/latest/download/<name>` resolves; the version is in the tag and in
+`--version`.
 
-**macOS Gatekeeper is a first-class distribution problem, not a footnote.** A
-downloaded, unsigned, un-notarized binary carries `com.apple.quarantine` and is
-killed on first exec with "cannot be opened because the developer cannot be
-verified." The workaround — `xattr -d com.apple.quarantine` — is strictly harder
-than `pip install pyyaml` for the audience this change is justified on. Darwin
-artifacts are Developer-ID-signed and notarized; if that is not done, the
-quarantine workaround ships in the install documentation and the HLD records it
-as an accepted cost. Verification is against a **downloaded** artifact, never a
-locally built one.
+**macOS Gatekeeper is a first-class distribution problem, not a footnote — and
+it is solved by the install path rather than by a certificate.**
+`com.apple.quarantine` is applied by the downloading *application* (Safari,
+Chrome, Mail), never by `curl`, `wget` or `tar`, and Gatekeeper adjudicates only
+files carrying it. `install.sh` fetches with `curl`, so the installed binary is
+unquarantined and runs unsigned with no prompt — the same basis on which the
+`local-search` CLI ships. Darwin artifacts are therefore **not** signed or
+notarized, deliberately.
+
+The residual exposure is the browser-download path, which does not fail cleanly:
+it hangs with no output at all. It is mitigated by publishing the install
+one-liner rather than a download link, everywhere installation appears, and by
+documenting `xattr -d com.apple.quarantine` at the point of failure for anyone
+who takes that route anyway. `spctl -a` reports `rejected` regardless; that is
+the wrong question for an unquarantined file.
+
+Verification is against a **downloaded/installed** artifact on a clean machine,
+never a locally built one.
 
 Templates are embedded with `//go:embed`, closing the one place the Python CLI
 reads a file from beside the binary (`_builtin_template`, `:526-529`). Discovery

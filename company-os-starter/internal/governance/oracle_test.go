@@ -10,17 +10,19 @@ package governance_test
 // asserting nothing, which is precisely what their own "a missing oracle must
 // never look like agreement" comment was written to prevent.
 //
-// They were removed rather than frozen because internal/difftest covers the same
-// ground end to end and more broadly: governance/resolve-* over all six committed
-// workspaces plus the failure-path ones, governance/resolve-twice for
-// idempotence, governance/explain-* including the close-match suggestion path,
-// and deviation/* and exception/* for the read-modify-write these tests pinned —
-// each freezing stdout, stderr, exit code AND a hash of every file in the tree,
-// so a byte-level reflow regression still fails.
+// They were removed because their oracle is gone and cannot come back. Nothing
+// replaced them: `governance resolve`, `explain`, `deviation declare` and
+// `exception request` have NO end-to-end byte-level coverage in this repository.
 //
-// What is lost is the claim "matches Python". What remains is "has not changed
-// since a human reviewed it", which is all any test can assert once the
-// reference implementation is gone.
+// That gap is deliberate and was measured before being accepted — see task 6.10
+// in docs/tasks/go-cli-tui-port.md. A 288-invocation golden corpus was built to
+// fill it, then removed: it caught one class of regression the unit tests miss
+// (rendered bytes), at the cost of 288 snapshots where a one-line change
+// reddened 135 of them, which is the blast radius that trains a reviewer to
+// rubber-stamp.
+//
+// What this package still asserts is behaviour at the library seam. What nobody
+// asserts is the exact bytes a user sees.
 //
 // The helpers below outlived the tests: governance_test.go uses copyFixture,
 // readFile, renderSections and repoRoot.

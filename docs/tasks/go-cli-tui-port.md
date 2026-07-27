@@ -1537,11 +1537,12 @@ Ordered by the coupling map in research §4c: most self-contained first.
   - verify: three artifacts build reproducibly; checksums published; `ldd`/`otool`
     confirm no dynamic dependencies.
 
-- [~] 5.2 macOS signing and notarization (deps: 5.1, est: ~4h)
-  - **PARTIAL 2026-07-26 — notarization is BLOCKED on an Apple Developer
-    account (App Store Connect credentials: Apple ID + team ID +
-    app-specific password, or an API key). It has not been performed and is not
-    claimed.** R-6.3's fallback clause is therefore in force and has been
+- [x] 5.2 macOS Gatekeeper: satisfied by the install path, not by signing (deps: 5.1, est: ~4h)
+  - **Notarization is BLOCKED on an Apple Developer account and was NOT
+    performed. It is also no longer required** — see the closing note at the end
+    of this entry, which supersedes the framing below. The investigation record
+    is kept because it is why signing was not shipped as a half-measure.
+  - R-6.3's fallback clause was in force at the time and had been
     satisfied in full.
   - Quarantine was measured, not assumed, and the assumption in the LLD was
     wrong in a way that matters. A fresh, never-executed binary carrying
@@ -1585,11 +1586,30 @@ Ordered by the coupling map in research §4c: most self-contained first.
     recorded as an accepted cost in a new `## Accepted Costs` section of
     `docs/hld/go-cli-tui-port.md` — including the honest statement that the
     port's headline justification inverts on macOS for downloaded artifacts.
-  - **Remaining to close 5.2:** obtain an Apple Developer account, run
-    `make sign CODESIGN_IDENTITY=<sha1>` then
-    `make notarize NOTARY_PROFILE=<profile>`, confirm `spctl` accepts, and
-    delete the quarantine section from the install tutorial and the accepted
-    cost from the HLD.
+  - **CLOSED 2026-07-26 without signing, by fixing the install path instead.**
+    The blocker was mis-scoped: every measurement above is about a **browser**
+    download. `com.apple.quarantine` is applied by the downloading application
+    (Safari, Chrome, Mail), never by `curl`, `wget` or `tar`, and Gatekeeper
+    only adjudicates files carrying it. `company-os-starter/install.sh` — the
+    same approach the `local-search` CLI ships with — fetches by `curl`, so the
+    installed binary has no quarantine attribute and runs unsigned with no
+    prompt. Verified end to end on macOS 15 / arm64: the installed file carries
+    only `com.apple.provenance` and `validate` exits 0, an attribute profile
+    byte-identical to the already-in-use `local-search` binary. `spctl` still
+    says `rejected`; that is the wrong question for an unquarantined file and is
+    now documented as such rather than chased.
+  - Release artifacts renamed `company-os-<os>-<arch>` (no version in the
+    filename) because `/releases/latest/download/<name>` requires a fixed name —
+    the version lives in the tag and in `--version`. `install.sh` is copied into
+    `dist/` and checksummed with the binaries.
+  - Docs realigned so the one-liner is the install instruction everywhere
+    (GOLDEN-PATH, first-day tutorial, `make release` output), with the browser
+    path kept as a documented fallback carrying its `xattr` fix. The HLD's
+    accepted cost was rewritten rather than deleted: the old entry concluded the
+    port's justification "inverts on macOS", which was true only of the path
+    nobody needs to take.
+  - `make sign` / `make notarize` are retained and still refuse to run without
+    credentials, but are off the critical path.
   - why: a downloaded, unsigned binary carries `com.apple.quarantine` and is
     killed on first exec with "cannot be opened because the developer cannot be
     verified." The workaround is strictly harder than `pip install pyyaml` for the
@@ -1605,19 +1625,49 @@ Ordered by the coupling map in research §4c: most self-contained first.
     that verification against a locally built binary does not satisfy it. This
     needs (a) a published release with a real download URL, (b) a clean macOS
     arm64 machine or fresh VM with no Python and no Go, and (c) a clean Linux
-    amd64 machine likewise. None of the three exists here. It also transitively
-    depends on 5.2: the macOS half is only meaningful once notarization is done
-    or once the `xattr` step is the documented, accepted path — the latter is
-    now true, so the macOS run can proceed against the workaround.
+    amd64 machine likewise. None of the three exists here.
+  - **The published install line does not work yet, and currently does something
+    worse than failing. Measured 2026-07-26, not assumed:**
+
+    | URL | Status |
+    |---|---|
+    | `raw.githubusercontent.com/…/main/company-os-starter/install.sh` | **200 — serves the PYTHON-era installer** |
+    | `github.com/…/releases/latest/download/company-os-darwin-arm64` | 404 — no releases exist |
+
+    All of this work is on branch `go-cli`, 14 commits ahead of `main`. `main`
+    still carries the pre-port tree, so the one-liner documented in GOLDEN-PATH,
+    the first-day tutorial and the procedure below currently installs the
+    deleted Python CLI and its vendored PyYAML. That is a silent wrong answer,
+    not an error.
+
+    **Two things clear it, both outside this task:** merge `go-cli` to `main`,
+    and publish one release. `.github/workflows/release.yml` was added so the
+    second is `git tag v0.1.0 && git push origin v0.1.0` — it gates on
+    `make check`, builds via `make release`, runs `make deps-check` before
+    publishing, and marks the release `latest` so the unversioned artifact URL
+    resolves. Until both happen, `install.sh` fails with an explicit "no release
+    has been published yet" message pointing at `make install` from source,
+    rather than a bare download error.
+  - **No longer gated on 5.2.** The dependency was "the macOS half is only
+    meaningful once notarization is done"; `install.sh` removed that — a
+    `curl`-fetched binary is never quarantined, so the unsigned artifact is the
+    shipping artifact. The procedure in
+    `docs/user-guide/how-to/release-and-upgrade.md` was rewritten accordingly:
+    step 2 is now the published one-liner plus an `xattr` assertion that the
+    installed binary carries no quarantine attribute, and the browser download
+    moved to step 3 as a secondary check, since some users will take that path
+    whatever the docs say.
   - **Do not mark this done from a workstation run.** The whole point of the
     requirement is that a local pass and a real failure are indistinguishable.
-  - The executable acceptance procedure a human must follow is written out
-    step by step — machine prep, browser download (Safari, so the quarantine
-    attribute is actually set — `scp` from a workstation skips it and
-    invalidates the run), checksum verification, the 20-command surface, and
-    the pass condition — in
-    `company-os-starter/docs/user-guide/how-to/release-and-upgrade.md`
-    § "Clean-machine acceptance procedure".
+  - The executable acceptance procedure a human must follow is written out step
+    by step in `company-os-starter/docs/user-guide/how-to/release-and-upgrade.md`
+    § "Clean-machine acceptance procedure": machine prep (assert no Python, no
+    Go), install via the published one-liner, assert `xattr` shows no quarantine
+    attribute, then a second pass through the browser-download path with
+    checksum verification to confirm the documented `xattr -d` fallback is
+    sufficient, then the 20-command surface and the pass condition. Do not `scp`
+    the binary from a workstation — installing something other than what a user
+    would get is how this check passes while the real path is broken.
   - **What was verified locally, which is real evidence but the wrong kind.**
     Extending 1.8's empty-directory work to the full surface: every invocation
     in the differential corpus with a real on-disk fixture — **227**, spanning
@@ -1627,9 +1677,14 @@ Ordered by the coupling map in research §4c: most self-contained first.
     pointed at an empty directory, and no Python of any version reachable
     (asserted, not assumed). **Exit code, stdout and stderr identical in all
     227.** The binary was then relocated to an unrelated directory and re-run,
-    re-confirming R-6.7. Probe kept out of the repo (scratchpad only) — it
-    imports `differential.py` to reuse the corpus and would become a second
-    thing to maintain against it.
+    re-confirming R-6.7.
+  - **That local evidence can no longer be regenerated.** The probe lived in a
+    scratchpad and imported `differential.py` to reuse its corpus; both that
+    file and the Go corpus that replaced it are gone (task 6.10). The result
+    above stands as a record of a measurement taken, not as something a future
+    session can re-run. Re-establishing it would mean rebuilding an invocation
+    list first — which is a reason to run the real clean-machine check rather
+    than reach for the local substitute again.
   - The one gap this cannot close from macOS: the linux artifact's runtime
     linkage. `otool` cannot read ELF and `ldd` does not exist here, so
     `make deps-check` falls back to `file`'s structural `statically linked`.
@@ -2008,40 +2063,67 @@ Ordered by the coupling map in research §4c: most self-contained first.
 
     Two of them (`graph_test.go`) already skipped with the message "the Python
     reference is gone; this oracle retires with it" — seen previously and left.
-  - **The corpus was the valuable half, so it was ported rather than deleted.**
-    `examples/differential.py` (1361 lines) is now
+  - **The corpus was ported to Go, evaluated, and then REMOVED. That reversal is
+    the substance of this task and is recorded rather than tidied away.**
+
+    `examples/differential.py` (1361 lines) was first rebuilt as
     `company-os-starter/internal/difftest`: the same **288** invocations across
-    all 16 subcommands, each run against a fresh fixture copy, with per-step
-    exit/stdout/stderr and the resulting file tree frozen into `testdata/`. It
-    changed shape from a differential (compare A to B) to a characterization
-    suite (compare to frozen truth), because there is no second implementation
-    left. It now runs in `go test ./...`, so it is in `make check` on every
-    commit instead of being a slow manual step.
-  - The **entire declared-divergence subsystem was deliberately not ported** —
-    the waiver registry, its citation grammar, and all 631 records in
-    `examples/declared-divergences.txt`. Every one of those sanctioned a
-    Python/Go difference; against a golden there is no second implementation, so
-    any difference is a regression and waiving it would defeat the point. That
-    is why the Go port is smaller than the Python it replaces.
-  - **Corpus parity is proved, not asserted.** The id list was captured from
-    `differential.py --list` *before* the file was deleted and pinned as
-    `internal/difftest/testdata/corpus-ids.txt`;
-    `TestCorpusMatchesTheInheritedIDSet` fails if any of the 288 goes missing, so
-    a dropped invocation is a red test rather than silent coverage loss. Note the
-    real count is **288**, not the 227 quoted in task 5.3 — that figure was the
-    subset with a real on-disk fixture.
-  - **The goldens were proved able to fail, which is the only thing that makes
-    them worth having.** A one-word change to a `[warn]` label in
-    `internal/render` reddened 3; a change visible only *inside a written file*
-    (a `##` heading in `internal/scaffold/template.go`) reddened 8. Both halves —
-    stdout capture and tree hashing — demonstrably work.
-  - **One real semantic difference between differential and golden had to be
-    handled.** `workspace sync` records the source `file://` URL in
-    `workspace.lock.yaml`, and the synthetic git repo lives in a per-run temp
-    directory. The Python harness never saw this because it ran both binaries
-    inside ONE temp dir in ONE process, so the path cancelled out. A golden
-    outlives the run, so the normalizer gained `<SRC>` alongside `<WS>`; without
-    it the suite would have failed at random.
+    all 16 subcommands, each against a fresh fixture copy, with per-step
+    exit/stdout/stderr and the whole resulting file tree frozen into `testdata/`.
+    It worked. Corpus parity was proved rather than asserted — the id list was
+    captured from `differential.py --list` *before* that file was deleted, and a
+    test failed if any of the 288 went missing. (The real count is **288**, not
+    the 227 quoted in task 5.3; that figure was the subset with a real on-disk
+    fixture.) The goldens were proved able to fail, twice.
+
+    It was then removed, on a measurement. Three mutations, each checked against
+    the suite WITHOUT the corpus:
+
+    | Mutation | Rest of suite | corpus | acceptance.sh |
+    |---|---|---|---|
+    | `[warn]` → `[WARN]` in `render/governance.go` | **missed** | caught (3) | — |
+    | `##` heading in `scaffold/template.go` | caught | caught (8) | — |
+    | renamed a key in the generated governance file | caught | caught (**135**) | **missed** |
+
+    One unique catch in three, and its class is specific: **rendered bytes**.
+    Unit tests exercise the model, not the text that reaches a terminal —
+    `internal/render` has tests and they passed while the label was wrong.
+
+    Against that, the third row is the cost. A one-line change reddened 135 of
+    288 snapshots. Nobody reviews 135 golden diffs honestly; they run `-update`
+    and skim. A suite with that blast radius trains a reviewer to rubber-stamp,
+    which is the exact failure it exists to prevent. 2.1M of `testdata` was the
+    smaller objection.
+
+    The deciding frame: the ten oracle tests deleted below had been **skipping
+    since cutover**, asserting nothing. So removing the corpus does not regress
+    from a working state — it returns the repository to where it was, minus 55
+    misleading green skips. The corpus was new coverage that had never existed in
+    working form, and it was judged not worth its maintenance shape.
+  - **What is consequently NOT covered, stated plainly rather than left to be
+    discovered.** No end-to-end byte-level coverage exists for `discover`,
+    `deviation`, `exception`, `check`, `governance`, `today`, `graph`, `ids`,
+    `skills` or `scratchpad`. `acceptance.sh` freezes `validate` alone (5
+    fixtures, passing and failing paths). A change to what any other command
+    PRINTS will not be caught by any test. What each command WRITES is still
+    covered at the library seam by its own package's tests.
+
+    The proportionate fix, if this ever bites: add a handful of golden
+    assertions to `acceptance.sh` for `today` / `skills list` / `ids list` —
+    roughly 1% of the corpus's size for most of its unique value. Deliberately
+    not done pre-emptively.
+  - The **entire declared-divergence subsystem was never ported** — the waiver
+    registry, its citation grammar, and all 631 records in
+    `examples/declared-divergences.txt`. Every one sanctioned a Python/Go
+    difference; against frozen output there is no second implementation, so any
+    difference is a regression and waiving it would defeat the point.
+  - **One finding from the port worth keeping even though the code is gone.**
+    `workspace sync` records the source `file://` URL in `workspace.lock.yaml`,
+    and a synthetic git repo lives in a per-run temp directory. The Python
+    harness never saw this because it ran both binaries inside ONE temp dir in
+    ONE process, so the path cancelled out of the comparison. Anything that
+    freezes `workspace sync` output across runs must normalize that path or it
+    will fail at random.
   - **Each skip-only test was decided on its own merits, not swept.** Tag
     `python-cli-final` — the recovery path 6.3 exists to provide — was checked
     out to recover both the Python CLI and the vendored PyYAML 6.0.2, so
@@ -2051,10 +2133,12 @@ Ordered by the coupling map in research §4c: most self-contained first.
       `skills/gate_oracle_test.go`'s 17 synthesized workspaces — skill shadowing,
       dangling `extends`, and the id-type collisions where Python's `==` spans
       the numeric tower (`5 == 5.0`, `True == 1`) — exist in NO committed
-      fixture, so `internal/difftest` cannot reach them either. Reference gate-7
-      blocks captured into `testdata/gate7_reference.json`.
+      fixture, so no fixture-driven suite could reach them however broad.
+      Reference gate-7 blocks captured into `testdata/gate7_reference.json`.
       `internal/yamlio`'s four emitter tests frozen into
-      `testdata/pyyaml_safedump.json` (61 cases, 4 dump modes).
+      `testdata/pyyaml_safedump.json` (61 cases, 4 dump modes). These are the
+      reason the `python-cli-final` checkout was worth doing, and they survive
+      the corpus's removal.
     - **Converted to self-contained property tests (no oracle needed).**
       `governance_test.go`'s duplicate-relationship tally now asserts the
       property directly — the platform appears twice in the list while the
@@ -2065,12 +2149,13 @@ Ordered by the coupling map in research §4c: most self-contained first.
       `internal/yamlio/testdata/pathorder_oracle.py`, the last thing in the suite
       needing `python3` on `PATH`, became `testdata/pathorder_cpython.json`
       (208 groups, CPython 3.12.11; the group set is seeded, so reproducible).
-    - **Deleted (genuinely redundant with the difftest corpus).**
-      `governance/oracle_test.go`'s and `skills/oracle_test.go`'s eight tests and
-      `graph_test.go`'s two — every one of them compares a command's output over
-      committed fixtures, which the corpus now freezes end to end including a
-      hash of every file in the tree. Their shared helpers were kept; only the
-      oracle-specific ones went.
+    - **Deleted, and NOT replaced.** `governance/oracle_test.go`'s and
+      `skills/oracle_test.go`'s eight tests and `graph_test.go`'s two. At the
+      time they were removed the corpus covered the same ground; the corpus was
+      then removed too, so nothing covers it now. That is the gap enumerated
+      above, and it is the honest outcome: these ten had asserted nothing since
+      cutover, so no working coverage was lost — but none was gained either.
+      Their shared helpers were kept; only the oracle-specific ones went.
 
     Every frozen file was mutation-checked: corrupting two entries in
     `pyyaml_safedump.json` produces four failures, and one in
@@ -2104,32 +2189,38 @@ Ordered by the coupling map in research §4c: most self-contained first.
     rests on the same emitter it used to be independent of.
   - why: a test that can only skip is worse than no test, because a skip reads as
     a pass in a green summary — and `make check` was reporting green over 55 of
-    them. Deleting them all outright would have been honest but would have
-    dropped both the only end-to-end byte-level coverage for `discover`,
-    `deviation`, `exception`, `check`, `governance`, `today`, `graph`, `ids`,
-    `skills` and `scratchpad` (`acceptance.sh` freezes `validate` alone) and the
-    17 skill-conflict workspaces no fixture contains.
-  - acceptance: R-9.3 (completion), R-7.1 (corpus preserved)
+    them. The end state keeps the coverage that nothing else could provide (the
+    17 skill-conflict workspaces, the PyYAML emitter answers) and accepts the
+    loss of the rest, having measured what that loss actually is rather than
+    assuming it either way.
+  - acceptance: R-9.3 (completion). **R-7.1 is NOT met and is not claimed** —
+    the differential corpus was preserved through the port and then deliberately
+    retired; the requirement predates the deletion of the reference
+    implementation it was written for.
   - verify: no tracked `.py` outside the banking fixture; **zero** Python-related
-    SKIP in `go test ./... -v` (was 55); `make check` green; the corpus goldens
-    are idempotent across runs AND go red on a deliberate byte flip.
+    SKIP in `go test ./... -v` (was 55); `make check` green; the frozen answers
+    in `gate7_reference.json` and `pyyaml_safedump.json` go red when corrupted.
 
 - [x] 6.9 Record the named Go codebase owner (deps: none, est: ~15m)
-  - DONE 2026-07-26, **as a blocking placeholder — this task is not closed until
-    a human writes a name.** `docs/hld/go-cli-tui-port.md` Stakeholders now
-    carries a `**Go codebase owner (R-9.9):** TBD — must be filled before
-    cutover` field with the accountability spelled out (review of
-    `internal/**` + `cmd/**`, the `go.mod` toolchain pin, and the parity-loss
-    risk that starts the moment `bin/company-os` is deleted) and a note that it
-    must be replaced before 6.4's parity gate is declared green. No name was
-    invented: naming an owner requires a person to accept the responsibility and
-    cannot be inferred from the repository.
-  - **BLOCKED ON A HUMAN DECISION — the `TBD` marker must be replaced before
-    task 6.5 deletes the Python implementation.**
+  - **CLOSED 2026-07-26. Owner: javierbenavides**, recorded in
+    `docs/hld/go-cli-tui-port.md` Stakeholders. Scope accepted: review of
+    `internal/**` and `cmd/**`, the `go.mod` toolchain pin, and being the person
+    a defect lands on.
+  - The field was first added as a deliberate `TBD` placeholder and left
+    blocking, because naming an owner requires a person to accept the
+    responsibility and cannot be inferred from a repository. No name was
+    invented in the interim; the placeholder held for four commits.
+  - **Recorded out of order, which is worth keeping in the record rather than
+    smoothing over.** R-9.9 requires the owner "before implementation begins."
+    This was filled after the port shipped, after `151f159` deleted the Python
+    reference, and after 6.10 retired the differential corpus. The guarantee the
+    requirement was written to provide — that somebody had accepted the
+    maintenance burden *before* the only oracle was destroyed — was not
+    delivered. The acceptance is genuine; the sequencing was not honoured.
   - why: there is no Go precedent in this repository, and `local-search` being Go
     is precedent for the ecosystem rather than evidence of this team's capacity to
     maintain 4500–6000 lines of it.
-  - acceptance: R-9.9
+  - acceptance: R-9.9 (met late — see above)
   - verify: owner named in the HLD Stakeholders section.
 
 ---
@@ -2310,12 +2401,15 @@ mutating form is written.
        than engineering, and who is not told how the TUI works beforehand.
     2. **A machine they own** — a fresh macOS box with no prior shell
        configuration, no Go toolchain, no `PATH` edits, no repo checkout.
-    3. **A download link only.** A signed, notarized darwin artifact, which
-       today does not exist: `make sign` and `make notarize` have never been run
-       against a real Apple account (see the Makefile's own note), so an
-       unassisted download currently hangs with no output under
-       `com.apple.quarantine`. R-6.3 is a hard prerequisite for THIS task, not
-       a parallel one.
+    3. **An install line only** — `curl -fsSL …/install.sh | bash`, and nothing
+       else: no repo, no toolchain, no instructions beyond the published docs.
+       **This item was previously blocked on notarization and no longer is.**
+       It read "a signed, notarized darwin artifact, which today does not
+       exist… R-6.3 is a hard prerequisite for THIS task." That was true of a
+       browser download, which hangs under `com.apple.quarantine`. Task 5.2
+       established that `curl` never sets that attribute, so the unsigned
+       artifact installs and runs unassisted. The prerequisite is gone; what
+       remains is a person and a machine.
     4. **An observer** who records where they hesitate rather than helping —
        the finding is the hesitation.
     The journey to observe, unassisted: read workspace status, open a
@@ -2329,6 +2423,6 @@ mutating form is written.
     struck and the TUI is re-justified on engineer value alone — which is
     defensible, but it has to be said rather than assumed.
   - acceptance: HLD Success Criterion 9
-  - verify: a product owner, given only a download link and no prior use, reads
+  - verify: a product owner, given only the published install line and no prior use, reads
     workspace status, opens a component's governance, and inspects a validate
     failure — unassisted, without prior shell configuration.

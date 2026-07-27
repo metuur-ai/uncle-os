@@ -20,17 +20,16 @@ import (
 // deleted that binary, so all four could only SKIP: 12 subtests reporting green
 // while asserting nothing.
 //
-// They were removed rather than frozen because internal/difftest covers the same
-// ground end to end — skills/list-<fixture> over all six committed workspaces
-// plus the three failure-path ones, and skills/list-after-scratchpad for the
-// populated personal-rules layer, each freezing stdout AND a hash of every file
-// in the tree.
+// They were removed because their oracle is gone and cannot come back. Nothing
+// replaced them: `skills list` has no end-to-end byte-level coverage. See task
+// 6.10 in docs/tasks/go-cli-tui-port.md for the measurement behind accepting
+// that gap.
 //
-// One thing did NOT survive by that argument and was frozen instead:
-// gate_oracle_test.go's 17 synthesized workspaces (skill shadowing, dangling
-// extends, id-type collisions) exist in no committed fixture, so difftest cannot
-// reach them. Its reference answers were recovered from tag python-cli-final and
-// live in testdata/gate7_reference.json.
+// One thing did NOT go, and was frozen instead: gate_oracle_test.go's 17
+// synthesized workspaces (skill shadowing, dangling extends, id-type collisions)
+// exist in no committed fixture, so no fixture-driven suite could ever have
+// reached them. Its reference answers were recovered from tag python-cli-final
+// and live in testdata/gate7_reference.json.
 //
 // The pathlib-stem edge case the fourth test covered — `Path(".md").stem` is
 // ".md", not "" — is still pinned, by the "personal rule named exactly .md" case

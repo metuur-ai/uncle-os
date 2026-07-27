@@ -3,8 +3,7 @@
 # The Go module is rooted here; acceptance.sh and the fixture workspaces live in
 # ../examples/ because they predate the port. Targets that need both reach up one
 # level. There is no longer a Python reference to drive: R-9.3 deleted it, and
-# the differential harness that compared against it is now the golden
-# characterization suite in ./internal/difftest.
+# the differential harness that compared against it was retired with it.
 #
 #   make            # build
 #   make dev        # rebuild + run against the example workspace
@@ -52,18 +51,14 @@ GOFLAGS_STATIC := CGO_ENABLED=0
 # There is deliberately no build date; buildinfo.go explains why.
 BUILDFLAGS := -trimpath
 
-# --- macOS code signing (R-6.3) ------------------------------------------
-# Both are empty by default and both targets refuse to run without them. An
-# unsigned artifact that looks signed is worse than a loud failure.
-#   CODESIGN_IDENTITY  Developer ID Application cert. Use the 40-char SHA-1
-#                      from `security find-identity -v -p codesigning` — the
-#                      human-readable name is ambiguous whenever a renewed and
-#                      an expiring cert share it, and codesign then refuses.
-#   NOTARY_PROFILE     `xcrun notarytool store-credentials` keychain profile.
-CODESIGN_IDENTITY ?=
-NOTARY_PROFILE    ?=
-DARWIN_ARTIFACTS   = $(DIST)/$(BINARY)_$(VERSION)_darwin_arm64 \
-                     $(DIST)/$(BINARY)_$(VERSION)_darwin_amd64
+# --- macOS: no signing, deliberately (R-6.3) ------------------------------
+# There are no sign/notarize targets and no Apple Developer ID is required.
+# `com.apple.quarantine` is set by the DOWNLOADING APP (Safari, Chrome, Mail),
+# never by curl/wget/tar, and Gatekeeper only adjudicates files carrying it —
+# so a binary fetched by install.sh runs unsigned, with no prompt. Publish the
+# install line, never a download link. Full reasoning, and what was measured
+# before signing was ruled out, in
+# docs/user-guide/how-to/release-and-upgrade.md.
 
 # R-6.2: release targets. Windows is deliberately absent (R-6.11) — Go
 # cross-compiles to it for free, but nothing here is tested there, so nothing
@@ -71,8 +66,8 @@ DARWIN_ARTIFACTS   = $(DIST)/$(BINARY)_$(VERSION)_darwin_arm64 \
 PLATFORMS  := darwin/arm64 darwin/amd64 linux/amd64
 
 .PHONY: help build install uninstall run dev test test-v cover fmt fmt-check \
-        vet lint check acceptance differential differential-update golden \
-        clean release tidy deps-check arch-test repro sign notarize
+        vet lint check acceptance golden clean release tidy \
+        deps-check arch-test repro
 
 # --- help ----------------------------------------------------------------
 help: ## Show this help
@@ -146,11 +141,16 @@ vet: ## go vet
 
 lint: fmt-check vet ## fmt-check + vet
 
-# --- behaviour suites ----------------------------------------------------
-# Two frozen-output suites, both now measuring the Go binary against recorded
-# truth rather than against the deleted Python reference (R-9.3). Re-baselining
-# either one is a review step, not a formality: a golden accepted without reading
-# the diff protects nothing.
+# --- behaviour suite -----------------------------------------------------
+# acceptance.sh freezes `validate` output against golden snapshots, on the
+# passing path and the failure path, and proves the generated artifacts are
+# idempotent. Re-baselining is a review step, not a formality: a golden accepted
+# without reading the diff protects nothing.
+#
+# There was briefly a second suite here, `make differential`, over a
+# 288-invocation corpus in internal/difftest. It was removed — see task 6.10 in
+# docs/tasks/go-cli-tui-port.md for the measurement that decided it and for what
+# is consequently NOT covered.
 
 acceptance: ## Golden-snapshot suite over `validate` (examples/acceptance.sh)
 	@$(EXAMPLES)/acceptance.sh
@@ -158,33 +158,33 @@ acceptance: ## Golden-snapshot suite over `validate` (examples/acceptance.sh)
 golden: ## Re-baseline the acceptance snapshots — review the diff before committing
 	@$(EXAMPLES)/acceptance.sh --update
 
-differential: ## The 288-invocation corpus across all 16 commands (internal/difftest)
-	go test ./internal/difftest $(ARGS)
-
-differential-update: ## Re-baseline the corpus goldens — review the diff before committing
-	go test ./internal/difftest -update
-
-check: lint test acceptance ## Everything CI runs (`test` includes the difftest corpus)
+check: lint test acceptance ## Everything CI runs
 
 # --- release -------------------------------------------------------------
+# Artifact names carry no version: `/releases/latest/download/<name>` needs a
+# fixed name, and install.sh is built on that URL. The version lives in the
+# release tag and is stamped into the binary — `company-os --version` reports it.
 release: ## Cross-compile release artifacts + checksums into ./dist
 	@rm -rf $(DIST) && mkdir -p $(DIST)
 	@for p in $(PLATFORMS); do \
 	  os=$${p%/*}; arch=$${p#*/}; \
-	  out=$(DIST)/$(BINARY)_$(VERSION)_$${os}_$${arch}; \
+	  out=$(DIST)/$(BINARY)-$${os}-$${arch}; \
 	  echo "  $$os/$$arch"; \
 	  $(GOFLAGS_STATIC) GOOS=$$os GOARCH=$$arch \
 	    go build $(BUILDFLAGS) -ldflags '$(LDFLAGS)' -o $$out $(PKG) || exit 1; \
 	done
+	@cp install.sh $(DIST)/install.sh
 	@cd $(DIST) && shasum -a 256 * > SHA256SUMS
 	@echo
-	@echo "artifacts in $(DIST):"
+	@echo "artifacts in $(DIST) ($(VERSION)):"
 	@ls -1 $(DIST)
 	@echo
-	@echo "NOT SIGNED, NOT NOTARIZED. A downloaded darwin binary carries"
-	@echo "com.apple.quarantine and does not fail on first exec — it hangs with no"
-	@echo "output at all. Users need 'xattr -d com.apple.quarantine'. See"
-	@echo "docs/user-guide/how-to/release-and-upgrade.md and R-6.3 before publishing."
+	@echo "NOT SIGNED, NOT NOTARIZED — deliberately (R-6.3). Ship install.sh as the"
+	@echo "install path: com.apple.quarantine is set by the DOWNLOADING APP (Safari,"
+	@echo "Chrome, Mail), not by curl/wget/tar, so a curl-fetched binary runs with no"
+	@echo "Gatekeeper prompt. A browser download of these same bytes HANGS silently."
+	@echo "Publish the install line, not a download link. See"
+	@echo "docs/user-guide/how-to/release-and-upgrade.md."
 
 repro: ## R-6.10: build the release matrix twice and prove the checksums match
 	@tmp=$$(mktemp -d) || exit 1; \
@@ -222,7 +222,7 @@ repro: ## R-6.10: build the release matrix twice and prove the checksums match
 #   task 5.3's clean Linux box.
 deps-check: release ## Prove each release artifact needs nothing at runtime (R-6.1, R-6.2, R-6.8)
 	@fail=0; \
-	for f in $(DIST)/$(BINARY)_*; do \
+	for f in $(DIST)/$(BINARY)-*; do \
 	  echo "== $$(basename $$f)"; \
 	  meta=$$(go version -m $$f 2>/dev/null); \
 	  echo "$$meta" | grep -qE 'CGO_ENABLED=0' \
@@ -234,7 +234,7 @@ deps-check: release ## Prove each release artifact needs nothing at runtime (R-6
 	  grep -qa '$(VERSION)' $$f \
 	    && echo "   ok    version string '$(VERSION)' present in the image (R-6.8)" \
 	    || { echo "   FAIL  -X model.version did not reach the linker"; fail=1; }; \
-	  if [ "$$(basename $$f)" = "$(BINARY)_$(VERSION)_$$(go env GOOS)_$$(go env GOARCH)" ]; then \
+	  if [ "$$(basename $$f)" = "$(BINARY)-$$(go env GOOS)-$$(go env GOARCH)" ]; then \
 	    got=$$($$f --version 2>&1); \
 	    case "$$got" in \
 	      *"$(VERSION)"*) echo "   ok    executes and reports: $$got" ;; \
@@ -242,7 +242,7 @@ deps-check: release ## Prove each release artifact needs nothing at runtime (R-6
 	    esac; \
 	  else echo "         (not host-native — cannot exec here; --version verified on 5.3's clean boxes)"; fi; \
 	  case $$f in \
-	    *_darwin_*) \
+	    *-darwin-*) \
 	      libs=$$(otool -L $$f 2>/dev/null | tail -n +2 | awk '{print $$1}'); \
 	      extra=$$(echo "$$libs" | grep -v '^/usr/lib/libSystem\.B\.dylib$$' \
 	                             | grep -v '^/usr/lib/libresolv\.9\.dylib$$' | grep -v '^$$'); \
@@ -250,7 +250,7 @@ deps-check: release ## Prove each release artifact needs nothing at runtime (R-6
 	      else echo "   ok    links only OS-provided dylibs (libSystem, libresolv)"; fi; \
 	      echo "         note: Apple ships no static libSystem — a fully static Mach-O"; \
 	      echo "         does not exist. Both dylibs are present on every macOS." ;; \
-	    *_linux_*) \
+	    *-linux-*) \
 	      file $$f | grep -q 'statically linked' \
 	        && echo "   ok    ELF reports 'statically linked'" \
 	        || { echo "   FAIL  ELF is not statically linked: $$(file $$f)"; fail=1; }; \
@@ -259,62 +259,6 @@ deps-check: release ## Prove each release artifact needs nothing at runtime (R-6
 	  esac; \
 	done; \
 	exit $$fail
-
-# --- macOS signing and notarization (R-6.3) -------------------------------
-# Neither target has ever been run against a real Apple account in this repo.
-# They exist so that a maintainer who has one runs the right commands, and so
-# that a maintainer who does not gets told rather than shipping an artifact
-# that macOS will refuse to execute. See
-# docs/user-guide/how-to/release-a-signed-build.md.
-sign: ## Developer-ID-sign the darwin artifacts (needs CODESIGN_IDENTITY)
-	@test -n "$(CODESIGN_IDENTITY)" || { \
-	  echo "make sign: CODESIGN_IDENTITY is not set — refusing to publish an unsigned artifact."; \
-	  echo; \
-	  echo "  This needs an Apple Developer ID Application certificate in the keychain."; \
-	  echo "  List what you have:"; \
-	  echo "      security find-identity -v -p codesigning"; \
-	  echo "  Then pass the 40-char SHA-1, not the name (the name is ambiguous"; \
-	  echo "  whenever a renewed and an expiring cert share it, and codesign refuses):"; \
-	  echo "      make sign CODESIGN_IDENTITY=<sha1>"; \
-	  echo; \
-	  echo "  No Developer ID? Signing is not the fallback — see R-6.3 and"; \
-	  echo "  docs/user-guide/how-to/release-a-signed-build.md."; \
-	  exit 1; }
-	@for f in $(DARWIN_ARTIFACTS); do \
-	  test -f $$f || { echo "missing $$f — run 'make release' first"; exit 1; }; \
-	  echo "signing $$(basename $$f)"; \
-	  codesign --force --sign "$(CODESIGN_IDENTITY)" --options runtime --timestamp $$f || exit 1; \
-	  codesign --verify --strict --verbose=2 $$f || exit 1; \
-	done
-	@echo
-	@echo "Signed, NOT notarized. Gatekeeper still rejects this"
-	@echo "(source=Unnotarized Developer ID). Run 'make notarize' next."
-
-notarize: ## Submit the signed darwin artifacts to Apple (needs NOTARY_PROFILE)
-	@test -n "$(NOTARY_PROFILE)" || { \
-	  echo "make notarize: NOTARY_PROFILE is not set — refusing to publish an un-notarized artifact."; \
-	  echo; \
-	  echo "  Store credentials once (Apple ID + app-specific password, or an"; \
-	  echo "  App Store Connect API key):"; \
-	  echo "      xcrun notarytool store-credentials company-os \\"; \
-	  echo "        --apple-id <email> --team-id <TEAMID> --password <app-specific-password>"; \
-	  echo "  Then:"; \
-	  echo "      make notarize NOTARY_PROFILE=company-os"; \
-	  exit 1; }
-	@for f in $(DARWIN_ARTIFACTS); do \
-	  codesign -dv $$f 2>&1 | grep -q 'Authority=Developer ID' \
-	    || { echo "$$(basename $$f) is not Developer-ID-signed — run 'make sign' first"; exit 1; }; \
-	  echo "submitting $$(basename $$f)"; \
-	  ditto -c -k --keepParent $$f $$f.zip || exit 1; \
-	  xcrun notarytool submit $$f.zip --keychain-profile "$(NOTARY_PROFILE)" --wait || exit 1; \
-	  rm -f $$f.zip; \
-	  spctl -a -vv -t exec $$f || exit 1; \
-	done
-	@echo
-	@echo "Notarized. A bare Mach-O executable cannot be stapled — there is"
-	@echo "nowhere in the file to store the ticket — so Gatekeeper resolves it"
-	@echo "online on first run. Ship a .dmg or .pkg and staple that if first"
-	@echo "run has to work offline."
 
 clean: ## Remove build output
 	@rm -rf $(BIN_OUT) $(DIST) coverage.out

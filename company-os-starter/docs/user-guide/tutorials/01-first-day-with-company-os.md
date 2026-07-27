@@ -15,61 +15,51 @@ about 25 minutes.
 
 ## 1. Install the CLI
 
-`company-os` is a single static binary. There is nothing to install
-underneath it — no interpreter, no runtime, no package manager. Download the
-one for your platform, make it executable, and put it somewhere on your
-`PATH`:
+`company-os` is a single static binary. There is nothing to install underneath
+it — no interpreter, no runtime, no package manager. One line:
 
 ```bash
-# pick the artifact matching your machine, e.g.
-#   company-os_<version>_darwin_arm64   (Apple Silicon Mac)
-#   company-os_<version>_darwin_amd64   (Intel Mac)
-#   company-os_<version>_linux_amd64
-curl -fsSLo company-os <release-url>/company-os_<version>_darwin_arm64
-chmod +x company-os
-mkdir -p ~/.local/bin && mv company-os ~/.local/bin/
+curl -fsSL https://raw.githubusercontent.com/metuur-ai/uncle-os/main/company-os-starter/install.sh | bash
 ```
+
+That detects your platform, fetches the matching binary into `~/.local/bin`,
+runs `--version` to prove it works, and tells you if `~/.local/bin` isn't on
+your `PATH`. Override the location with `INSTALL_DIR=/some/where`, or pin a
+release with `VERSION=v0.4.0`.
 
 <!-- INSTALL-CAVEATS: macOS Gatekeeper / quarantine guidance is owned by task
      5.2 and lands here. Do not duplicate it elsewhere. -->
 
-### macOS: the first run will be blocked
+### macOS: why the installer, and not a download link
 
-**This applies on macOS only, and only to a binary you downloaded.** Releases
-are not yet Apple-notarized. macOS tags anything a browser downloads with a
-`com.apple.quarantine` attribute, and Gatekeeper refuses to execute a
-quarantined binary it cannot verify. Run it and it does not fail — it hangs,
-and nothing is printed, which is a worse first impression than an error would
-be. Launched from Finder you get "cannot be opened because the developer cannot
-be verified" instead.
+Releases are **not** Apple-signed or notarized, and with this install path they
+do not need to be.
 
-Clear the attribute once, right after moving the binary into place:
+`com.apple.quarantine` is attached by the application that does the
+downloading — Safari, Chrome, Mail — not by `curl`, `wget` or `tar`. Gatekeeper
+only adjudicates files carrying that attribute. A binary fetched by the
+installer never gets it, so it runs immediately, with no prompt and no extra
+step. This is the same approach the `local-search` CLI ships with.
+
+**If you download the binary in a browser instead**, you get the quarantined
+path, and it does not fail cleanly: it *hangs* with no output at all, which is a
+worse first impression than an error would be. From Finder you get "cannot be
+opened because the developer cannot be verified." Clear it once:
 
 ```bash
 xattr -d com.apple.quarantine ~/.local/bin/company-os
 ```
 
-That is the whole workaround. It is per-download, so you will do it again the
-next time you upgrade by downloading. It is not needed at all if you built from
-source, if you fetched the binary with `curl` rather than a browser, or on
-Linux.
+That is per-download, so you would repeat it on every upgrade. Using the
+installer avoids it entirely.
 
-Check the attribute is gone before you blame anything else:
-
-```bash
-xattr ~/.local/bin/company-os      # prints nothing (or only com.apple.provenance)
-```
-
-Notarization is the real fix and is
-[documented for maintainers](../how-to/release-and-upgrade.md#macos-signing-and-notarization).
-Until it happens, this step is an accepted cost, recorded as such in the
-project's design docs.
-
-If `~/.local/bin` isn't already on your `PATH`, add it to your shell profile
-now and restart your shell:
+One thing that looks alarming and is not: `spctl -a` reports `rejected` for this
+binary either way. `spctl` answers "would Gatekeeper admit this?", which is a
+different question from "will this run?" — and Gatekeeper is not consulted for a
+file with no quarantine attribute. Check the attribute, not `spctl`:
 
 ```bash
-echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+xattr ~/.local/bin/company-os      # prints nothing, or only com.apple.provenance
 ```
 
 > **Note:** Building from source instead? From `company-os-starter/`, run

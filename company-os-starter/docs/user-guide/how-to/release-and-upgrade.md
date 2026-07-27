@@ -16,13 +16,20 @@ All `make` commands run from `company-os-starter/`.
 make release
 ```
 
-Three artifacts land in `dist/`, plus a `SHA256SUMS` covering all three:
+Three artifacts land in `dist/`, plus `install.sh` and a `SHA256SUMS` covering
+all four:
 
 | Artifact | Runs on |
 |---|---|
-| `company-os_<version>_darwin_arm64` | Apple Silicon Macs |
-| `company-os_<version>_darwin_amd64` | Intel Macs |
-| `company-os_<version>_linux_amd64` | x86-64 Linux |
+| `company-os-darwin-arm64` | Apple Silicon Macs |
+| `company-os-darwin-amd64` | Intel Macs |
+| `company-os-linux-amd64` | x86-64 Linux |
+
+The names carry **no version**. `install.sh` resolves
+`/releases/latest/download/company-os-<os>-<arch>`, and that URL needs a fixed
+filename. The version lives in the release tag and is stamped into the binary —
+`company-os --version` reports it, so an artifact is never ambiguous about what
+it is.
 
 There is deliberately no Windows build. Go cross-compiles to it for free, but
 nothing here is tested there, so nothing is claimed.
@@ -97,90 +104,53 @@ nothing to install underneath the binary — holds. `deps-check` fails on any
 
 ---
 
-## macOS signing and notarization
+## macOS: no signing, no Apple Developer ID
 
-**Status: not performed. R-6.3's fallback clause is in force** — see
-[the quarantine workaround](../tutorials/01-first-day-with-company-os.md#macos-the-first-run-will-be-blocked)
-that ships in the install docs instead, and the accepted cost recorded in the
-HLD.
+**The artifacts are unsigned and un-notarized, deliberately. Nothing in the
+release or install path needs an Apple Developer account.**
 
-What follows is the exact procedure for a maintainer who has an Apple
-Developer account. Neither target has ever been run against a real Apple
-account in this repository. Both refuse to run without credentials rather than
-quietly producing an artifact macOS will not execute.
+`com.apple.quarantine` is attached by the *downloading application* — Safari,
+Chrome, Mail — not by `curl`, `wget` or `tar`. Gatekeeper only adjudicates files
+that carry it. `install.sh` fetches with `curl`, so the binary it places in
+`~/.local/bin` has no quarantine attribute and executes with no prompt.
 
-### 1. Sign
+Verified on macOS 15 / arm64: an installed binary carries only
+`com.apple.provenance` and runs. That is the same attribute profile as the
+`local-search` CLI, which ships unsigned on the same basis.
 
-```bash
-security find-identity -v -p codesigning        # find your Developer ID
-make sign CODESIGN_IDENTITY=<40-char-sha1>
-```
+**Therefore: publish the install line, never a download link.** A browser
+download of the same bytes is the quarantined path, and it does not fail
+cleanly — it hangs with no output. The `xattr -d com.apple.quarantine` fallback
+for anyone who takes that route is documented in the install tutorial.
 
-which runs, per darwin artifact:
+`spctl -a` reports `rejected` for these artifacts. That is expected, not a defect
+to chase: `spctl` answers "would Gatekeeper admit this?", while the question that
+matters is "will this execute?" — and Gatekeeper is not consulted for an
+unquarantined file. Check `xattr`, not `spctl`.
 
-```bash
-codesign --force --sign <identity> --options runtime --timestamp <artifact>
-codesign --verify --strict --verbose=2 <artifact>
-```
+### If someone reconsiders this later
 
-- `--options runtime` enables the hardened runtime. Notarization rejects
-  submissions without it.
-- `--timestamp` requests a secure timestamp from Apple. Without it the
-  signature dies with the certificate instead of outliving it.
-- **Pass the 40-character SHA-1, not the human-readable name.** The moment you
-  hold a renewed cert alongside an expiring one they share a name, and
-  `codesign` fails with `ambiguous (matches … and …)`.
+There are no `sign` / `notarize` targets; they were removed along with the
+`CODESIGN_IDENTITY` and `NOTARY_PROFILE` variables once the install path made
+them unnecessary. Three findings from when signing *was* investigated, recorded
+so the work is not repeated from scratch:
 
-Signing alone is not enough and it is worth being blunt about it: a
-Developer-ID-signed but un-notarized binary is still rejected by Gatekeeper
-(`spctl` reports `source=Unnotarized Developer ID`) and is still killed on
-first run when downloaded. Verified on macOS 15 — see task 5.2.
+1. **Signing alone is not a partial fix.** A binary signed with a real Developer
+   ID Application certificate, hardened runtime and secure timestamp verified
+   clean under `codesign` — correct Designated Requirement, `TeamIdentifier`
+   set, full Apple chain — and `spctl` still reported `rejected`,
+   `source=Unnotarized Developer ID`, with the quarantined binary still hanging.
+   Signing without notarization buys nothing a user can perceive.
+2. **A bare Mach-O executable cannot be stapled.** There is nowhere in a flat
+   file to store the ticket, and `notarytool` will not accept one either — hence
+   the `ditto -c -k` zip for submission. Gatekeeper then resolves the ticket
+   online on first run; offline first-run requires shipping a `.dmg` or `.pkg`
+   and stapling that.
+3. **Pass the certificate SHA-1, not the name.** `codesign --sign "<name>"`
+   fails with `ambiguous` the moment a renewed and an expiring certificate share
+   a name. The 40-char SHA-1 from `security find-identity -v -p codesigning` is
+   the only reliable argument.
 
-### 2. Notarize
-
-```bash
-xcrun notarytool store-credentials company-os \
-  --apple-id <email> --team-id <TEAMID> --password <app-specific-password>
-make notarize NOTARY_PROFILE=company-os
-```
-
-which runs, per darwin artifact:
-
-```bash
-ditto -c -k --keepParent <artifact> <artifact>.zip
-xcrun notarytool submit <artifact>.zip --keychain-profile company-os --wait
-spctl -a -vv -t exec <artifact>
-```
-
-`notarytool` will not accept a bare Mach-O executable, hence the zip. Apple
-records the *contained* binary's cdhash, so the unzipped binary passes
-Gatekeeper afterwards.
-
-**You cannot staple a ticket to a bare executable** — there is nowhere in a
-flat Mach-O to store it. `xcrun stapler staple ./company-os` fails. The
-consequence: Gatekeeper resolves the ticket **online** on first run. That is
-fine for a machine with a network and wrong for an air-gapped one. If first run
-must work offline, ship a `.dmg` or `.pkg` and staple that instead.
-
-### Secrets CI needs
-
-| Secret | Used by | Notes |
-|---|---|---|
-| `APPLE_CERT_P12` | `codesign` | Developer ID Application cert + private key, exported as `.p12`, base64-encoded |
-| `APPLE_CERT_PASSWORD` | `codesign` | password for the `.p12` |
-| `KEYCHAIN_PASSWORD` | `codesign` | for the throwaway keychain the job creates, imports into, and deletes |
-| `APPLE_ID` | `notarytool` | Apple account email |
-| `APPLE_TEAM_ID` | `notarytool` | 10-character team identifier |
-| `APPLE_APP_PASSWORD` | `notarytool` | app-specific password, **not** the account password |
-
-An App Store Connect API key (`--key`, `--key-id`, `--issuer`) replaces the
-last three and is the better choice for CI: it is scoped, revocable, and not
-tied to one person's Apple ID.
-
-The signing job must run on a macOS runner. Linux cannot produce a
-Developer ID signature.
-
----
 
 ## Clean-machine acceptance procedure
 
@@ -191,8 +161,9 @@ machines, and record the result against task 5.3.
 
 **Machine A: macOS arm64. Machine B: Linux amd64.** Both freshly imaged or a
 fresh VM. Neither with a Python interpreter, a Go toolchain, or this repository
-on it. Do not `scp` the binary from your workstation — that skips the
-quarantine attribute on macOS, which is the single most likely failure.
+on it. Do not `scp` the binary from your workstation — installing something
+other than what a user would get is how this check passes while the real path
+is broken.
 
 1. Confirm the machine is actually clean:
 
@@ -201,16 +172,33 @@ quarantine attribute on macOS, which is the single most likely failure.
    command -v go            || echo "no go: good"
    ```
 
-2. Download the artifact for the platform **through a browser** (Safari on
-   macOS — that is what sets `com.apple.quarantine`) and verify it:
+2. Install using **only the published one-liner**, exactly as a user would:
+
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/metuur-ai/uncle-os/main/company-os-starter/install.sh | bash
+   ```
+
+   On macOS, confirm the binary is not quarantined — this is the property the
+   whole install path rests on, so assert it rather than assume it:
+
+   ```bash
+   xattr ~/.local/bin/company-os     # nothing, or only com.apple.provenance
+   ```
+
+   Ignore `spctl`; it reports `rejected` by design here. See
+   [macOS signing and notarization](#macos-signing-and-notarization).
+
+3. **Also test the browser path once**, because some users will take it whatever
+   the docs say. Download the artifact for the platform in Safari, verify the
+   checksum, and confirm the documented `xattr -d` step is sufficient:
 
    ```bash
    shasum -a 256 -c SHA256SUMS --ignore-missing   # or sha256sum -c on Linux
    ```
 
-3. Install it following only the published instructions in
+   Follow only the published instructions in
    [tutorials/01-first-day-with-company-os.md](../tutorials/01-first-day-with-company-os.md).
-   Do not deviate. If a step is missing from the docs, that is the finding.
+   If a step is missing from the docs, that is the finding.
 
 4. Run the surface. Every command must behave as documented:
 

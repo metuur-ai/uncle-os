@@ -166,7 +166,8 @@ name: "éééééééééééééééééééééééééééééééééééé�
 // TestEmitterMatchesPyYAML asserts PyDump reproduces yaml.safe_dump byte for
 // byte over the corpus. It is the only thing standing between this port and a
 // silently different file tree: every YAML artifact the scaffolding commands
-// write is produced here, and the difftest corpus compares file bytes.
+// write is produced here, and since the end-to-end corpus was removed (task
+// 6.10) nothing downstream would notice the drift.
 //
 // The expected bytes used to be derived live by shelling out to the vendored
 // PyYAML. R-9.3 deleted that vendor tree, which left the test able only to skip
