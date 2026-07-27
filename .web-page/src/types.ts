@@ -1,6 +1,7 @@
-export type TabType = 
+export type TabType =
   | 'home'
-  | 'architecture' 
+  | 'install'
+  | 'architecture'
   | 'cli' 
   | 'workflows' 
   | 'governance' 

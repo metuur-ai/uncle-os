@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { 
   Search, 
   X, 
-  ArrowRight, 
-  FolderTree, 
+  ArrowRight,
+  Download,
+  FolderTree,
   Terminal, 
   ShieldCheck, 
   PlayCircle, 
@@ -35,6 +36,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
   const getItemIcon = (iconName: string) => {
     switch (iconName) {
       case 'Layers': return Layers;
+      case 'Download': return Download;
       case 'FolderTree': return FolderTree;
       case 'Terminal': return Terminal;
       case 'ShieldCheck': return ShieldCheck;

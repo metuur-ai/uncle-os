@@ -3,8 +3,9 @@ import {
   X, 
   Search, 
   Home,
-  FolderTree, 
-  Terminal, 
+  Download,
+  FolderTree,
+  Terminal,
   PlayCircle, 
   ShieldCheck, 
   CheckSquare, 
@@ -35,6 +36,7 @@ export const ContentDirectoryModal: React.FC<ContentDirectoryModalProps> = ({
   const getCategoryIcon = (iconName: string) => {
     switch (iconName) {
       case 'Home': return Home;
+      case 'Download': return Download;
       case 'FolderTree': return FolderTree;
       case 'Terminal': return Terminal;
       case 'PlayCircle': return PlayCircle;

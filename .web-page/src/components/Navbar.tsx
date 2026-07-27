@@ -1,9 +1,10 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { TabType } from '../types';
 import { Tooltip } from './Tooltip';
-import { 
+import {
   Home,
-  FolderTree, 
+  Download,
+  FolderTree,
   Terminal, 
   PlayCircle, 
   ShieldCheck, 
@@ -37,9 +38,15 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
       icon: Home,
       whyText: 'Start here for a high-level summary of how Company OS connects product, engineering, and governance.'
     },
-    { 
-      id: 'architecture', 
-      label: 'Workspace Architecture', 
+    {
+      id: 'install',
+      label: 'Install & Setup',
+      icon: Download,
+      whyText: 'Install the company-os CLI in one line, put it on your PATH, and scaffold your first workspace.'
+    },
+    {
+      id: 'architecture',
+      label: 'Workspace Architecture',
       icon: FolderTree,
       whyText: 'Explore the workspace directory structure, file hierarchy, and folder layouts for Company OS and Team OS.'
     },

@@ -3,6 +3,7 @@ import { TabType } from './types';
 import { Header } from './components/Header';
 import { Navbar } from './components/Navbar';
 import { HomeOverview } from './components/HomeOverview';
+import { InstallSetupView } from './components/InstallSetupView';
 import { ArchitectureView } from './components/ArchitectureView';
 import { CliTerminalView } from './components/CliTerminalView';
 import { WorkflowPlayground } from './components/WorkflowPlayground';
@@ -63,6 +64,8 @@ export default function App() {
             setIsStandalone={setIsStandalone}
           />
         )}
+
+        {activeTab === 'install' && <InstallSetupView />}
 
         {activeTab === 'architecture' && (
           <ArchitectureView isStandalone={isStandalone} setIsStandalone={setIsStandalone} />

@@ -31,8 +31,34 @@ export const DIRECTORY_CATEGORIES_DATA: DirectoryCategoryData[] = [
     ]
   },
   {
+    id: 'install',
+    categoryName: '1. Install & Setup',
+    iconName: 'Download',
+    description: 'Get the company-os CLI onto your machine and scaffold a first workspace.',
+    items: [
+      {
+        title: 'Install the company-os CLI',
+        description: 'One-line installer, PATH setup, verification, and your first company-os init.',
+        targetTab: 'install',
+        tag: 'Getting Started',
+      },
+      {
+        title: 'Install Options & Release Artifacts',
+        description: 'INSTALL_DIR, VERSION and BASE_URL overrides, plus the per-platform binaries and checksums.',
+        targetTab: 'install',
+        tag: 'Reference',
+      },
+      {
+        title: 'macOS Gatekeeper, Upgrades & Uninstall',
+        description: 'Why the installer instead of a browser download, how to upgrade safely, and how to remove it.',
+        targetTab: 'install',
+        tag: 'Troubleshooting',
+      },
+    ]
+  },
+  {
     id: 'arch',
-    categoryName: '1. Architecture & Folder Structure',
+    categoryName: '2. Architecture & Folder Structure',
     iconName: 'FolderTree',
     description: 'Explore the workspace directory, Git-based Markdown files, architectural layers, and multi-repo federation.',
     items: [
@@ -78,7 +104,7 @@ export const DIRECTORY_CATEGORIES_DATA: DirectoryCategoryData[] = [
   },
   {
     id: 'cli',
-    categoryName: '2. Terminal CLI Commands & Tools',
+    categoryName: '3. Terminal CLI Commands & Tools',
     iconName: 'Terminal',
     description: 'Explore all 16 CLI subcommands, exit code contracts (0-8), and JSON envelopes.',
     items: [
@@ -107,7 +133,7 @@ export const DIRECTORY_CATEGORIES_DATA: DirectoryCategoryData[] = [
   },
   {
     id: 'workflows',
-    categoryName: '3. Interactive PRD Lifecycle Workflows',
+    categoryName: '4. Interactive PRD Lifecycle Workflows',
     iconName: 'PlayCircle',
     description: 'Step-by-step simulations of feature lifecycles from brief to production release.',
     items: [
@@ -127,7 +153,7 @@ export const DIRECTORY_CATEGORIES_DATA: DirectoryCategoryData[] = [
   },
   {
     id: 'validation',
-    categoryName: '4. Validation Safety Gates (1 to 8)',
+    categoryName: '5. Validation Safety Gates (1 to 8)',
     iconName: 'ShieldCheck',
     description: 'Detailed inspection of all 8 automated quality and security safety checks.',
     items: [
@@ -155,7 +181,7 @@ export const DIRECTORY_CATEGORIES_DATA: DirectoryCategoryData[] = [
   },
   {
     id: 'governance',
-    categoryName: '5. Governance Tiers & Rule Engine',
+    categoryName: '6. Governance Tiers & Rule Engine',
     iconName: 'CheckSquare',
     description: 'Mandatory, Default, and Guidance rule tiers with clear deviation logging.',
     items: [
@@ -169,7 +195,7 @@ export const DIRECTORY_CATEGORIES_DATA: DirectoryCategoryData[] = [
   },
   {
     id: 'skills-search',
-    categoryName: '6. Agent Skills & Local Search Engine',
+    categoryName: '7. Agent Skills & Local Search Engine',
     iconName: 'Bot',
     description: '4-layer agent skills (company, platform, team, personal) and offline SQLite BM25 search.',
     items: [
@@ -200,7 +226,7 @@ export const DIRECTORY_CATEGORIES_DATA: DirectoryCategoryData[] = [
   },
   {
     id: 'quiz',
-    categoryName: '7. Knowledge Mastery Quiz',
+    categoryName: '8. Knowledge Mastery Quiz',
     iconName: 'Award',
     description: '10 plain-English questions to verify your understanding of Company OS.',
     items: [
