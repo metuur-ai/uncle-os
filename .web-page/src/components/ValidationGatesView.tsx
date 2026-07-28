@@ -26,10 +26,10 @@ export const ValidationGatesView: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] font-bold text-indigo-700 uppercase tracking-widest font-mono">
+              <span className="text-[11px] font-bold text-indigo-700 uppercase tracking-widest font-mono">
                 05 VALIDATION GATES
               </span>
-              <span className="px-2 py-0.5 bg-indigo-100/70 rounded-full text-[10px] font-semibold text-indigo-800 border border-indigo-200">
+              <span className="px-2 py-0.5 bg-indigo-100/70 rounded-full text-[11px] font-semibold text-indigo-800 border border-indigo-200">
                 QUALITY CONTRACT
               </span>
             </div>
@@ -49,20 +49,20 @@ export const ValidationGatesView: React.FC = () => {
         {/* Why What How Quick Guide */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs border-t border-indigo-100/80">
           <div className="bg-white/80 p-3 rounded-xl border border-slate-200/80 space-y-1">
-            <span className="font-bold text-indigo-900 block font-mono uppercase text-[10px]">WHY IS THIS HERE?</span>
-            <p className="text-slate-600 text-[11px] leading-relaxed">
+            <span className="font-bold text-indigo-900 block font-mono uppercase text-[11px]">WHY IS THIS HERE?</span>
+            <p className="text-slate-600 text-[12px] leading-relaxed">
               To automatically verify that every document is properly formatted, security rules are respected, and dates match.
             </p>
           </div>
           <div className="bg-white/80 p-3 rounded-xl border border-slate-200/80 space-y-1">
-            <span className="font-bold text-indigo-900 block font-mono uppercase text-[10px]">WHAT AM I LOOKING AT?</span>
-            <p className="text-slate-600 text-[11px] leading-relaxed">
+            <span className="font-bold text-indigo-900 block font-mono uppercase text-[11px]">WHAT AM I LOOKING AT?</span>
+            <p className="text-slate-600 text-[12px] leading-relaxed">
               8 numbered gate buttons across the top. Selecting a gate displays its exact rules and interactive failure simulation.
             </p>
           </div>
           <div className="bg-white/80 p-3 rounded-xl border border-slate-200/80 space-y-1">
-            <span className="font-bold text-indigo-900 block font-mono uppercase text-[10px]">HOW DO I USE IT?</span>
-            <p className="text-slate-600 text-[11px] leading-relaxed">
+            <span className="font-bold text-indigo-900 block font-mono uppercase text-[11px]">HOW DO I USE IT?</span>
+            <p className="text-slate-600 text-[12px] leading-relaxed">
               Click any gate button (1-8) to inspect what it tests, or click <strong>Simulate Gate Failure</strong> to test fixing errors!
             </p>
           </div>
@@ -86,15 +86,15 @@ export const ValidationGatesView: React.FC = () => {
               <div className="flex items-center justify-between">
                 <span className="font-mono font-bold text-xs text-indigo-700">Gate {gate.id}</span>
                 {gate.federatedOnly && (
-                  <span className="text-[9px] px-1 py-0.2 rounded bg-cyan-50 text-cyan-700 border border-cyan-200 font-mono">
+                  <span className="text-[10px] px-1 py-0.2 rounded bg-cyan-50 text-cyan-700 border border-cyan-200 font-mono">
                     FED
                   </span>
                 )}
               </div>
-              <h4 className="text-[11px] font-bold line-clamp-2 leading-tight text-slate-800 mt-1">
+              <h4 className="text-[12px] font-bold line-clamp-2 leading-tight text-slate-800 mt-1">
                 {gate.shortName}
               </h4>
-              <span className="text-[9px] text-slate-500">
+              <span className="text-[10px] text-slate-500">
                 {gate.absenceTolerant ? 'Absence Tolerant' : 'Strict Contract'}
               </span>
             </button>
@@ -138,9 +138,9 @@ export const ValidationGatesView: React.FC = () => {
             </ul>
           </div>
 
-          <div className="p-3 bg-slate-900 border border-slate-800 rounded-xl space-y-2 text-xs shadow-inner">
-            <span className="font-bold text-emerald-400 block font-mono text-[11px]">Example PASS Output:</span>
-            <pre className="font-mono text-[11px] text-emerald-300 whitespace-pre-wrap">{selectedGate.examplePass}</pre>
+          <div className="p-3 bg-indigo-950 border border-indigo-900 rounded-xl space-y-2 text-xs shadow-inner">
+            <span className="font-bold text-emerald-400 block font-mono text-[12px]">Example PASS Output:</span>
+            <pre className="font-mono text-[12px] text-emerald-300 whitespace-pre-wrap">{selectedGate.examplePass}</pre>
           </div>
         </div>
 
@@ -160,8 +160,8 @@ export const ValidationGatesView: React.FC = () => {
           </div>
 
           {/* Failure Output Console */}
-          <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-xs space-y-2 shadow-md">
-            <div className="text-slate-500 text-[10px] uppercase font-bold border-b border-slate-800 pb-1">
+          <div className="bg-[#171340] border border-indigo-900 rounded-xl p-4 font-mono text-xs space-y-2 shadow-md">
+            <div className="text-slate-500 text-[11px] uppercase font-bold border-b border-indigo-900 pb-1">
               company-os validate console output
             </div>
 
@@ -185,13 +185,13 @@ FAIL — 1 problem(s) found (Exit Code 1)`}
           {/* Root Cause & One-Click Fix */}
           <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3 text-xs">
             <div>
-              <span className="font-bold text-amber-800 block text-[11px] uppercase tracking-wider">Root Cause Analysis</span>
+              <span className="font-bold text-amber-800 block text-[12px] uppercase tracking-wider">Root Cause Analysis</span>
               <p className="text-slate-700 mt-1">{selectedGate.description}</p>
             </div>
 
             <div className="pt-2 border-t border-slate-200">
-              <span className="font-bold text-indigo-700 block text-[11px] uppercase tracking-wider">Recommended Fix Action</span>
-              <p className="text-slate-800 mt-1 font-mono text-[11px]">{selectedGate.fixAction}</p>
+              <span className="font-bold text-indigo-700 block text-[12px] uppercase tracking-wider">Recommended Fix Action</span>
+              <p className="text-slate-800 mt-1 font-mono text-[12px]">{selectedGate.fixAction}</p>
             </div>
 
             {!isFixed && (

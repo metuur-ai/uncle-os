@@ -23,7 +23,7 @@ export const BeginnerGuideModal: React.FC<BeginnerGuideModalProps> = ({
   );
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-indigo-950/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
       <div className="bg-white border border-slate-200 rounded-3xl shadow-2xl max-w-3xl w-full overflow-hidden flex flex-col max-h-[90vh]">
         
         {/* Header */}
@@ -34,7 +34,7 @@ export const BeginnerGuideModal: React.FC<BeginnerGuideModalProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full text-indigo-100 font-mono">
+                <span className="text-[11px] font-bold uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full text-indigo-100 font-mono">
                   ACCESSIBLE GUIDE
                 </span>
               </div>
@@ -197,7 +197,7 @@ export const BeginnerGuideModal: React.FC<BeginnerGuideModalProps> = ({
                       <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center shrink-0">1</span>
                       <h4 className="font-bold text-slate-900 text-xs">Check specs first</h4>
                     </div>
-                    <p className="text-slate-600 text-[11px] leading-relaxed">
+                    <p className="text-slate-600 text-[12px] leading-relaxed">
                       Use <strong>Local Search</strong> to check existing components and specs before building anything new.
                     </p>
                   </div>
@@ -207,7 +207,7 @@ export const BeginnerGuideModal: React.FC<BeginnerGuideModalProps> = ({
                       <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center shrink-0">2</span>
                       <h4 className="font-bold text-slate-900 text-xs">Run validation</h4>
                     </div>
-                    <p className="text-slate-600 text-[11px] leading-relaxed">
+                    <p className="text-slate-600 text-[12px] leading-relaxed">
                       Run <code>company-os validate</code> in the <strong>Terminal Explorer</strong>. If a gate fails, fix the reported error.
                     </p>
                   </div>
@@ -217,7 +217,7 @@ export const BeginnerGuideModal: React.FC<BeginnerGuideModalProps> = ({
                       <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center shrink-0">3</span>
                       <h4 className="font-bold text-slate-900 text-xs">Update docs</h4>
                     </div>
-                    <p className="text-slate-600 text-[11px] leading-relaxed">
+                    <p className="text-slate-600 text-[12px] leading-relaxed">
                       Bump the <code>updated: YYYY-MM-DD</code> date in the reality document so docs match the code!
                     </p>
                   </div>
@@ -308,7 +308,7 @@ export const BeginnerGuideModal: React.FC<BeginnerGuideModalProps> = ({
           <span>Tip: You can reopen this guide anytime from the top header menu.</span>
           <button
             onClick={onClose}
-            className="px-4 py-1.5 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-colors"
+            className="px-4 py-1.5 rounded-xl bg-indigo-950 text-white font-bold hover:bg-indigo-900 transition-colors"
           >
             Got it, thanks!
           </button>

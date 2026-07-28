@@ -59,17 +59,17 @@ export const ContentDirectoryModal: React.FC<ContentDirectoryModalProps> = ({
   }).filter(cat => cat.items.length > 0);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-indigo-950/60 backdrop-blur-sm animate-fadeIn">
       <div 
         className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden text-slate-900"
         onClick={(e) => e.stopPropagation()}
       >
         
         {/* Header */}
-        <div className="bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 text-white p-5 sm:p-6 flex items-start justify-between gap-4 shrink-0">
+        <div className="bg-gradient-to-r from-indigo-900 via-indigo-800 to-indigo-950 text-white p-5 sm:p-6 flex items-start justify-between gap-4 shrink-0">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-200 border border-indigo-400/30 text-[10px] font-bold uppercase font-mono tracking-wider">
+              <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-200 border border-indigo-400/30 text-[11px] font-bold uppercase font-mono tracking-wider">
                 CONTENT DIRECTORY & SITE MAP
               </span>
               <span className="text-xs text-indigo-300 hidden sm:inline">• Full Catalog Index</span>
@@ -163,7 +163,7 @@ export const ContentDirectoryModal: React.FC<ContentDirectoryModalProps> = ({
                               {item.title}
                             </span>
                             {item.tag && (
-                              <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-bold shrink-0 border border-slate-200">
+                              <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[11px] font-bold shrink-0 border border-slate-200">
                                 {item.tag}
                               </span>
                             )}
@@ -193,7 +193,7 @@ export const ContentDirectoryModal: React.FC<ContentDirectoryModalProps> = ({
           </span>
           <button
             onClick={onClose}
-            className="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors shadow-sm"
+            className="px-5 py-2 rounded-xl bg-indigo-950 hover:bg-indigo-900 text-white font-bold text-xs transition-colors shadow-sm"
           >
             Close Directory
           </button>

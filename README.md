@@ -1,5 +1,7 @@
 # Agent OS Graph Explorer
 
+> Check out web version on [https://metuur-ai.github.io/uncle-os](https://metuur-ai.github.io/uncle-os)
+
 A single-file, zero-build web tool for exploring a knowledge base as an interactive force-directed graph. It renders files, and the projects, repos, and tags that connect them, so you can navigate the structure of an Agent OS workspace visually.
 
 Everything lives in [`os-graph-explorer.html`](./os-graph-explorer.html) — no install, no bundler, no dependencies to vendor. Tailwind and the [`force-graph`](https://github.com/vasturiano/force-graph) library are loaded from a CDN at runtime.

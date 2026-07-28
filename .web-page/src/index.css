@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Content scale. Tailwind's rem-based sizes (text-xs/sm/base/...) all key off
+   this, so one value nudges the whole page. 17px = 16px + ~6%. */
+html {
+  font-size: 17px;
+}
+
 @layer utilities {
   /* Hide scrollbar for Chrome, Safari and Opera */
   .no-scrollbar::-webkit-scrollbar {

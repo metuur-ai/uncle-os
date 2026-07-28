@@ -40,10 +40,10 @@ export const GovernanceTiersView: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] font-bold text-indigo-700 uppercase tracking-widest font-mono">
+              <span className="text-[11px] font-bold text-indigo-700 uppercase tracking-widest font-mono">
                 04 GOVERNANCE TIERS
               </span>
-              <span className="px-2 py-0.5 bg-indigo-100/70 rounded-full text-[10px] font-semibold text-indigo-800 border border-indigo-200">
+              <span className="px-2 py-0.5 bg-indigo-100/70 rounded-full text-[11px] font-semibold text-indigo-800 border border-indigo-200">
                 FLEXIBILITY & STANDARDS
               </span>
             </div>
@@ -54,20 +54,20 @@ export const GovernanceTiersView: React.FC = () => {
         {/* Why What How Quick Guide */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs border-t border-indigo-100/80">
           <div className="bg-white/80 p-3 rounded-xl border border-slate-200/80 space-y-1">
-            <span className="font-bold text-indigo-900 block font-mono uppercase text-[10px]">WHY IS THIS HERE?</span>
-            <p className="text-slate-600 text-[11px] leading-relaxed">
+            <span className="font-bold text-indigo-900 block font-mono uppercase text-[11px]">WHY IS THIS HERE?</span>
+            <p className="text-slate-600 text-[12px] leading-relaxed">
               So teams can follow company standards while having a safe, official way to request exceptions when needed.
             </p>
           </div>
           <div className="bg-white/80 p-3 rounded-xl border border-slate-200/80 space-y-1">
-            <span className="font-bold text-indigo-900 block font-mono uppercase text-[10px]">WHAT AM I LOOKING AT?</span>
-            <p className="text-slate-600 text-[11px] leading-relaxed">
+            <span className="font-bold text-indigo-900 block font-mono uppercase text-[11px]">WHAT AM I LOOKING AT?</span>
+            <p className="text-slate-600 text-[12px] leading-relaxed">
               The 3 rule tiers (Mandatory, Default, Guidance) and forms to declare a rule deviation or exception.
             </p>
           </div>
           <div className="bg-white/80 p-3 rounded-xl border border-slate-200/80 space-y-1">
-            <span className="font-bold text-indigo-900 block font-mono uppercase text-[10px]">HOW DO I USE IT?</span>
-            <p className="text-slate-600 text-[11px] leading-relaxed">
+            <span className="font-bold text-indigo-900 block font-mono uppercase text-[11px]">HOW DO I USE IT?</span>
+            <p className="text-slate-600 text-[12px] leading-relaxed">
               Read the 3 rule cards below, or fill out a quick form to test declaring a team rule exception!
             </p>
           </div>
@@ -89,7 +89,7 @@ export const GovernanceTiersView: React.FC = () => {
           <p className="text-xs text-slate-600 leading-relaxed">
             Non-negotiable outcomes (e.g. security SLAs, compliance checks). Cannot be opted out of via deviations. Escapable ONLY via an approved, time-boxed <strong className="text-rose-700">Exception</strong>.
           </p>
-          <div className="pt-2 text-[11px] text-slate-500 border-t border-slate-100">
+          <div className="pt-2 text-[12px] text-slate-500 border-t border-slate-100">
             <strong>Escape Hatch:</strong> <code className="text-rose-700 font-mono">company-os exception request</code> (Requires expiry date & owner signoff)
           </div>
         </div>
@@ -106,7 +106,7 @@ export const GovernanceTiersView: React.FC = () => {
           <p className="text-xs text-slate-600 leading-relaxed">
             Standard guidelines (e.g. story points estimation). Teams can opt out by declaring a <strong className="text-amber-800">Deviation</strong> with rationale. Auto-sets a 180-day review date.
           </p>
-          <div className="pt-2 text-[11px] text-slate-500 border-t border-slate-100">
+          <div className="pt-2 text-[12px] text-slate-500 border-t border-slate-100">
             <strong>Escape Hatch:</strong> <code className="text-amber-800 font-mono">company-os deviation declare</code> (Review date 180 days out)
           </div>
         </div>
@@ -123,7 +123,7 @@ export const GovernanceTiersView: React.FC = () => {
           <p className="text-xs text-slate-600 leading-relaxed">
             Best practices and suggested templates. Fully advisory, untracked by validators, and requiring no deviations or approval.
           </p>
-          <div className="pt-2 text-[11px] text-slate-500 border-t border-slate-100">
+          <div className="pt-2 text-[12px] text-slate-500 border-t border-slate-100">
             <strong>Escape Hatch:</strong> None needed — completely voluntary
           </div>
         </div>
@@ -194,7 +194,7 @@ export const GovernanceTiersView: React.FC = () => {
             </button>
 
             {devOutput && (
-              <div className="p-3 bg-slate-900 border border-slate-800 rounded-xl font-mono text-emerald-300 text-xs whitespace-pre-wrap shadow-inner">
+              <div className="p-3 bg-indigo-950 border border-indigo-900 rounded-xl font-mono text-emerald-300 text-xs whitespace-pre-wrap shadow-inner">
                 {devOutput}
               </div>
             )}
@@ -272,7 +272,7 @@ export const GovernanceTiersView: React.FC = () => {
             </button>
 
             {excOutput && (
-              <div className="p-3 bg-slate-900 border border-slate-800 rounded-xl font-mono text-xs whitespace-pre-wrap text-emerald-300 shadow-inner">
+              <div className="p-3 bg-indigo-950 border border-indigo-900 rounded-xl font-mono text-xs whitespace-pre-wrap text-emerald-300 shadow-inner">
                 {excOutput}
               </div>
             )}

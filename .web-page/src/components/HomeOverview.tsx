@@ -65,9 +65,9 @@ export const HomeOverview: React.FC<HomeOverviewProps> = ({
     <div className="space-y-8">
       
       {/* Hero Banner Section */}
-      <div className="bg-slate-900 text-white rounded-2xl p-6 sm:p-8 md:p-9 border border-slate-800 shadow-sm relative">
+      <div className="bg-indigo-950 text-white rounded-2xl p-6 sm:p-8 md:p-9 border border-indigo-900 shadow-sm relative">
         <div className="max-w-4xl space-y-4">
-          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-slate-800 border border-slate-700 text-indigo-300 font-mono text-[11px] font-bold uppercase tracking-wider">
+          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-indigo-900 border border-indigo-800 text-indigo-200 font-mono text-[12px] font-bold uppercase tracking-wider">
             <span>{HOME_HERO_CONTENT.badge}</span>
           </div>
 
@@ -97,7 +97,7 @@ export const HomeOverview: React.FC<HomeOverviewProps> = ({
             <Tooltip title="Why click this?" content="Test interactive terminal commands like company-os validate in a live CLI simulator." position="bottom">
               <button
                 onClick={() => onNavigateTab('cli')}
-                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 font-semibold text-xs sm:text-sm border border-slate-700 transition-all flex items-center gap-2"
+                className="px-4 py-2.5 rounded-xl bg-indigo-900 hover:bg-indigo-800 text-slate-100 font-semibold text-xs sm:text-sm border border-indigo-800 transition-all flex items-center gap-2"
               >
                 <Terminal className="w-4 h-4 text-cyan-400" />
                 <span>Try CLI Simulator</span>
@@ -107,7 +107,7 @@ export const HomeOverview: React.FC<HomeOverviewProps> = ({
             <Tooltip title="Why click this?" content="Open plain English explanations for technical terms without confusing jargon." position="bottom">
               <button
                 onClick={onOpenGuide}
-                className="px-4 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-200 font-semibold text-xs sm:text-sm border border-slate-700 transition-all flex items-center gap-2"
+                className="px-4 py-2.5 rounded-xl bg-indigo-900/80 hover:bg-indigo-900 text-slate-200 font-semibold text-xs sm:text-sm border border-indigo-800 transition-all flex items-center gap-2"
               >
                 <HelpCircle className="w-4 h-4 text-indigo-400" />
                 <span>Beginner Glossary</span>
@@ -181,7 +181,7 @@ export const HomeOverview: React.FC<HomeOverviewProps> = ({
                       {isCompany ? <Building2 className="w-5 h-5" /> : <Users className="w-5 h-5" />}
                     </div>
                     <div>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono uppercase tracking-wider ${
+                      <span className={`px-2 py-0.5 rounded text-[11px] font-bold font-mono uppercase tracking-wider ${
                         isCompany ? 'bg-indigo-50 text-indigo-800 border border-indigo-100' : 'bg-cyan-50 text-cyan-800 border border-cyan-100'
                       }`}>
                         {info.badge}
@@ -201,7 +201,7 @@ export const HomeOverview: React.FC<HomeOverviewProps> = ({
                 </p>
 
                 <div className="space-y-2 pt-2 border-t border-slate-100">
-                  <span className="text-[11px] font-bold text-slate-900 uppercase font-mono tracking-wider block">Key Focus Areas:</span>
+                  <span className="text-[12px] font-bold text-slate-900 uppercase font-mono tracking-wider block">Key Focus Areas:</span>
                   <ul className="space-y-1.5 text-xs text-slate-700">
                     {info.keyPoints.map((point, idx) => (
                       <li key={idx} className="flex items-start gap-2">
@@ -231,7 +231,7 @@ export const HomeOverview: React.FC<HomeOverviewProps> = ({
       </div>
 
       {/* Interactive Mode Demonstration Widget */}
-      <div className="bg-slate-900 text-white rounded-2xl p-6 border border-slate-800 space-y-5">
+      <div className="bg-indigo-950 text-white rounded-2xl p-6 border border-indigo-900 space-y-5">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
@@ -248,7 +248,7 @@ export const HomeOverview: React.FC<HomeOverviewProps> = ({
             </p>
           </div>
 
-          <div className="bg-slate-800 p-1 rounded-xl border border-slate-700 flex items-center shrink-0">
+          <div className="bg-indigo-900 p-1 rounded-xl border border-indigo-800 flex items-center shrink-0">
             <button
               onClick={() => setIsStandalone(false)}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${

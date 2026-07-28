@@ -51,10 +51,10 @@ export const QuizSection: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] font-bold text-indigo-700 uppercase tracking-widest font-mono">
+              <span className="text-[11px] font-bold text-indigo-700 uppercase tracking-widest font-mono">
                 08 MASTERY CHECK
               </span>
-              <span className="px-2 py-0.5 bg-indigo-100/70 rounded-full text-[10px] font-semibold text-indigo-800 border border-indigo-200">
+              <span className="px-2 py-0.5 bg-indigo-100/70 rounded-full text-[11px] font-semibold text-indigo-800 border border-indigo-200">
                 KNOWLEDGE ASSESSMENT
               </span>
             </div>
@@ -73,20 +73,20 @@ export const QuizSection: React.FC = () => {
         {/* Why What How Quick Guide */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs border-t border-indigo-100/80">
           <div className="bg-white/80 p-3 rounded-xl border border-slate-200/80 space-y-1">
-            <span className="font-bold text-indigo-900 block font-mono uppercase text-[10px]">WHY IS THIS HERE?</span>
-            <p className="text-slate-600 text-[11px] leading-relaxed">
+            <span className="font-bold text-indigo-900 block font-mono uppercase text-[11px]">WHY IS THIS HERE?</span>
+            <p className="text-slate-600 text-[12px] leading-relaxed">
               To help interns, managers, and engineers test their understanding of Company OS principles in 5 minutes.
             </p>
           </div>
           <div className="bg-white/80 p-3 rounded-xl border border-slate-200/80 space-y-1">
-            <span className="font-bold text-indigo-900 block font-mono uppercase text-[10px]">WHAT AM I LOOKING AT?</span>
-            <p className="text-slate-600 text-[11px] leading-relaxed">
+            <span className="font-bold text-indigo-900 block font-mono uppercase text-[11px]">WHAT AM I LOOKING AT?</span>
+            <p className="text-slate-600 text-[12px] leading-relaxed">
               A 10-question multiple-choice interactive quiz with instant feedback and explanations.
             </p>
           </div>
           <div className="bg-white/80 p-3 rounded-xl border border-slate-200/80 space-y-1">
-            <span className="font-bold text-indigo-900 block font-mono uppercase text-[10px]">HOW DO I USE IT?</span>
-            <p className="text-slate-600 text-[11px] leading-relaxed">
+            <span className="font-bold text-indigo-900 block font-mono uppercase text-[11px]">HOW DO I USE IT?</span>
+            <p className="text-slate-600 text-[12px] leading-relaxed">
               Select an answer below to get immediate explanation feedback, then click <strong>Next Question</strong>!
             </p>
           </div>

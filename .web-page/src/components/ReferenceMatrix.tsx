@@ -21,10 +21,10 @@ export const ReferenceMatrix: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] font-bold text-indigo-700 uppercase tracking-widest font-mono">
+              <span className="text-[11px] font-bold text-indigo-700 uppercase tracking-widest font-mono">
                 07 CONFIG MATRIX
               </span>
-              <span className="px-2 py-0.5 bg-indigo-100/70 rounded-full text-[10px] font-semibold text-indigo-800 border border-indigo-200">
+              <span className="px-2 py-0.5 bg-indigo-100/70 rounded-full text-[11px] font-semibold text-indigo-800 border border-indigo-200">
                 DIAGNOSTICS & RULES
               </span>
             </div>
@@ -62,20 +62,20 @@ export const ReferenceMatrix: React.FC = () => {
         {/* Why What How Quick Guide */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs border-t border-indigo-100/80">
           <div className="bg-white/80 p-3 rounded-xl border border-slate-200/80 space-y-1">
-            <span className="font-bold text-indigo-900 block font-mono uppercase text-[10px]">WHY IS THIS HERE?</span>
-            <p className="text-slate-600 text-[11px] leading-relaxed">
+            <span className="font-bold text-indigo-900 block font-mono uppercase text-[11px]">WHY IS THIS HERE?</span>
+            <p className="text-slate-600 text-[12px] leading-relaxed">
               To give engineers and managers a fast lookup for fixing errors and understanding configuration order.
             </p>
           </div>
           <div className="bg-white/80 p-3 rounded-xl border border-slate-200/80 space-y-1">
-            <span className="font-bold text-indigo-900 block font-mono uppercase text-[10px]">WHAT AM I LOOKING AT?</span>
-            <p className="text-slate-600 text-[11px] leading-relaxed">
+            <span className="font-bold text-indigo-900 block font-mono uppercase text-[11px]">WHAT AM I LOOKING AT?</span>
+            <p className="text-slate-600 text-[12px] leading-relaxed">
               A searchable troubleshooting directory, precedence hierarchy map, and exit code reference contract.
             </p>
           </div>
           <div className="bg-white/80 p-3 rounded-xl border border-slate-200/80 space-y-1">
-            <span className="font-bold text-indigo-900 block font-mono uppercase text-[10px]">HOW DO I USE IT?</span>
-            <p className="text-slate-600 text-[11px] leading-relaxed">
+            <span className="font-bold text-indigo-900 block font-mono uppercase text-[11px]">HOW DO I USE IT?</span>
+            <p className="text-slate-600 text-[12px] leading-relaxed">
               Type any error or symptom (e.g., "missing frontmatter" or "exit code 5") into the search bar!
             </p>
           </div>
@@ -102,10 +102,10 @@ export const ReferenceMatrix: React.FC = () => {
             {filteredTroubleshooting.map((item) => (
               <div key={item.id} className="bg-white border border-slate-200 shadow-sm rounded-2xl p-4 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200">
+                  <span className="text-[11px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200">
                     {item.symptom}
                   </span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
+                  <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
                     {item.tool} • {item.category}
                   </span>
                 </div>
@@ -140,7 +140,7 @@ export const ReferenceMatrix: React.FC = () => {
                 <span className="font-bold text-indigo-800 block font-mono">1. CLI Flag (Implemented)</span>
                 <code className="text-slate-900 font-semibold">company-os --root /abs/path ...</code>
               </div>
-              <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-bold">WIRED</span>
+              <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200 text-[11px] font-bold">WIRED</span>
             </div>
 
             <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
@@ -148,7 +148,7 @@ export const ReferenceMatrix: React.FC = () => {
                 <span className="font-bold text-indigo-800 block font-mono">2. Environment Variable (Implemented)</span>
                 <code className="text-slate-900 font-semibold">export COMPANY_OS_WORKSPACE_ROOT=/abs/path</code>
               </div>
-              <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-bold">WIRED</span>
+              <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200 text-[11px] font-bold">WIRED</span>
             </div>
 
             <div className="p-3 bg-slate-50/60 border border-slate-200 rounded-xl flex items-center justify-between text-slate-500">
@@ -156,7 +156,7 @@ export const ReferenceMatrix: React.FC = () => {
                 <span className="font-bold block font-mono text-slate-700">3. Repo-Local Override (Specified in Spec)</span>
                 <code className="text-slate-600">.company-os.local.yaml (git-ignored)</code>
               </div>
-              <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-500 border border-slate-200 text-[10px] font-bold">UNWIRED</span>
+              <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-500 border border-slate-200 text-[11px] font-bold">UNWIRED</span>
             </div>
 
             <div className="p-3 bg-slate-50/60 border border-slate-200 rounded-xl flex items-center justify-between text-slate-500">
@@ -164,7 +164,7 @@ export const ReferenceMatrix: React.FC = () => {
                 <span className="font-bold block font-mono text-slate-700">4. User-Level Config (Specified in Spec)</span>
                 <code className="text-slate-600">~/.company-os/config.yaml</code>
               </div>
-              <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-500 border border-slate-200 text-[10px] font-bold">UNWIRED</span>
+              <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-500 border border-slate-200 text-[11px] font-bold">UNWIRED</span>
             </div>
 
             <div className="p-3 bg-slate-50/60 border border-slate-200 rounded-xl flex items-center justify-between text-slate-500">
@@ -172,7 +172,7 @@ export const ReferenceMatrix: React.FC = () => {
                 <span className="font-bold block font-mono text-slate-700">5. Committed Shared Config (Specified in Spec)</span>
                 <code className="text-slate-600">config/repositories.yaml</code>
               </div>
-              <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-500 border border-slate-200 text-[10px] font-bold">UNWIRED</span>
+              <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-500 border border-slate-200 text-[11px] font-bold">UNWIRED</span>
             </div>
 
             <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center justify-between">
@@ -180,7 +180,7 @@ export const ReferenceMatrix: React.FC = () => {
                 <span className="font-bold text-indigo-800 block font-mono">6. Built-in Default (Implemented)</span>
                 <code className="text-slate-900 font-semibold">Current working directory (cwd)</code>
               </div>
-              <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-bold">WIRED</span>
+              <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200 text-[11px] font-bold">WIRED</span>
             </div>
           </div>
         </div>
@@ -204,8 +204,8 @@ export const ReferenceMatrix: React.FC = () => {
 
                 <div className="space-y-1">
                   <h4 className="font-bold text-slate-900 text-xs">{ec.meaning}</h4>
-                  <p className="text-slate-600 text-[11px]">{ec.whenOccurs}</p>
-                  <p className="text-emerald-800 font-mono text-[10px]">{ec.recommendedAction}</p>
+                  <p className="text-slate-600 text-[12px]">{ec.whenOccurs}</p>
+                  <p className="text-emerald-800 font-mono text-[11px]">{ec.recommendedAction}</p>
                 </div>
               </div>
             ))}

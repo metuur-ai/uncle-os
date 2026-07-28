@@ -1,5 +1,7 @@
 # The Company OS user guide
 
+> Check out web version on [https://metuur-ai.github.io/uncle-os](https://metuur-ai.github.io/uncle-os)
+
 Company OS is a Git-based operating system for running governance, product,
 and engineering work as validated Markdown and YAML — not a SaaS app, not a
 database, just files, a CLI that guides you through them, and a validator

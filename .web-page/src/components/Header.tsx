@@ -38,11 +38,11 @@ export const Header: React.FC<HeaderProps> = ({
                 <h1 className="text-sm sm:text-base font-bold tracking-tight text-slate-900 whitespace-nowrap">
                   Company OS & Team OS
                 </h1>
-                <span className="px-2 py-0.5 bg-indigo-50 rounded-full text-[10px] font-semibold text-indigo-700 uppercase tracking-wider border border-indigo-200 shrink-0">
+                <span className="px-2 py-0.5 bg-indigo-50 rounded-full text-[11px] font-semibold text-indigo-700 uppercase tracking-wider border border-indigo-200 shrink-0">
                   v1.4.0
                 </span>
               </div>
-              <p className="text-[11px] text-slate-500 hidden xl:block whitespace-nowrap">
+              <p className="text-[12px] text-slate-500 hidden xl:block whitespace-nowrap">
                 Git-based governance, product & engineering operating system
               </p>
             </div>
@@ -64,7 +64,7 @@ export const Header: React.FC<HeaderProps> = ({
                   <Search className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-600 transition-colors shrink-0" />
                   <span className="truncate text-slate-600 font-medium">Search topics, commands, gates & rules...</span>
                 </div>
-                <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-mono bg-white text-slate-500 rounded border border-slate-200 shrink-0">
+                <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[11px] font-mono bg-white text-slate-500 rounded border border-slate-200 shrink-0">
                   Search
                 </kbd>
               </button>
@@ -82,7 +82,7 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <button
                 onClick={onOpenDirectory}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-sm whitespace-nowrap"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-950 hover:bg-indigo-900 text-white text-xs font-bold transition-all shadow-sm whitespace-nowrap"
               >
                 <ListFilter className="w-3.5 h-3.5 text-indigo-300 shrink-0" />
                 <span>Content Directory</span>

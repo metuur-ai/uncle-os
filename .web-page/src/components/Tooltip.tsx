@@ -64,14 +64,14 @@ export const Tooltip: React.FC<TooltipProps> = ({
           role="tooltip"
           className={`absolute z-50 pointer-events-none transition-all duration-200 animate-in fade-in zoom-in-95 ${positionClasses[position]} ${maxWidth}`}
         >
-          <div className="bg-slate-900 text-white text-xs rounded-xl p-2.5 shadow-xl border border-slate-700/80 leading-snug font-normal text-left">
+          <div className="bg-indigo-950 text-white text-xs rounded-xl p-2.5 shadow-xl border border-indigo-800/80 leading-snug font-normal text-left">
             {title && (
-              <div className="flex items-center gap-1.5 font-bold text-indigo-300 text-[11px] mb-1 uppercase tracking-wider font-mono">
+              <div className="flex items-center gap-1.5 font-bold text-indigo-300 text-[12px] mb-1 uppercase tracking-wider font-mono">
                 <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
                 <span>{title}</span>
               </div>
             )}
-            <div className="text-slate-200 text-[11px] leading-relaxed">
+            <div className="text-slate-200 text-[12px] leading-relaxed">
               {content}
             </div>
           </div>

@@ -24,10 +24,10 @@ export const WhyWhatHowCard: React.FC<WhyWhatHowCardProps> = ({ onNavigate, onOp
   return (
     <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
       {/* Top Banner Bar */}
-      <div className="bg-slate-900 p-5 sm:p-6 text-white flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800">
+      <div className="bg-indigo-950 p-5 sm:p-6 text-white flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-indigo-900">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="px-2 py-0.5 rounded bg-slate-800 text-indigo-300 border border-slate-700 text-[10px] font-bold uppercase tracking-wider font-mono">
+            <span className="px-2 py-0.5 rounded bg-indigo-900 text-indigo-200 border border-indigo-800 text-[11px] font-bold uppercase tracking-wider font-mono">
               SIMPLE GUIDE
             </span>
             <span className="text-xs text-slate-400 font-medium hidden sm:inline">
@@ -50,7 +50,7 @@ export const WhyWhatHowCard: React.FC<WhyWhatHowCardProps> = ({ onNavigate, onOp
         >
           <button
             onClick={onOpenGuide}
-            className="self-start md:self-auto px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 font-semibold text-xs flex items-center gap-2 border border-slate-700 transition-all shrink-0"
+            className="self-start md:self-auto px-3.5 py-2 rounded-xl bg-indigo-900 hover:bg-indigo-800 text-slate-100 font-semibold text-xs flex items-center gap-2 border border-indigo-800 transition-all shrink-0"
           >
             <BookOpen className="w-4 h-4 text-indigo-400" />
             <span>Plain English Glossary</span>
@@ -216,7 +216,7 @@ export const WhyWhatHowCard: React.FC<WhyWhatHowCardProps> = ({ onNavigate, onOp
               ))}
             </div>
 
-            <div className="p-4 bg-slate-900 rounded-xl text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+            <div className="p-4 bg-indigo-950 rounded-xl text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
               <div>
                 <span className="font-bold text-indigo-300 block">Want an interactive guided simulation?</span>
                 <span className="text-slate-300">Run through a step-by-step PRD lifecycle from discovery brief to production release!</span>

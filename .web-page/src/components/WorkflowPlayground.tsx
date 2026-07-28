@@ -61,10 +61,10 @@ export const WorkflowPlayground: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] font-bold text-indigo-700 uppercase tracking-widest font-mono">
+              <span className="text-[11px] font-bold text-indigo-700 uppercase tracking-widest font-mono">
                 03 WORKFLOWS
               </span>
-              <span className="px-2 py-0.5 bg-indigo-100/70 rounded-full text-[10px] font-semibold text-indigo-800 border border-indigo-200">
+              <span className="px-2 py-0.5 bg-indigo-100/70 rounded-full text-[11px] font-semibold text-indigo-800 border border-indigo-200">
                 LIFECYCLE SIMULATOR
               </span>
             </div>
@@ -83,20 +83,20 @@ export const WorkflowPlayground: React.FC = () => {
         {/* Why What How Quick Guide */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs border-t border-indigo-100/80">
           <div className="bg-white/80 p-3 rounded-xl border border-slate-200/80 space-y-1">
-            <span className="font-bold text-indigo-900 block font-mono uppercase text-[10px]">WHY IS THIS HERE?</span>
-            <p className="text-slate-600 text-[11px] leading-relaxed">
+            <span className="font-bold text-indigo-900 block font-mono uppercase text-[11px]">WHY IS THIS HERE?</span>
+            <p className="text-slate-600 text-[12px] leading-relaxed">
               To practice real-world team scenarios (like creating a PRD or updating docs) before doing it in real life.
             </p>
           </div>
           <div className="bg-white/80 p-3 rounded-xl border border-slate-200/80 space-y-1">
-            <span className="font-bold text-indigo-900 block font-mono uppercase text-[10px]">WHAT AM I LOOKING AT?</span>
-            <p className="text-slate-600 text-[11px] leading-relaxed">
+            <span className="font-bold text-indigo-900 block font-mono uppercase text-[11px]">WHAT AM I LOOKING AT?</span>
+            <p className="text-slate-600 text-[12px] leading-relaxed">
               5 scenario cards above, and an interactive step-by-step simulator below.
             </p>
           </div>
           <div className="bg-white/80 p-3 rounded-xl border border-slate-200/80 space-y-1">
-            <span className="font-bold text-indigo-900 block font-mono uppercase text-[10px]">HOW DO I USE IT?</span>
-            <p className="text-slate-600 text-[11px] leading-relaxed">
+            <span className="font-bold text-indigo-900 block font-mono uppercase text-[11px]">HOW DO I USE IT?</span>
+            <p className="text-slate-600 text-[12px] leading-relaxed">
               Pick a scenario card, then click <strong>Execute Step</strong> to advance through each milestone!
             </p>
           </div>
@@ -118,14 +118,14 @@ export const WorkflowPlayground: React.FC = () => {
               }`}
             >
               <div>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
                   isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'
                 }`}>
                   {scenario.badge}
                 </span>
                 <h3 className="text-xs font-bold mt-2 text-slate-900 line-clamp-2">{scenario.title}</h3>
               </div>
-              <p className="text-[10px] text-slate-500 mt-2 line-clamp-2">{scenario.subtitle}</p>
+              <p className="text-[11px] text-slate-500 mt-2 line-clamp-2">{scenario.subtitle}</p>
             </button>
           );
         })}
@@ -173,7 +173,7 @@ export const WorkflowPlayground: React.FC = () => {
 
                   <div>
                     <h4 className="text-xs font-bold text-slate-800">{step.title}</h4>
-                    <p className="text-[11px] text-slate-500 font-mono mt-0.5 line-clamp-1">{step.command}</p>
+                    <p className="text-[12px] text-slate-500 font-mono mt-0.5 line-clamp-1">{step.command}</p>
                   </div>
                 </div>
               );
@@ -236,15 +236,15 @@ export const WorkflowPlayground: React.FC = () => {
           )}
 
           {/* Command execution display */}
-          <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 font-mono text-xs text-indigo-300 shadow-inner">
+          <div className="bg-indigo-950 p-3 rounded-xl border border-indigo-900 font-mono text-xs text-indigo-300 shadow-inner">
             <span className="text-slate-500">$ </span>
             <span className="text-slate-100 font-bold">{currentStep.command}</span>
           </div>
 
           {/* Terminal Output */}
           {simulationOutput && (
-            <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-xs space-y-2 shadow-md">
-              <div className="text-slate-500 text-[11px] border-b border-slate-800/80 pb-1 flex justify-between">
+            <div className="bg-[#171340] border border-indigo-900 rounded-xl p-4 font-mono text-xs space-y-2 shadow-md">
+              <div className="text-slate-500 text-[12px] border-b border-indigo-900/80 pb-1 flex justify-between">
                 <span>Terminal Output</span>
                 {simulationOutput.includes('FAIL') ? (
                   <span className="text-rose-400 font-bold">Execution Blocked [FAIL]</span>

@@ -37,10 +37,10 @@ export const LocalSearchAgentView: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] font-bold text-indigo-700 uppercase tracking-widest font-mono">
+              <span className="text-[11px] font-bold text-indigo-700 uppercase tracking-widest font-mono">
                 06 AGENT SKILLS & LOCAL SEARCH
               </span>
-              <span className="px-2 py-0.5 bg-indigo-50 rounded text-[10px] font-bold text-indigo-800 border border-indigo-100 font-mono">
+              <span className="px-2 py-0.5 bg-indigo-50 rounded text-[11px] font-bold text-indigo-800 border border-indigo-100 font-mono">
                 AUTHORING & READ-SIDE ARCHITECTURE
               </span>
             </div>
@@ -77,20 +77,20 @@ export const LocalSearchAgentView: React.FC = () => {
         {/* Why What How Quick Guide */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs border-t border-slate-100">
           <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-1">
-            <span className="font-bold text-indigo-900 block font-mono uppercase text-[10px]">WHY IS THIS HERE?</span>
-            <p className="text-slate-600 text-[11px] leading-relaxed">
+            <span className="font-bold text-indigo-900 block font-mono uppercase text-[11px]">WHY IS THIS HERE?</span>
+            <p className="text-slate-600 text-[12px] leading-relaxed">
               Skills teach AI agents and humans <strong>how to author</strong> artifacts, while Local Search enables instant <strong>offline discovery</strong>.
             </p>
           </div>
           <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-1">
-            <span className="font-bold text-indigo-900 block font-mono uppercase text-[10px]">WHAT AM I LOOKING AT?</span>
-            <p className="text-slate-600 text-[11px] leading-relaxed">
+            <span className="font-bold text-indigo-900 block font-mono uppercase text-[11px]">WHAT AM I LOOKING AT?</span>
+            <p className="text-slate-600 text-[12px] leading-relaxed">
               A 4-layer skills resolution system (Company, Platform, Team, Personal) merged by <code>company-os skills list</code>.
             </p>
           </div>
           <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-1">
-            <span className="font-bold text-indigo-900 block font-mono uppercase text-[10px]">HOW DO I USE IT?</span>
-            <p className="text-slate-600 text-[11px] leading-relaxed">
+            <span className="font-bold text-indigo-900 block font-mono uppercase text-[11px]">HOW DO I USE IT?</span>
+            <p className="text-slate-600 text-[12px] leading-relaxed">
               Explore reference skills, review tier rules, or switch format to view the <code>--json</code> agent envelope!
             </p>
           </div>
@@ -110,7 +110,7 @@ export const LocalSearchAgentView: React.FC = () => {
               <p className="text-xs text-slate-600 leading-relaxed">
                 Versioned Markdown files (<code>*.SKILL.md</code>) that teach agents and humans <strong>how to author</strong> compliant discovery briefs, PRDs, and reality docs. Enforced during validation.
               </p>
-              <div className="pt-2 text-[11px] text-indigo-900 font-mono bg-indigo-50/70 px-3 py-1.5 rounded-lg border border-indigo-100">
+              <div className="pt-2 text-[12px] text-indigo-900 font-mono bg-indigo-50/70 px-3 py-1.5 rounded-lg border border-indigo-100">
                 $ company-os skills list
               </div>
             </div>
@@ -123,7 +123,7 @@ export const LocalSearchAgentView: React.FC = () => {
               <p className="text-xs text-slate-600 leading-relaxed">
                 Installed via <code>local-search install-skill</code> into <code>~/.claude/skills/local-search</code>. Teaches agents <strong>how to find</strong> existing workspace docs offline via SQLite FTS5.
               </p>
-              <div className="pt-2 text-[11px] text-cyan-900 font-mono bg-cyan-50/70 px-3 py-1.5 rounded-lg border border-cyan-100">
+              <div className="pt-2 text-[12px] text-cyan-900 font-mono bg-cyan-50/70 px-3 py-1.5 rounded-lg border border-cyan-100">
                 $ local-search init --json
               </div>
             </div>
@@ -145,7 +145,7 @@ export const LocalSearchAgentView: React.FC = () => {
               When an AI agent operates on a workspace, rules and skills are resolved across 4 layers. Canonical mandatory steps always outrank personal preferences, ensuring company governance remains unbreakable:
             </p>
 
-            <div className="bg-slate-900 p-3.5 rounded-xl border border-slate-800 font-mono text-xs text-indigo-300 space-y-1 shadow-inner">
+            <div className="bg-indigo-950 p-3.5 rounded-xl border border-indigo-900 font-mono text-xs text-indigo-300 space-y-1 shadow-inner">
               <div className="text-emerald-400"># Configured precedence contract in team.yaml</div>
               <div>precedence: canonical-mandatory &gt; personal &gt; canonical-default &gt; canonical-guidance</div>
               <div className="text-slate-400">onConflict: prefer-canonical-and-inform-user</div>
@@ -154,27 +154,27 @@ export const LocalSearchAgentView: React.FC = () => {
             {/* Visual Precedence Staircase */}
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs pt-1">
               <div className="bg-rose-50 border border-rose-200 p-3.5 rounded-xl space-y-1">
-                <span className="text-rose-700 font-bold block text-[10px] uppercase font-mono">1. TOP AUTHORITY</span>
+                <span className="text-rose-700 font-bold block text-[11px] uppercase font-mono">1. TOP AUTHORITY</span>
                 <span className="text-slate-900 font-bold block text-sm">canonical-mandatory</span>
-                <p className="text-slate-600 text-[11px] leading-tight">Company & platform security/compliance gates. Unbreakable.</p>
+                <p className="text-slate-600 text-[12px] leading-tight">Company & platform security/compliance gates. Unbreakable.</p>
               </div>
 
               <div className="bg-cyan-50 border border-cyan-200 p-3.5 rounded-xl space-y-1">
-                <span className="text-cyan-800 font-bold block text-[10px] uppercase font-mono">2. SECOND LEVEL</span>
+                <span className="text-cyan-800 font-bold block text-[11px] uppercase font-mono">2. SECOND LEVEL</span>
                 <span className="text-slate-900 font-bold block text-sm">personal scratchpad</span>
-                <p className="text-slate-600 text-[11px] leading-tight">Personal workflow rules in <code>scratchpad/personal-rules/</code>.</p>
+                <p className="text-slate-600 text-[12px] leading-tight">Personal workflow rules in <code>scratchpad/personal-rules/</code>.</p>
               </div>
 
               <div className="bg-amber-50 border border-amber-200 p-3.5 rounded-xl space-y-1">
-                <span className="text-amber-800 font-bold block text-[10px] uppercase font-mono">3. THIRD LEVEL</span>
+                <span className="text-amber-800 font-bold block text-[11px] uppercase font-mono">3. THIRD LEVEL</span>
                 <span className="text-slate-900 font-bold block text-sm">canonical-default</span>
-                <p className="text-slate-600 text-[11px] leading-tight">Standard process unless a formal deviation is logged.</p>
+                <p className="text-slate-600 text-[12px] leading-tight">Standard process unless a formal deviation is logged.</p>
               </div>
 
               <div className="bg-slate-100 border border-slate-200 p-3.5 rounded-xl space-y-1">
-                <span className="text-slate-600 font-bold block text-[10px] uppercase font-mono">4. FOURTH LEVEL</span>
+                <span className="text-slate-600 font-bold block text-[11px] uppercase font-mono">4. FOURTH LEVEL</span>
                 <span className="text-slate-900 font-bold block text-sm">canonical-guidance</span>
-                <p className="text-slate-600 text-[11px] leading-tight">Advisory best practices. Untracked and optional.</p>
+                <p className="text-slate-600 text-[12px] leading-tight">Advisory best practices. Untracked and optional.</p>
               </div>
             </div>
           </div>
@@ -187,7 +187,7 @@ export const LocalSearchAgentView: React.FC = () => {
                 <div key={layer.layer} className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-slate-900 text-sm">{layer.title}</span>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold font-mono uppercase ${
+                    <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold font-mono uppercase ${
                       layer.authority === 'canonical' ? 'bg-indigo-100 text-indigo-800' :
                       layer.authority === 'team' ? 'bg-cyan-100 text-cyan-800' : 'bg-slate-100 text-slate-700'
                     }`}>
@@ -200,7 +200,7 @@ export const LocalSearchAgentView: React.FC = () => {
                   <p className="text-xs text-slate-600 leading-relaxed">
                     {layer.description}
                   </p>
-                  <p className="text-[11px] text-slate-500 italic pt-1 border-t border-slate-100">
+                  <p className="text-[12px] text-slate-500 italic pt-1 border-t border-slate-100">
                     {layer.overrideRule}
                   </p>
                 </div>
@@ -243,10 +243,10 @@ export const LocalSearchAgentView: React.FC = () => {
             <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-2">
                 <div>
-                  <span className="text-[10px] font-mono text-indigo-700 font-bold uppercase">{activeRefSkill.id}</span>
+                  <span className="text-[11px] font-mono text-indigo-700 font-bold uppercase">{activeRefSkill.id}</span>
                   <h4 className="font-bold text-slate-900 text-sm">{activeRefSkill.title}</h4>
                 </div>
-                <span className="text-[11px] font-mono text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200 self-start sm:self-center">
+                <span className="text-[12px] font-mono text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200 self-start sm:self-center">
                   {activeRefSkill.location}
                 </span>
               </div>
@@ -260,10 +260,10 @@ export const LocalSearchAgentView: React.FC = () => {
                 <div className="space-y-2">
                   {activeRefSkill.steps.map((st) => (
                     <div key={st.number} className="flex items-start gap-2 bg-white p-2.5 rounded-xl border border-slate-200 text-xs">
-                      <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-800 font-bold flex items-center justify-center font-mono shrink-0 text-[11px]">
+                      <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-800 font-bold flex items-center justify-center font-mono shrink-0 text-[12px]">
                         {st.number}
                       </span>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono uppercase shrink-0 ${
+                      <span className={`px-2 py-0.5 rounded text-[11px] font-bold font-mono uppercase shrink-0 ${
                         st.tier === 'mandatory' ? 'bg-rose-100 text-rose-800 border border-rose-200' :
                         st.tier === 'default' ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' :
                         'bg-slate-100 text-slate-700 border border-slate-200'
@@ -324,11 +324,11 @@ export const LocalSearchAgentView: React.FC = () => {
             <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
               <p className="text-xs text-slate-700 leading-relaxed">
                 <strong>Company OS ships no MCP server and no MCP client.</strong> There is no{' '}
-                <code className="font-mono text-[11px] px-1 rounded bg-slate-200/70">.mcp.json</code> anywhere
-                in the repo, and no <code className="font-mono text-[11px]">company-os</code> command talks to
-                the GitHub API — <code className="font-mono text-[11px]">workspace sync</code> is eight plain
-                git invocations with no <code className="font-mono text-[11px]">push</code>,{' '}
-                <code className="font-mono text-[11px]">commit</code>, or HTTP call anywhere.
+                <code className="font-mono text-[12px] px-1 rounded bg-slate-200/70">.mcp.json</code> anywhere
+                in the repo, and no <code className="font-mono text-[12px]">company-os</code> command talks to
+                the GitHub API — <code className="font-mono text-[12px]">workspace sync</code> is eight plain
+                git invocations with no <code className="font-mono text-[12px]">push</code>,{' '}
+                <code className="font-mono text-[12px]">commit</code>, or HTTP call anywhere.
               </p>
               <p className="text-xs text-slate-700 leading-relaxed">
                 So the GitHub MCP is <strong>your agent's</strong> tool, configured in your agent; Company OS
@@ -336,8 +336,8 @@ export const LocalSearchAgentView: React.FC = () => {
                 <strong>skill</strong> tells the agent when to reach for it. That inherits the constraint
                 from <em>No Execution Authority</em> above: a skill describes how to author an artifact, so
                 no skill — and therefore no MCP call it suggests — can grant permission to bypass a
-                mandatory gate, edit <code className="font-mono text-[11px]">generated/</code>, or modify a{' '}
-                <code className="font-mono text-[11px]">0444</code> synced slice.
+                mandatory gate, edit <code className="font-mono text-[12px]">generated/</code>, or modify a{' '}
+                <code className="font-mono text-[12px]">0444</code> synced slice.
               </p>
             </div>
 
@@ -347,7 +347,7 @@ export const LocalSearchAgentView: React.FC = () => {
                 <GitBranch className="w-4 h-4 text-indigo-600" />
                 <span>
                   Applied to{' '}
-                  <code className="font-mono text-[11px] text-indigo-800">
+                  <code className="font-mono text-[12px] text-indigo-800">
                     skill://governance/syncing-knowledge
                   </code>
                 </span>
@@ -410,7 +410,7 @@ export const LocalSearchAgentView: React.FC = () => {
                 {MCP_BOUNDARY[2].items.map((item, i) => (
                   <div
                     key={i}
-                    className="p-3 bg-rose-50/60 border border-rose-200 rounded-xl text-[11px] text-slate-700 leading-relaxed"
+                    className="p-3 bg-rose-50/60 border border-rose-200 rounded-xl text-[12px] text-slate-700 leading-relaxed"
                   >
                     {item}
                   </div>
@@ -428,7 +428,7 @@ export const LocalSearchAgentView: React.FC = () => {
                 Same skill, same gates — the prompt just uses MCP for the read half and names the boundary
                 out loud so the agent cannot drift across it:
               </p>
-              <div className="p-3 bg-slate-900 rounded-lg text-xs font-mono text-slate-200 leading-relaxed border border-slate-800 shadow-inner">
+              <div className="p-3 bg-indigo-950 rounded-lg text-xs font-mono text-slate-200 leading-relaxed border border-indigo-900 shadow-inner">
                 {MCP_ASSISTED_PROMPT}
               </div>
               <button
@@ -453,7 +453,7 @@ export const LocalSearchAgentView: React.FC = () => {
               </button>
             </div>
 
-            <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-start gap-2 text-xs text-slate-200">
+            <div className="p-3 rounded-xl bg-indigo-950 border border-indigo-900 flex items-start gap-2 text-xs text-slate-200">
               <ShieldAlert className="w-4 h-4 shrink-0 text-amber-400 mt-0.5" />
               <span className="leading-relaxed">
                 <strong className="text-white">An agent may read anything, but the CLI writes the
@@ -486,11 +486,11 @@ export const LocalSearchAgentView: React.FC = () => {
                 <div key={prompt.id} className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5 flex flex-col justify-between">
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
+                      <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
                         {prompt.category}
                       </span>
                       {prompt.skillName && (
-                        <span className="text-[11px] font-mono font-bold text-indigo-950 bg-indigo-100/80 border border-indigo-200 px-2 py-0.5 rounded flex items-center gap-1">
+                        <span className="text-[12px] font-mono font-bold text-indigo-950 bg-indigo-100/80 border border-indigo-200 px-2 py-0.5 rounded flex items-center gap-1">
                           <FileCode className="w-3 h-3 text-indigo-600" />
                           <span>{prompt.skillName}</span>
                         </span>
@@ -499,13 +499,13 @@ export const LocalSearchAgentView: React.FC = () => {
                     <div>
                       <h4 className="font-bold text-slate-900 text-sm">{prompt.title}</h4>
                       {prompt.targetSkillId && (
-                        <div className="mt-1 text-[10px] font-mono text-slate-500 bg-slate-100/90 px-2 py-0.5 rounded border border-slate-200/70 inline-block max-w-full overflow-x-auto whitespace-nowrap">
+                        <div className="mt-1 text-[11px] font-mono text-slate-500 bg-slate-100/90 px-2 py-0.5 rounded border border-slate-200/70 inline-block max-w-full overflow-x-auto whitespace-nowrap">
                           ID: <span className="text-slate-700 font-semibold">{prompt.targetSkillId}</span>
                         </div>
                       )}
                     </div>
                     <p className="text-xs text-slate-600">{prompt.description}</p>
-                    <div className="p-3 bg-slate-900 rounded-lg text-xs font-mono text-slate-200 leading-relaxed border border-slate-800 shadow-inner overflow-x-auto max-h-36">
+                    <div className="p-3 bg-indigo-950 rounded-lg text-xs font-mono text-slate-200 leading-relaxed border border-indigo-900 shadow-inner overflow-x-auto max-h-36">
                       {prompt.promptText}
                     </div>
                   </div>
@@ -544,7 +544,7 @@ export const LocalSearchAgentView: React.FC = () => {
                 {PROMPTING_RULES.map((pr, idx) => (
                   <div key={idx} className="p-3 bg-indigo-50/50 border border-indigo-100/80 rounded-xl space-y-1">
                     <div className="font-bold text-indigo-950 text-xs">{pr.rule}</div>
-                    <p className="text-slate-600 text-[11px] leading-relaxed">{pr.detail}</p>
+                    <p className="text-slate-600 text-[12px] leading-relaxed">{pr.detail}</p>
                   </div>
                 ))}
               </div>
@@ -552,17 +552,17 @@ export const LocalSearchAgentView: React.FC = () => {
           </div>
 
           {/* CLI Terminal Output Simulator */}
-          <div className="bg-slate-950 border border-slate-800 shadow-xl rounded-2xl p-5 space-y-3 font-mono text-xs">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+          <div className="bg-[#171340] border border-indigo-900 shadow-xl rounded-2xl p-5 space-y-3 font-mono text-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-indigo-900 pb-3">
               <div className="flex items-center gap-2">
                 <Terminal className="w-4 h-4 text-emerald-400" />
                 <span className="text-slate-200 font-bold">company-os skills list CLI Simulator</span>
               </div>
 
-              <div className="flex items-center gap-2 bg-slate-900 p-1 rounded-lg border border-slate-800">
+              <div className="flex items-center gap-2 bg-indigo-950 p-1 rounded-lg border border-indigo-900">
                 <button
                   onClick={() => setCliFormat('text')}
-                  className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-all ${
+                  className={`px-2.5 py-1 rounded text-[12px] font-semibold transition-all ${
                     cliFormat === 'text' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
@@ -570,7 +570,7 @@ export const LocalSearchAgentView: React.FC = () => {
                 </button>
                 <button
                   onClick={() => setCliFormat('json')}
-                  className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-all ${
+                  className={`px-2.5 py-1 rounded text-[12px] font-semibold transition-all ${
                     cliFormat === 'json' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
@@ -579,11 +579,11 @@ export const LocalSearchAgentView: React.FC = () => {
               </div>
             </div>
 
-            <div className="text-slate-400 text-[11px]">
+            <div className="text-slate-400 text-[12px]">
               Command: <code className="text-emerald-300">company-os {cliFormat === 'json' ? '--json ' : ''}skills list</code>
             </div>
 
-            <pre className="p-4 bg-slate-900 rounded-xl text-slate-200 overflow-x-auto text-[11px] leading-relaxed border border-slate-800/80 max-h-80">
+            <pre className="p-4 bg-indigo-950 rounded-xl text-slate-200 overflow-x-auto text-[12px] leading-relaxed border border-indigo-900/80 max-h-80">
               {cliFormat === 'text' ? MOCK_SKILLS_CLI_TEXT : MOCK_SKILLS_JSON_TEXT}
             </pre>
           </div>
@@ -602,7 +602,7 @@ export const LocalSearchAgentView: React.FC = () => {
               <p className="text-xs text-slate-600 leading-relaxed">
                 Scaffolds discovery briefs, PRDs, reality docs, resolves governance, builds graph tags, and runs validation gates. Never queries external servers or databases.
               </p>
-              <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono text-indigo-300 shadow-inner">
+              <div className="p-2.5 rounded-xl bg-indigo-950 border border-indigo-900 text-xs font-mono text-indigo-300 shadow-inner">
                 $ company-os validate
               </div>
             </div>
@@ -615,7 +615,7 @@ export const LocalSearchAgentView: React.FC = () => {
               <p className="text-xs text-slate-600 leading-relaxed">
                 Single Go binary that registers workspaces, scans Markdown files, and provides BM25 hybrid search for terminal users and AI agents.
               </p>
-              <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono text-cyan-300 shadow-inner">
+              <div className="p-2.5 rounded-xl bg-indigo-950 border border-indigo-900 text-xs font-mono text-cyan-300 shadow-inner">
                 $ local-search search "same-day pickup"
               </div>
             </div>
@@ -647,27 +647,27 @@ export const LocalSearchAgentView: React.FC = () => {
               </div>
 
               <div className="flex items-end">
-                <div className="w-full bg-slate-900 p-2 rounded-lg border border-slate-800 font-mono text-cyan-300 text-xs truncate shadow-inner">
+                <div className="w-full bg-indigo-950 p-2 rounded-lg border border-indigo-900 font-mono text-cyan-300 text-xs truncate shadow-inner">
                   $ local-search search "{searchQuery}"
                 </div>
               </div>
             </div>
 
-            <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-xs space-y-2 shadow-md">
-              <div className="text-slate-500 text-[10px] border-b border-slate-800 pb-1">
+            <div className="bg-[#171340] border border-indigo-900 rounded-xl p-4 font-mono text-xs space-y-2 shadow-md">
+              <div className="text-slate-500 text-[11px] border-b border-indigo-900 pb-1">
                 Local Search BM25 Ranked Results (2 matches)
               </div>
               <div className="text-emerald-300 space-y-2">
                 <div>
                   <span className="text-slate-400">[1] score: 0.94 | repo: {searchScope}</span>
                   <div className="text-white font-bold">platforms/ordering/change-records/active/2026-same-day-pickup-slots/prd.md</div>
-                  <div className="text-slate-400 text-[11px]">...Allow web customers to choose 15-minute same-day pickup slots on current day...</div>
+                  <div className="text-slate-400 text-[12px]">...Allow web customers to choose 15-minute same-day pickup slots on current day...</div>
                 </div>
 
-                <div className="pt-2 border-t border-slate-800/80">
+                <div className="pt-2 border-t border-indigo-900/80">
                   <span className="text-slate-400">[2] score: 0.81 | repo: {searchScope}</span>
                   <div className="text-white font-bold">teams/web/product/discovery/2026-same-day-pickup-slots/brief.md</div>
-                  <div className="text-slate-400 text-[11px]">...Problem signal: Customers abandon carts when pickup is limited to next-day...</div>
+                  <div className="text-slate-400 text-[12px]">...Problem signal: Customers abandon carts when pickup is limited to next-day...</div>
                 </div>
               </div>
             </div>

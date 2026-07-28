@@ -125,7 +125,7 @@ export default function App() {
       {/* Bento Grid Footer */}
       <footer className="border-t border-slate-200 bg-white py-6 text-slate-500">
         <div className="max-w-[95%] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-[10px] text-slate-500 font-mono">
+          <p className="text-[11px] text-slate-500 font-mono">
             © 2026 uncle-os v{VERSION} · made by{' '}
             <a
               href={X_URL}
@@ -153,7 +153,7 @@ export default function App() {
               className={`${footerLinkClass} flex items-center gap-1.5`}
             >
               <Coffee className="w-4 h-4" />
-              <span className="text-[10px] font-bold uppercase tracking-wider font-mono">Buy me a coffee</span>
+              <span className="text-[11px] font-bold uppercase tracking-wider font-mono">Buy me a coffee</span>
             </a>
           </div>
         </div>

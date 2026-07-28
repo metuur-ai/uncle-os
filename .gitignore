@@ -8,6 +8,7 @@ __pycache__/
 .venv/
 venv/
 
+.playwright-mcp/
 # Local-only working areas (company-os scratchpad convention)
 scratchpad/
 .company-os.local.yaml
