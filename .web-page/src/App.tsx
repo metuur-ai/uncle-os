@@ -16,6 +16,21 @@ import { BeginnerGuideModal } from './components/BeginnerGuideModal';
 import { ContentDirectoryModal } from './components/ContentDirectoryModal';
 import { GlobalSearchModal } from './components/GlobalSearchModal';
 import { WhyWhatHowCard } from './components/WhyWhatHowCard';
+import { Coffee, Github } from 'lucide-react';
+
+const VERSION = '1.4.0';
+const GITHUB_URL = 'https://github.com/metuur-ai/uncle-os';
+const X_URL = 'https://x.com/javierhbr';
+const COFFEE_URL = 'https://buymeacoffee.com/javierhbr';
+
+const footerLinkClass = 'text-slate-500 hover:text-indigo-600 transition-colors';
+
+// lucide-react has no X (Twitter) brand mark, so it is inlined here.
+const XMark = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className={className}>
+    <path d="M18.9 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932zm-1.29 19.49h2.039L6.486 3.24H4.298z" />
+  </svg>
+);
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabType>('home');
@@ -110,23 +125,37 @@ export default function App() {
       {/* Bento Grid Footer */}
       <footer className="border-t border-slate-200 bg-white py-6 text-slate-500">
         <div className="max-w-[95%] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 shadow-[0_0_8px_rgba(79,70,229,0.5)]" />
-              <span className="text-[10px] text-slate-600 font-bold uppercase tracking-wider font-mono">Node: London-01</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-              <span className="text-[10px] text-slate-600 font-bold uppercase tracking-wider font-mono">Encryption: AES-256</span>
-            </div>
-            <div className="hidden sm:flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-cyan-600" />
-              <span className="text-[10px] text-slate-600 font-bold uppercase tracking-wider font-mono">BM25 Local Engine</span>
-            </div>
-          </div>
           <p className="text-[10px] text-slate-500 font-mono">
-            COMPANY OS & TEAM OS • GIT-BASED DUAL-CORE OPERATING SYSTEM v1.4.0
+            © 2026 uncle-os v{VERSION} · made by{' '}
+            <a
+              href={X_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="text-slate-700 font-bold hover:text-indigo-600 transition-colors"
+            >
+              @javierhbr
+            </a>
           </p>
+
+          <div className="flex items-center gap-5">
+            <a href={GITHUB_URL} target="_blank" rel="noreferrer" aria-label="GitHub repository" className={footerLinkClass}>
+              <Github className="w-4 h-4" />
+            </a>
+
+            <a href={X_URL} target="_blank" rel="noreferrer" aria-label="Author on X" className={footerLinkClass}>
+              <XMark className="w-3.5 h-3.5" />
+            </a>
+
+            <a
+              href={COFFEE_URL}
+              target="_blank"
+              rel="noreferrer"
+              className={`${footerLinkClass} flex items-center gap-1.5`}
+            >
+              <Coffee className="w-4 h-4" />
+              <span className="text-[10px] font-bold uppercase tracking-wider font-mono">Buy me a coffee</span>
+            </a>
+          </div>
         </div>
       </footer>
 
