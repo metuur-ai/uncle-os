@@ -1,30 +1,27 @@
-import React, { useState } from 'react';
-import { 
-  Building2, 
-  Users, 
-  GitBranch, 
-  ShieldCheck, 
-  Zap, 
-  Layers, 
-  Terminal, 
-  FolderTree, 
-  Award, 
-  CheckCircle2, 
-  ArrowRight, 
-  HelpCircle,
-  Compass,
-  RefreshCw,
+import React from 'react';
+import {
+  Building2,
   FileCode2,
-  ListCheck
+  ListCheck,
+  ShieldCheck,
+  GitBranch,
+  Layers,
+  ArrowRight,
+  Rocket,
+  HelpCircle,
+  CheckCircle2,
+  type LucideIcon,
 } from 'lucide-react';
 import { TabType } from '../types';
-import { Tooltip } from './Tooltip';
-import { 
-  HOME_HERO_CONTENT, 
-  DUAL_CORE_COMPARISON, 
-  LIFECYCLE_STEPS, 
-  QUICK_DIRECTORY_CARDS 
+import { LESSONS, lessonNumber } from '../lessons';
+import {
+  HOME_HERO_CONTENT,
+  DUAL_CORE_COMPARISON,
+  LIFECYCLE_STEPS,
+  QUICK_DIRECTORY_CARDS,
 } from '../data/homeData';
+import { WhyWhatHowCard } from './WhyWhatHowCard';
+import { PageShell, Section, Card, Badge, Button } from './ui';
 
 interface HomeOverviewProps {
   onNavigateTab: (tab: TabType) => void;
@@ -33,341 +30,246 @@ interface HomeOverviewProps {
   setIsStandalone: (val: boolean) => void;
 }
 
+const LIFECYCLE_ICONS: Record<string, LucideIcon> = {
+  FileCode2,
+  ListCheck,
+  ShieldCheck,
+  Building2,
+};
+
 export const HomeOverview: React.FC<HomeOverviewProps> = ({
   onNavigateTab,
   onOpenGuide,
   isStandalone,
   setIsStandalone,
 }) => {
-  const [activeComparisonTab, setActiveComparisonTab] = useState<'all' | 'company' | 'team'>('all');
-
-  const getStepIcon = (iconName: string) => {
-    switch (iconName) {
-      case 'FileCode2': return <FileCode2 className="w-4 h-4 text-slate-400" />;
-      case 'ListCheck': return <ListCheck className="w-4 h-4 text-slate-400" />;
-      case 'ShieldCheck': return <ShieldCheck className="w-4 h-4 text-slate-400" />;
-      case 'Building2': return <Building2 className="w-4 h-4 text-slate-400" />;
-      default: return <FileCode2 className="w-4 h-4 text-slate-400" />;
-    }
-  };
-
-  const getQuickCardIcon = (index: number) => {
-    switch (index) {
-      case 0: return <FolderTree className="w-5 h-5 text-indigo-600" />;
-      case 1: return <Terminal className="w-5 h-5 text-indigo-600" />;
-      case 2: return <ShieldCheck className="w-5 h-5 text-indigo-600" />;
-      case 3: return <Award className="w-5 h-5 text-indigo-600" />;
-      default: return <FolderTree className="w-5 h-5 text-indigo-600" />;
-    }
-  };
+  const tutorials = LESSONS.filter((l) => l.id !== 'home');
 
   return (
-    <div className="space-y-8">
-      
-      {/* Hero Banner Section */}
-      <div className="bg-indigo-950 text-white rounded-2xl p-6 sm:p-8 md:p-9 border border-indigo-900 shadow-sm relative">
-        <div className="max-w-4xl space-y-4">
-          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-indigo-900 border border-indigo-800 text-indigo-200 font-mono text-[12px] font-bold uppercase tracking-wider">
-            <span>{HOME_HERO_CONTENT.badge}</span>
-          </div>
+    <PageShell width="wide">
+      {/* ================= HERO ============================================ */}
+      <section className="relative overflow-hidden rounded-2xl border border-border bg-surface px-6 py-14 sm:px-10 lg:px-14 lg:py-20">
+        {/* Decorative only — the grid never carries meaning. */}
+        <div className="bg-grid pointer-events-none absolute inset-0 opacity-60" aria-hidden="true" />
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-surface to-transparent"
+          aria-hidden="true"
+        />
 
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-white leading-tight">
+        <div className="relative">
+          <Badge tone="accent" icon={Rocket}>
+            {HOME_HERO_CONTENT.badge}
+          </Badge>
+
+          <h1 className="measure-wide mt-5 text-4xl font-bold tracking-tight text-fg sm:text-5xl">
             {HOME_HERO_CONTENT.titlePrefix}
-            <span className="text-indigo-300"> {HOME_HERO_CONTENT.companyTitle} </span>
+            <span className="text-accent-text">{HOME_HERO_CONTENT.companyTitle}</span>
             {HOME_HERO_CONTENT.titleConnector}
-            <span className="text-cyan-300"> {HOME_HERO_CONTENT.teamTitle}</span>
+            <span className="text-scope-text">{HOME_HERO_CONTENT.teamTitle}</span>
           </h1>
 
-          <p className="text-slate-300 text-sm sm:text-base leading-relaxed max-w-3xl">
+          <p className="measure mt-5 text-lg leading-relaxed text-fg-muted">
             {HOME_HERO_CONTENT.description}
           </p>
 
-          <div className="pt-2 flex flex-wrap gap-3 items-center">
-            <Tooltip title="Why click this?" content="View the full visual tree map of files, folders, and repository layouts." position="bottom">
-              <button
-                onClick={() => onNavigateTab('architecture')}
-                className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs sm:text-sm transition-all flex items-center gap-2 shadow-xs"
-              >
-                <FolderTree className="w-4 h-4" />
-                <span>Explore Architecture</span>
-                <ArrowRight className="w-4 h-4 ml-0.5" />
-              </button>
-            </Tooltip>
-
-            <Tooltip title="Why click this?" content="Test interactive terminal commands like company-os validate in a live CLI simulator." position="bottom">
-              <button
-                onClick={() => onNavigateTab('cli')}
-                className="px-4 py-2.5 rounded-xl bg-indigo-900 hover:bg-indigo-800 text-slate-100 font-semibold text-xs sm:text-sm border border-indigo-800 transition-all flex items-center gap-2"
-              >
-                <Terminal className="w-4 h-4 text-cyan-400" />
-                <span>Try CLI Simulator</span>
-              </button>
-            </Tooltip>
-
-            <Tooltip title="Why click this?" content="Open plain English explanations for technical terms without confusing jargon." position="bottom">
-              <button
-                onClick={onOpenGuide}
-                className="px-4 py-2.5 rounded-xl bg-indigo-900/80 hover:bg-indigo-900 text-slate-200 font-semibold text-xs sm:text-sm border border-indigo-800 transition-all flex items-center gap-2"
-              >
-                <HelpCircle className="w-4 h-4 text-indigo-400" />
-                <span>Beginner Glossary</span>
-              </button>
-            </Tooltip>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Button size="lg" iconRight={ArrowRight} onClick={() => onNavigateTab('install')}>
+              Start lesson 1 — Install &amp; Setup
+            </Button>
+            <Button variant="secondary" size="lg" icon={HelpCircle} onClick={onOpenGuide}>
+              I&apos;m new — explain the jargon
+            </Button>
           </div>
+
+          <p className="mt-6 font-mono text-xs text-fg-subtle">
+            9 interactive lessons · no signup · runs entirely in your browser
+          </p>
         </div>
-      </div>
+      </section>
 
-      {/* Core Explanation Cards: Company OS vs Team OS */}
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200">
-          <div>
-            <h2 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
-              <Layers className="w-5 h-5 text-indigo-600" />
-              <span>Understanding the Dual-Core System</span>
-            </h2>
-            <p className="text-xs text-slate-500">
-              Why operating rules are separated into central company standards and local team autonomy.
-            </p>
-          </div>
+      {/* ================= WHY / WHAT / HOW ================================ */}
+      <WhyWhatHowCard onNavigate={onNavigateTab} onOpenGuide={onOpenGuide} />
 
-          <div className="bg-slate-100 p-1 rounded-xl border border-slate-200 flex items-center text-xs self-start sm:self-auto">
-            <button
-              onClick={() => setActiveComparisonTab('all')}
-              className={`px-3 py-1 rounded-lg font-semibold transition-all ${
-                activeComparisonTab === 'all' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Side-by-Side
-            </button>
-            <button
-              onClick={() => setActiveComparisonTab('company')}
-              className={`px-3 py-1 rounded-lg font-semibold transition-all ${
-                activeComparisonTab === 'company' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Company OS
-            </button>
-            <button
-              onClick={() => setActiveComparisonTab('team')}
-              className={`px-3 py-1 rounded-lg font-semibold transition-all ${
-                activeComparisonTab === 'team' ? 'bg-cyan-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Team OS
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {DUAL_CORE_COMPARISON.map((info) => {
-            const isCompany = info.id === 'company';
-            const isVisible = activeComparisonTab === 'all' || activeComparisonTab === info.id;
-            if (!isVisible) return null;
+      {/* ================= DUAL CORE ======================================= */}
+      <Section
+        title="Two cores, one workspace"
+        description="Company OS holds the rules everyone inherits. Team OS is where a squad actually works. Pick a side below to switch the whole site into that point of view."
+      >
+        <div className="grid gap-4 lg:grid-cols-2">
+          {DUAL_CORE_COMPARISON.map((core) => {
+            const isTeam = core.id === 'team';
+            const selected = isTeam === isStandalone;
+            const Icon = isTeam ? GitBranch : Layers;
 
             return (
-              <div 
-                key={info.id}
-                className={`bg-white border rounded-2xl p-5 shadow-xs space-y-4 transition-all ${
-                  activeComparisonTab === info.id 
-                    ? (isCompany ? 'border-indigo-600 md:col-span-2' : 'border-cyan-600 md:col-span-2')
-                    : 'border-slate-200 hover:border-slate-300'
-                }`}
+              <Card
+                key={core.id}
+                padding="lg"
+                tone={selected ? (isTeam ? 'scope' : 'accent') : 'neutral'}
+                className="flex flex-col"
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-xl text-white flex items-center justify-center font-bold shrink-0 ${
-                      isCompany ? 'bg-indigo-600' : 'bg-cyan-600'
-                    }`}>
-                      {isCompany ? <Building2 className="w-5 h-5" /> : <Users className="w-5 h-5" />}
-                    </div>
-                    <div>
-                      <span className={`px-2 py-0.5 rounded text-[11px] font-bold font-mono uppercase tracking-wider ${
-                        isCompany ? 'bg-indigo-50 text-indigo-800 border border-indigo-100' : 'bg-cyan-50 text-cyan-800 border border-cyan-100'
-                      }`}>
-                        {info.badge}
-                      </span>
-                      <h3 className="text-lg font-bold text-slate-900 tracking-tight mt-0.5">
-                        {info.title}
-                      </h3>
-                    </div>
-                  </div>
-                  <span className="text-xs font-mono font-semibold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 shrink-0">
-                    {info.yamlFile}
-                  </span>
-                </div>
-
-                <p className="text-slate-600 text-xs leading-relaxed">
-                  {info.summary}
-                </p>
-
-                <div className="space-y-2 pt-2 border-t border-slate-100">
-                  <span className="text-[12px] font-bold text-slate-900 uppercase font-mono tracking-wider block">Key Focus Areas:</span>
-                  <ul className="space-y-1.5 text-xs text-slate-700">
-                    {info.keyPoints.map((point, idx) => (
-                      <li key={idx} className="flex items-start gap-2">
-                        <CheckCircle2 className={`w-4 h-4 shrink-0 mt-0.5 ${isCompany ? 'text-indigo-600' : 'text-cyan-600'}`} />
-                        <span>{point}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="pt-2 flex items-center justify-between text-xs">
-                  <span className="text-slate-500 italic">{info.footerNote}</span>
-                  <button
-                    onClick={() => onNavigateTab(info.targetTab)}
-                    className={`px-3 py-1.5 rounded-xl font-bold transition-colors flex items-center gap-1 ${
-                      isCompany ? 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700' : 'bg-cyan-50 hover:bg-cyan-100 text-cyan-800'
+                <div className="flex flex-wrap items-center gap-3">
+                  <span
+                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${
+                      isTeam ? 'bg-scope-soft text-scope-text' : 'bg-accent-soft text-accent-text'
                     }`}
+                    aria-hidden="true"
                   >
-                    <span>{info.actionText}</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <div className="min-w-0">
+                    <h3 className="text-2xl font-semibold tracking-tight text-fg">{core.title}</h3>
+                    <p className="font-mono text-xs text-fg-subtle">{core.yamlFile}</p>
+                  </div>
+                  <Badge tone={isTeam ? 'scope' : 'accent'} className="ml-auto">
+                    {core.badge}
+                  </Badge>
                 </div>
-              </div>
+
+                <p className="mt-4 leading-relaxed text-fg-muted">{core.summary}</p>
+
+                <ul className="mt-5 space-y-3">
+                  {core.keyPoints.map((point) => {
+                    const [label, ...rest] = point.split(': ');
+                    const body = rest.join(': ');
+                    return (
+                      <li key={point} className="flex gap-2.5">
+                        <CheckCircle2
+                          className={`mt-0.5 h-4 w-4 shrink-0 ${
+                            isTeam ? 'text-scope-text' : 'text-accent-text'
+                          }`}
+                          aria-hidden="true"
+                        />
+                        <span className="text-sm leading-relaxed text-fg-muted">
+                          <span className="font-semibold text-fg">{label}</span>
+                          {body ? <>: {body}</> : null}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+
+                <div className="mt-auto flex flex-wrap items-center gap-2 pt-6">
+                  <Button
+                    variant={selected ? 'primary' : 'secondary'}
+                    size="sm"
+                    iconRight={ArrowRight}
+                    onClick={() => {
+                      setIsStandalone(isTeam);
+                      onNavigateTab(core.targetTab);
+                    }}
+                  >
+                    {core.actionText}
+                  </Button>
+                  {!selected && (
+                    <Button variant="ghost" size="sm" onClick={() => setIsStandalone(isTeam)}>
+                      Switch to this view
+                    </Button>
+                  )}
+                  {selected && (
+                    <span className="font-mono text-2xs uppercase tracking-widest text-fg-subtle">
+                      Currently viewing
+                    </span>
+                  )}
+                </div>
+
+                <p className="mt-4 border-t border-border pt-4 font-mono text-xs text-fg-subtle">
+                  {core.footerNote}
+                </p>
+              </Card>
             );
           })}
         </div>
-      </div>
+      </Section>
 
-      {/* Interactive Mode Demonstration Widget */}
-      <div className="bg-indigo-950 text-white rounded-2xl p-6 border border-indigo-900 space-y-5">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <RefreshCw className="w-4 h-4 text-indigo-400" />
-              <span className="text-xs font-bold text-indigo-300 font-mono uppercase tracking-wider">
-                Live Operating Mode Preview
-              </span>
-            </div>
-            <h3 className="text-lg font-bold text-white tracking-tight">
-              Switching Operating Modes: Standalone vs. Federated
-            </h3>
-            <p className="text-slate-400 text-xs">
-              Toggle mode to experience how validation rules & workspace requirements adapt.
-            </p>
-          </div>
+      {/* ================= LIFECYCLE ======================================= */}
+      <Section
+        title="What a change looks like end to end"
+        description="From an idea in a squad's head to a merged, indexed, searchable document — four stages."
+      >
+        <ol className="stagger grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {LIFECYCLE_STEPS.map((step) => {
+            const Icon = LIFECYCLE_ICONS[step.iconName] ?? FileCode2;
+            return (
+              <li key={step.stepNumber}>
+                <Card padding="md" className="h-full">
+                  <div className="flex items-center gap-2.5">
+                    <span
+                      className="tabular flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent font-mono text-xs font-bold text-accent-fg"
+                      aria-hidden="true"
+                    >
+                      {step.stepNumber}
+                    </span>
+                    <Icon className="h-4 w-4 text-fg-subtle" aria-hidden="true" />
+                  </div>
+                  <h3 className="mt-3 font-semibold text-fg">{step.title}</h3>
+                  <p className="mt-1.5 text-sm leading-relaxed text-fg-muted">
+                    {step.description}
+                  </p>
+                </Card>
+              </li>
+            );
+          })}
+        </ol>
+      </Section>
 
-          <div className="bg-indigo-900 p-1 rounded-xl border border-indigo-800 flex items-center shrink-0">
-            <button
-              onClick={() => setIsStandalone(false)}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
-                !isStandalone
-                  ? 'bg-indigo-600 text-white'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5" />
-              <span>Company OS (Federated)</span>
-            </button>
-            <button
-              onClick={() => setIsStandalone(true)}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
-                isStandalone
-                  ? 'bg-cyan-600 text-white'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <GitBranch className="w-3.5 h-3.5" />
-              <span>Team OS (Standalone)</span>
-            </button>
-          </div>
-        </div>
+      {/* ================= LESSON INDEX ==================================== */}
+      <Section
+        title="All 9 lessons"
+        description="The lessons build on each other, but every one stands alone if you already know the basics."
+      >
+        <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {tutorials.map((lesson) => (
+            <li key={lesson.id}>
+              <button
+                type="button"
+                onClick={() => onNavigateTab(lesson.id)}
+                className="group flex h-full w-full cursor-pointer flex-col rounded-xl border border-border bg-surface p-4 text-left transition-colors duration-150 hover:border-accent-border hover:bg-surface-sunken"
+              >
+                <div className="flex items-center gap-2.5">
+                  <span
+                    className="tabular flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-border bg-surface-sunken font-mono text-2xs font-semibold text-fg-muted transition-colors group-hover:border-accent group-hover:bg-accent group-hover:text-accent-fg"
+                    aria-hidden="true"
+                  >
+                    {lessonNumber(lesson.id)}
+                  </span>
+                  <lesson.icon className="h-4 w-4 shrink-0 text-fg-subtle" aria-hidden="true" />
+                  <span className="truncate font-semibold text-fg">{lesson.label}</span>
+                  <ArrowRight
+                    className="ml-auto h-4 w-4 shrink-0 text-fg-faint transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-accent-text"
+                    aria-hidden="true"
+                  />
+                </div>
+                <p className="mt-2 text-sm leading-relaxed text-fg-muted">{lesson.whyText}</p>
+              </button>
+            </li>
+          ))}
+        </ol>
+      </Section>
 
-        {/* Dynamic Mode Feedback Box */}
-        <div className={`p-4 rounded-xl border text-xs leading-relaxed ${
-          !isStandalone 
-            ? 'bg-indigo-950/40 border-indigo-800/80 text-indigo-100' 
-            : 'bg-cyan-950/40 border-cyan-800/80 text-cyan-100'
-        }`}>
-          <div className="flex items-start gap-3">
-            <div className={`p-2 rounded-lg shrink-0 ${
-              !isStandalone ? 'bg-indigo-600/30 text-indigo-300' : 'bg-cyan-600/30 text-cyan-300'
-            }`}>
-              {!isStandalone ? <Building2 className="w-4 h-4" /> : <GitBranch className="w-4 h-4" />}
-            </div>
-            <div className="space-y-1">
-              <h4 className="font-bold text-sm text-white">
-                Active Mode: {!isStandalone ? 'Company OS (Federated Mode)' : 'Team OS (Standalone Mode)'}
-              </h4>
-              <p className="text-slate-300 text-xs">
-                {!isStandalone ? (
-                  <>In <strong>Federated Mode</strong>, workspace validation enforces root <code>company-os.yaml</code>, cross-team platform dependencies, global compliance rules, and root ontology definitions. Gate 8 (Federation) is strictly enforced.</>
-                ) : (
-                  <>In <strong>Standalone Mode</strong>, the team repository operates independently using <code>team-os.yaml</code>. Central company dependencies are treated as optional for local squad velocity.</>
-                )}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* How It Works Flow: 4 Steps */}
-      <div className="space-y-4">
-        <div>
-          <h2 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <Zap className="w-5 h-5 text-indigo-600" />
-            <span>The 4-Step Feature Lifecycle</span>
-          </h2>
-          <p className="text-xs text-slate-500">
-            How changes move from local ideation to verified release.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {LIFECYCLE_STEPS.map((step) => (
-            <div key={step.stepNumber} className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="w-6 h-6 rounded bg-slate-100 text-slate-800 font-bold text-xs flex items-center justify-center font-mono">
-                  {step.stepNumber}
-                </span>
-                {getStepIcon(step.iconName)}
-              </div>
-              <h4 className="font-bold text-slate-900 text-sm">{step.title}</h4>
-              <p className="text-slate-600 text-xs leading-relaxed">{step.description}</p>
-            </div>
+      {/* ================= QUICK DIRECTORY ================================= */}
+      <Section
+        title="Jump straight to a tool"
+        description="Already know your way around? These are the four things people open most."
+      >
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {QUICK_DIRECTORY_CARDS.map((card) => (
+            <Card key={card.title} padding="md" className="flex h-full flex-col">
+              <h3 className="font-semibold text-fg">{card.title}</h3>
+              <p className="mt-1.5 text-sm leading-relaxed text-fg-muted">{card.description}</p>
+              <Button
+                variant="ghost"
+                size="sm"
+                iconRight={ArrowRight}
+                onClick={() => onNavigateTab(card.targetTab)}
+                className="mt-auto self-start pt-4"
+              >
+                {card.actionText}
+              </Button>
+            </Card>
           ))}
         </div>
-      </div>
-
-      {/* Feature Navigation Grid (Direct Jump to Tools) */}
-      <div className="space-y-4">
-        <div>
-          <h2 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <Compass className="w-5 h-5 text-indigo-600" />
-            <span>Interactive Explorer Directory</span>
-          </h2>
-          <p className="text-xs text-slate-500">
-            Jump directly to any interactive simulator or reference tool.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {QUICK_DIRECTORY_CARDS.map((card, idx) => (
-            <div
-              key={idx}
-              onClick={() => onNavigateTab(card.targetTab)}
-              className="p-4 bg-white rounded-xl border border-slate-200 hover:border-indigo-300 transition-all cursor-pointer group shadow-xs space-y-2"
-            >
-              <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center">
-                {getQuickCardIcon(idx)}
-              </div>
-              <h3 className="font-bold text-slate-900 text-sm group-hover:text-indigo-700 transition-colors">
-                {card.title}
-              </h3>
-              <p className="text-slate-600 text-xs">
-                {card.description}
-              </p>
-              <div className="pt-1 text-xs font-bold text-indigo-600 flex items-center gap-1">
-                <span>{card.actionText}</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-    </div>
+      </Section>
+    </PageShell>
   );
 };
-

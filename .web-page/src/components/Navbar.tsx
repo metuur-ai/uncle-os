@@ -1,192 +1,174 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { TabType } from '../types';
-import { Tooltip } from './Tooltip';
-import {
-  Home,
-  Download,
-  FolderTree,
-  Terminal, 
-  PlayCircle, 
-  ShieldCheck, 
-  CheckSquare, 
-  Search, 
-  BookOpen, 
-  Award,
-  ChevronLeft,
-  ChevronRight
-} from 'lucide-react';
+import { LESSONS, lessonNumber } from '../lessons';
+import { Check, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface NavbarProps {
   activeTab: TabType;
   setActiveTab: (tab: TabType) => void;
+  /** Tabs the learner has already opened — drives the completion ticks. */
+  visited: Set<TabType>;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
+/**
+ * Lesson rail. Sticks directly under the header and doubles as a progress
+ * indicator: each tutorial shows its number until it has been visited, then a
+ * tick. Implemented as a real tablist so arrow keys work.
+ */
+export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, visited }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
-  const tabs: { 
-    id: TabType; 
-    label: string; 
-    icon: React.FC<{ className?: string }>;
-    whyText: string;
-  }[] = [
-    { 
-      id: 'home', 
-      label: 'Index & Overview', 
-      icon: Home,
-      whyText: 'Start here for a high-level summary of how Company OS connects product, engineering, and governance.'
-    },
-    {
-      id: 'install',
-      label: 'Install & Setup',
-      icon: Download,
-      whyText: 'Install the company-os CLI in one line, put it on your PATH, and scaffold your first workspace.'
-    },
-    {
-      id: 'architecture',
-      label: 'Workspace Architecture',
-      icon: FolderTree,
-      whyText: 'Explore the workspace directory structure, file hierarchy, and folder layouts for Company OS and Team OS.'
-    },
-    { 
-      id: 'cli', 
-      label: 'CLI Terminal Explorer', 
-      icon: Terminal,
-      whyText: 'Run interactive terminal commands like validate, graph build, and prd new in a live CLI simulator.'
-    },
-    { 
-      id: 'workflows', 
-      label: 'Interactive Workflows', 
-      icon: PlayCircle,
-      whyText: 'Simulate a complete PRD lifecycle step-by-step from discovery brief to production release.'
-    },
-    { 
-      id: 'governance', 
-      label: 'Governance Tiers', 
-      icon: ShieldCheck,
-      whyText: 'Learn how Canonical, Team, and Personal rules coordinate without confusion or broken builds.'
-    },
-    { 
-      id: 'validation', 
-      label: 'Validation Gates (1-8)', 
-      icon: CheckSquare,
-      whyText: 'Inspect automated compliance gates (1-8) that verify your PRDs, dependencies, and workspace rules.'
-    },
-    { 
-      id: 'search-agent', 
-      label: 'Local Search & BM25', 
-      icon: Search,
-      whyText: 'Search offline workspace docs and discover AI Agent Skills for authoring standardized artifacts.'
-    },
-    { 
-      id: 'reference', 
-      label: 'Config & Matrix', 
-      icon: BookOpen,
-      whyText: 'Compare YAML configurations, schema rules, and precedence resolution matrices side-by-side.'
-    },
-    { 
-      id: 'quiz', 
-      label: 'Mastery Check', 
-      icon: Award,
-      whyText: 'Test your knowledge with an interactive 10-question quiz and earn your Company OS certificate!'
-    },
-  ];
-
-  const checkScrollability = () => {
-    if (scrollRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
-      setCanScrollLeft(scrollLeft > 4);
-      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 4);
-    }
-  };
-
-  useEffect(() => {
-    checkScrollability();
-    window.addEventListener('resize', checkScrollability);
-    return () => window.removeEventListener('resize', checkScrollability);
+  const measure = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 4);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
   }, []);
 
-  const handleScroll = (direction: 'left' | 'right') => {
-    if (scrollRef.current) {
-      const scrollAmount = direction === 'left' ? -260 : 260;
-      scrollRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-    }
+  useEffect(() => {
+    measure();
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', measure, { passive: true });
+    window.addEventListener('resize', measure);
+    return () => {
+      el.removeEventListener('scroll', measure);
+      window.removeEventListener('resize', measure);
+    };
+  }, [measure]);
+
+  // Keep the active tab in view when navigation happens from elsewhere
+  // (home cards, lesson footers, the directory modal).
+  useEffect(() => {
+    const i = LESSONS.findIndex((l) => l.id === activeTab);
+    tabRefs.current[i]?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+  }, [activeTab]);
+
+  const nudge = (dir: 'left' | 'right') => {
+    scrollRef.current?.scrollBy({ left: dir === 'left' ? -280 : 280, behavior: 'smooth' });
   };
 
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    const i = LESSONS.findIndex((l) => l.id === activeTab);
+    let next = -1;
+    if (e.key === 'ArrowRight') next = (i + 1) % LESSONS.length;
+    if (e.key === 'ArrowLeft') next = (i - 1 + LESSONS.length) % LESSONS.length;
+    if (e.key === 'Home') next = 0;
+    if (e.key === 'End') next = LESSONS.length - 1;
+    if (next < 0) return;
+    e.preventDefault();
+    setActiveTab(LESSONS[next].id);
+    tabRefs.current[next]?.focus();
+  };
+
+  const arrowBase =
+    'absolute top-0 bottom-0 z-10 flex w-10 cursor-pointer items-center justify-center text-fg-muted transition-colors hover:text-fg';
+
   return (
-    <nav className="bg-white/90 border-b border-slate-200 sticky top-[56px] z-40 backdrop-blur-md">
-      <div className="max-w-[95%] mx-auto px-4 sm:px-6 lg:px-8 relative">
-        <div className="relative flex items-center group py-2">
-          
-          {/* Left Scroll Chevron Button */}
-          {canScrollLeft && (
-            <div className="absolute left-0 top-0 bottom-0 z-10 flex items-center pr-6 bg-gradient-to-r from-white via-white/90 to-transparent">
-              <Tooltip content="Scroll left through tabs" position="right">
-                <button
-                  onClick={() => handleScroll('left')}
-                  aria-label="Scroll left"
-                  className="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-700 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 shadow-md flex items-center justify-center transition-all duration-150"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-              </Tooltip>
-            </div>
-          )}
+    <nav className="sticky top-16 z-40 border-b border-border bg-canvas/90 backdrop-blur-md">
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {canScrollLeft && (
+          <>
+            <button
+              type="button"
+              onClick={() => nudge('left')}
+              aria-label="Scroll lessons left"
+              className={`${arrowBase} left-0`}
+            >
+              <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+            </button>
+            <div
+              className="pointer-events-none absolute inset-y-0 left-10 z-10 w-8 bg-gradient-to-r from-canvas to-transparent"
+              aria-hidden="true"
+            />
+          </>
+        )}
 
-          {/* Tab List Container */}
-          <div
-            ref={scrollRef}
-            onScroll={checkScrollability}
-            className="flex overflow-x-auto space-x-1.5 py-1 no-scrollbar scroll-smooth w-full"
-          >
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              return (
-                <Tooltip
-                  key={tab.id}
-                  title="Why click this?"
-                  content={tab.whyText}
-                  position="bottom"
-                  maxWidth="max-w-xs"
-                >
-                  <button
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-150 shrink-0 ${
-                      isActive
-                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 border border-indigo-500/30'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent'
-                    }`}
-                  >
-                    <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-500'}`} />
-                    <span>{tab.label}</span>
-                  </button>
-                </Tooltip>
-              );
-            })}
-          </div>
+        <div
+          ref={scrollRef}
+          role="tablist"
+          aria-label="Lessons"
+          onKeyDown={onKeyDown}
+          className="no-scrollbar flex items-stretch gap-1 overflow-x-auto"
+        >
+          {LESSONS.map((lesson, i) => {
+            const active = lesson.id === activeTab;
+            const n = lessonNumber(lesson.id);
+            const done = visited.has(lesson.id) && !active && n > 0;
 
-          {/* Right Scroll Chevron Button */}
-          {canScrollRight && (
-            <div className="absolute right-0 top-0 bottom-0 z-10 flex items-center pl-6 bg-gradient-to-l from-white via-white/90 to-transparent">
-              <Tooltip content="Scroll right through tabs" position="left">
-                <button
-                  onClick={() => handleScroll('right')}
-                  aria-label="Scroll right"
-                  className="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-700 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 shadow-md flex items-center justify-center transition-all duration-150"
+            return (
+              <button
+                key={lesson.id}
+                ref={(el) => {
+                  tabRefs.current[i] = el;
+                }}
+                role="tab"
+                aria-selected={active}
+                aria-controls="main"
+                tabIndex={active ? 0 : -1}
+                onClick={() => setActiveTab(lesson.id)}
+                title={lesson.whyText}
+                className={`group relative flex h-13 shrink-0 cursor-pointer items-center gap-2 whitespace-nowrap px-5 py-3 text-sm font-medium transition-colors duration-150 ${
+                  active ? 'text-accent-text' : 'text-fg-muted hover:text-fg'
+                }`}
+              >
+                {/* Step marker: number → tick once visited. Never colour alone. */}
+                <span
+                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-2xs font-semibold transition-colors duration-150 ${
+                    active
+                      ? 'border-accent bg-accent text-accent-fg'
+                      : done
+                        ? 'border-success-border bg-success-soft text-success-text'
+                        : 'border-border bg-surface text-fg-subtle'
+                  }`}
+                  aria-hidden="true"
                 >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              </Tooltip>
-            </div>
-          )}
+                  {n === 0 ? (
+                    <lesson.icon className="h-3 w-3" />
+                  ) : done ? (
+                    <Check className="h-3 w-3" />
+                  ) : (
+                    <span className="tabular">{n}</span>
+                  )}
+                </span>
 
+                <span className="hidden md:inline">{lesson.label}</span>
+                <span className="md:hidden">{lesson.shortLabel}</span>
+
+                {done && <span className="sr-only">(visited)</span>}
+
+                {/* Active underline. Transform-only so it cannot shift layout. */}
+                <span
+                  className={`absolute inset-x-2 bottom-0 h-0.5 rounded-full bg-accent transition-transform duration-200 ${
+                    active ? 'scale-x-100' : 'scale-x-0'
+                  }`}
+                  aria-hidden="true"
+                />
+              </button>
+            );
+          })}
         </div>
+
+        {canScrollRight && (
+          <>
+            <div
+              className="pointer-events-none absolute inset-y-0 right-10 z-10 w-8 bg-gradient-to-l from-canvas to-transparent"
+              aria-hidden="true"
+            />
+            <button
+              type="button"
+              onClick={() => nudge('right')}
+              aria-label="Scroll lessons right"
+              className={`${arrowBase} right-0`}
+            >
+              <ChevronRight className="h-5 w-5" aria-hidden="true" />
+            </button>
+          </>
+        )}
       </div>
     </nav>
   );
 };
-
-

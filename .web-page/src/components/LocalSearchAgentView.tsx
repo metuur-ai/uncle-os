@@ -1,6 +1,34 @@
 import React, { useState } from 'react';
-import { Search, Code, Cpu, BookOpen, CheckCircle2, ArrowRight, Layers, Bot, Terminal, ShieldAlert, Sparkles, FileCode, CheckSquare, GitBranch, Info, MessageSquareCode, Copy, Check, Plug, XCircle } from 'lucide-react';
-import { Tooltip } from './Tooltip';
+import {
+  Search,
+  Bot,
+  Layers,
+  FileCode,
+  ShieldAlert,
+  Plug,
+  MessageSquareCode,
+  GitBranch,
+  XCircle,
+  Sparkles,
+  Terminal as TerminalIcon,
+  Loader2,
+  CheckCircle2,
+} from 'lucide-react';
+import {
+  PageShell,
+  PageHeader,
+  Section,
+  Card,
+  Callout,
+  Badge,
+  Button,
+  CodeBlock,
+  InlineCode,
+  Terminal,
+  Tabs,
+  EmptyState,
+  cx,
+} from './ui';
 import {
   SKILL_LAYERS,
   STEP_TIERS,
@@ -9,674 +37,557 @@ import {
   MOCK_SKILLS_CLI_TEXT,
   MOCK_SKILLS_JSON_TEXT,
   SAMPLE_PROMPTS,
-  PROMPTING_RULES
+  PROMPTING_RULES,
 } from '../data/skillsData';
 import { MCP_SKILL_STEPS, MCP_ASSISTED_PROMPT, MCP_BOUNDARY } from '../data/federationData';
 
+const PRECEDENCE_STEPS = [
+  {
+    tone: 'danger' as const,
+    label: '1. Top authority',
+    name: 'canonical-mandatory',
+    detail: 'Company & platform security/compliance gates. Unbreakable.',
+  },
+  {
+    tone: 'scope' as const,
+    label: '2. Second level',
+    name: 'personal scratchpad',
+    detail: 'Personal workflow rules in scratchpad/personal-rules/.',
+  },
+  {
+    tone: 'warn' as const,
+    label: '3. Third level',
+    name: 'canonical-default',
+    detail: 'Standard process unless a formal deviation is logged.',
+  },
+  {
+    tone: 'neutral' as const,
+    label: '4. Fourth level',
+    name: 'canonical-guidance',
+    detail: 'Advisory best practices. Untracked and optional.',
+  },
+];
+
+const layerTone = (authority: 'canonical' | 'team' | 'personal') =>
+  authority === 'canonical' ? 'accent' : authority === 'team' ? 'scope' : 'neutral';
+
+const tierTone = (tier: 'mandatory' | 'default' | 'guidance') =>
+  tier === 'mandatory' ? 'danger' : tier === 'default' ? 'accent' : 'neutral';
+
+interface MockDoc {
+  id: string;
+  score: number;
+  path: string;
+  snippet: string;
+  keywords: string[];
+}
+
+const MOCK_DOCS: MockDoc[] = [
+  {
+    id: 'doc-prd',
+    score: 0.94,
+    path: 'platforms/ordering/change-records/active/2026-same-day-pickup-slots/prd.md',
+    snippet:
+      '...Allow web customers to choose 15-minute same-day pickup slots on current day...',
+    keywords: ['same-day', 'same day', 'pickup', 'slots', 'prd', 'ordering'],
+  },
+  {
+    id: 'doc-brief',
+    score: 0.81,
+    path: 'teams/web/product/discovery/2026-same-day-pickup-slots/brief.md',
+    snippet: '...Problem signal: Customers abandon carts when pickup is limited to next-day...',
+    keywords: ['cart', 'abandon', 'pickup', 'brief', 'discovery', 'next-day'],
+  },
+];
+
 export const LocalSearchAgentView: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'search' | 'skills'>('skills');
+  const [activeTab, setActiveTab] = useState<'skills' | 'search'>('skills');
+  const [selectedReferenceSkill, setSelectedReferenceSkill] = useState<string>(REFERENCE_SKILLS[1].id);
+  const [cliFormat, setCliFormat] = useState<'text' | 'json'>('text');
+
   const [searchQuery, setSearchQuery] = useState('same-day pickup');
   const [searchScope, setSearchScope] = useState('moonbeam-os');
-  const [cliFormat, setCliFormat] = useState<'text' | 'json'>('text');
-  const [selectedReferenceSkill, setSelectedReferenceSkill] = useState<string>(REFERENCE_SKILLS[1].id);
-  const [copiedPromptId, setCopiedPromptId] = useState<string | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [results, setResults] = useState<MockDoc[]>(MOCK_DOCS);
+  const [hasSearched, setHasSearched] = useState(true);
 
-  const handleCopyPrompt = (id: string, text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedPromptId(id);
-    setTimeout(() => setCopiedPromptId(null), 2000);
+  const activeRefSkill = REFERENCE_SKILLS.find((s) => s.id === selectedReferenceSkill) || REFERENCE_SKILLS[1];
+
+  const runSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSearching(true);
+    const q = searchQuery.trim().toLowerCase();
+    window.setTimeout(() => {
+      const matched = q
+        ? MOCK_DOCS.filter((doc) => doc.keywords.some((k) => q.includes(k) || k.includes(q)))
+        : [];
+      setResults(matched);
+      setHasSearched(true);
+      setIsSearching(false);
+    }, 500);
   };
 
-  const activeRefSkill = REFERENCE_SKILLS.find(s => s.id === selectedReferenceSkill) || REFERENCE_SKILLS[1];
-
   return (
-    <div className="space-y-6">
-      
-      {/* Header Banner */}
-      <div className="bg-white p-5 sm:p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-[11px] font-bold text-indigo-700 uppercase tracking-widest font-mono">
-                06 AGENT SKILLS & LOCAL SEARCH
-              </span>
-              <span className="px-2 py-0.5 bg-indigo-50 rounded text-[11px] font-bold text-indigo-800 border border-indigo-100 font-mono">
-                AUTHORING & READ-SIDE ARCHITECTURE
-              </span>
-            </div>
-            <h2 className="text-xl font-bold text-slate-900 tracking-tight">Agent Skills & Workspace Search Engine</h2>
-          </div>
+    <PageShell>
+      <PageHeader
+        eyebrow="Lesson 7 of 9"
+        title="Agent Skills & Workspace Search Engine"
+        lead="Skills teach AI agents and humans how to author artifacts. Local Search teaches them how to find what already exists — offline, instantly."
+        icon={Bot}
+      />
 
-          <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl border border-slate-200 shrink-0">
-            <Tooltip title="Why click this?" content="Explore the 4 skill layers (Company, Platform, Team, Personal) that guide AI agents in authoring artifacts." position="bottom">
-              <button
-                onClick={() => setActiveTab('skills')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                  activeTab === 'skills' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <Bot className="w-4 h-4" />
-                <span>Agent Skills (4 Layers)</span>
-              </button>
-            </Tooltip>
-
-            <Tooltip title="Why click this?" content="Test the offline BM25 search engine for instant document indexing and keyword discovery." position="bottom">
-              <button
-                onClick={() => setActiveTab('search')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                  activeTab === 'search' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <Search className="w-4 h-4" />
-                <span>Local Search Engine</span>
-              </button>
-            </Tooltip>
-          </div>
-        </div>
-
-        {/* Why What How Quick Guide */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs border-t border-slate-100">
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-1">
-            <span className="font-bold text-indigo-900 block font-mono uppercase text-[11px]">WHY IS THIS HERE?</span>
-            <p className="text-slate-600 text-[12px] leading-relaxed">
-              Skills teach AI agents and humans <strong>how to author</strong> artifacts, while Local Search enables instant <strong>offline discovery</strong>.
-            </p>
-          </div>
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-1">
-            <span className="font-bold text-indigo-900 block font-mono uppercase text-[11px]">WHAT AM I LOOKING AT?</span>
-            <p className="text-slate-600 text-[12px] leading-relaxed">
-              A 4-layer skills resolution system (Company, Platform, Team, Personal) merged by <code>company-os skills list</code>.
-            </p>
-          </div>
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-1">
-            <span className="font-bold text-indigo-900 block font-mono uppercase text-[11px]">HOW DO I USE IT?</span>
-            <p className="text-slate-600 text-[12px] leading-relaxed">
-              Explore reference skills, review tier rules, or switch format to view the <code>--json</code> agent envelope!
-            </p>
-          </div>
-        </div>
-      </div>
+      <Tabs
+        label="Agent skills and local search"
+        tabs={[
+          { id: 'skills', label: 'Agent Skills (4 Layers)', icon: Bot },
+          { id: 'search', label: 'Local Search Engine', icon: Search },
+        ]}
+        active={activeTab}
+        onChange={(id) => setActiveTab(id as typeof activeTab)}
+      />
 
       {activeTab === 'skills' ? (
-        <div className="space-y-6">
-          
-          {/* Dual Cooperation Architecture Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-white border border-indigo-100 rounded-2xl p-5 shadow-xs space-y-2.5">
-              <div className="flex items-center gap-2 text-indigo-700">
-                <Bot className="w-5 h-5" />
-                <h3 className="font-bold text-slate-900 text-sm">Company OS Agent Skills (Authoring Side)</h3>
-              </div>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Versioned Markdown files (<code>*.SKILL.md</code>) that teach agents and humans <strong>how to author</strong> compliant discovery briefs, PRDs, and reality docs. Enforced during validation.
-              </p>
-              <div className="pt-2 text-[12px] text-indigo-900 font-mono bg-indigo-50/70 px-3 py-1.5 rounded-lg border border-indigo-100">
-                $ company-os skills list
-              </div>
-            </div>
-
-            <div className="bg-white border border-cyan-100 rounded-2xl p-5 shadow-xs space-y-2.5">
-              <div className="flex items-center gap-2 text-cyan-700">
-                <Search className="w-5 h-5" />
-                <h3 className="font-bold text-slate-900 text-sm">Local Search Claude Skill (Read Side)</h3>
-              </div>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Installed via <code>local-search install-skill</code> into <code>~/.claude/skills/local-search</code>. Teaches agents <strong>how to find</strong> existing workspace docs offline via SQLite FTS5.
-              </p>
-              <div className="pt-2 text-[12px] text-cyan-900 font-mono bg-cyan-50/70 px-3 py-1.5 rounded-lg border border-cyan-100">
-                $ local-search init --json
-              </div>
-            </div>
-          </div>
-
-          {/* Precedence Hierarchy Staircase */}
-          <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Layers className="w-5 h-5 text-indigo-600" />
-                <h3 className="text-base font-bold text-slate-900">4-Layer Skills Precedence Hierarchy</h3>
-              </div>
-              <span className="text-xs font-mono text-indigo-700 font-bold bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100">
-                teams/&lt;t&gt;/team.yaml
-              </span>
-            </div>
-
-            <p className="text-xs text-slate-600 leading-relaxed">
-              When an AI agent operates on a workspace, rules and skills are resolved across 4 layers. Canonical mandatory steps always outrank personal preferences, ensuring company governance remains unbreakable:
-            </p>
-
-            <div className="bg-indigo-950 p-3.5 rounded-xl border border-indigo-900 font-mono text-xs text-indigo-300 space-y-1 shadow-inner">
-              <div className="text-emerald-400"># Configured precedence contract in team.yaml</div>
-              <div>precedence: canonical-mandatory &gt; personal &gt; canonical-default &gt; canonical-guidance</div>
-              <div className="text-slate-400">onConflict: prefer-canonical-and-inform-user</div>
-            </div>
-
-            {/* Visual Precedence Staircase */}
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs pt-1">
-              <div className="bg-rose-50 border border-rose-200 p-3.5 rounded-xl space-y-1">
-                <span className="text-rose-700 font-bold block text-[11px] uppercase font-mono">1. TOP AUTHORITY</span>
-                <span className="text-slate-900 font-bold block text-sm">canonical-mandatory</span>
-                <p className="text-slate-600 text-[12px] leading-tight">Company & platform security/compliance gates. Unbreakable.</p>
-              </div>
-
-              <div className="bg-cyan-50 border border-cyan-200 p-3.5 rounded-xl space-y-1">
-                <span className="text-cyan-800 font-bold block text-[11px] uppercase font-mono">2. SECOND LEVEL</span>
-                <span className="text-slate-900 font-bold block text-sm">personal scratchpad</span>
-                <p className="text-slate-600 text-[12px] leading-tight">Personal workflow rules in <code>scratchpad/personal-rules/</code>.</p>
-              </div>
-
-              <div className="bg-amber-50 border border-amber-200 p-3.5 rounded-xl space-y-1">
-                <span className="text-amber-800 font-bold block text-[11px] uppercase font-mono">3. THIRD LEVEL</span>
-                <span className="text-slate-900 font-bold block text-sm">canonical-default</span>
-                <p className="text-slate-600 text-[12px] leading-tight">Standard process unless a formal deviation is logged.</p>
-              </div>
-
-              <div className="bg-slate-100 border border-slate-200 p-3.5 rounded-xl space-y-1">
-                <span className="text-slate-600 font-bold block text-[11px] uppercase font-mono">4. FOURTH LEVEL</span>
-                <span className="text-slate-900 font-bold block text-sm">canonical-guidance</span>
-                <p className="text-slate-600 text-[12px] leading-tight">Advisory best practices. Untracked and optional.</p>
-              </div>
-            </div>
-          </div>
-
-          {/* 4 Skill Layers Detail Cards */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-bold text-slate-900">4 Skill Storage Layers</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {SKILL_LAYERS.map((layer) => (
-                <div key={layer.layer} className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-900 text-sm">{layer.title}</span>
-                    <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold font-mono uppercase ${
-                      layer.authority === 'canonical' ? 'bg-indigo-100 text-indigo-800' :
-                      layer.authority === 'team' ? 'bg-cyan-100 text-cyan-800' : 'bg-slate-100 text-slate-700'
-                    }`}>
-                      {layer.authority}
-                    </span>
-                  </div>
-                  <div className="text-xs font-mono text-indigo-700 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200 truncate">
-                    {layer.location}
-                  </div>
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    {layer.description}
-                  </p>
-                  <p className="text-[12px] text-slate-500 italic pt-1 border-t border-slate-100">
-                    {layer.overrideRule}
-                  </p>
+        <>
+          <Section
+            title="Authoring side vs. read side"
+            description="Two independent systems that cooperate: skills teach agents how to write compliant artifacts; Local Search teaches them how to find existing ones."
+          >
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <Card className="space-y-2.5">
+                <div className="flex items-center gap-2 text-accent-text">
+                  <Bot className="h-5 w-5" aria-hidden="true" />
+                  <h3 className="text-sm font-bold text-fg">Company OS Agent Skills (Authoring Side)</h3>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Reference Skills Interactive Inspector */}
-          <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h3 className="text-base font-bold text-slate-900">Reference Agent Skills Explorer</h3>
-                <p className="text-xs text-slate-600">
-                  Pre-packaged skills shipped with Company OS to guide agents through lifecycle milestones:
+                <p className="text-xs leading-relaxed text-fg-muted">
+                  Versioned Markdown files (<InlineCode>*.SKILL.md</InlineCode>) that teach agents and humans{' '}
+                  <strong>how to author</strong> compliant discovery briefs, PRDs, and reality docs. Enforced during
+                  validation.
                 </p>
-              </div>
-              <span className="text-xs font-mono text-slate-500 font-semibold bg-slate-100 px-2.5 py-1 rounded-lg">
-                {REFERENCE_SKILLS.length} Reference Skills
-              </span>
-            </div>
+                <InlineCode>company-os skills list</InlineCode>
+              </Card>
 
-            <div className="flex flex-wrap gap-2">
-              {REFERENCE_SKILLS.map((skill) => (
-                <button
-                  key={skill.id}
-                  onClick={() => setSelectedReferenceSkill(skill.id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                    selectedReferenceSkill === skill.id
-                      ? 'bg-indigo-600 text-white shadow-sm'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  }`}
-                >
-                  <FileCode className="w-3.5 h-3.5" />
-                  <span>{skill.title}</span>
-                </button>
+              <Card className="space-y-2.5">
+                <div className="flex items-center gap-2 text-scope-text">
+                  <Search className="h-5 w-5" aria-hidden="true" />
+                  <h3 className="text-sm font-bold text-fg">Local Search Claude Skill (Read Side)</h3>
+                </div>
+                <p className="text-xs leading-relaxed text-fg-muted">
+                  Installed via <InlineCode>local-search install-skill</InlineCode> into{' '}
+                  <InlineCode>~/.claude/skills/local-search</InlineCode>. Teaches agents <strong>how to find</strong>{' '}
+                  existing workspace docs offline via SQLite FTS5.
+                </p>
+                <InlineCode>local-search init --json</InlineCode>
+              </Card>
+            </div>
+          </Section>
+
+          <Section
+            title="4-layer skills precedence hierarchy"
+            description="When an AI agent operates on a workspace, rules and skills are resolved across 4 layers. Canonical mandatory steps always outrank personal preferences."
+          >
+            <div className="space-y-4">
+              <CodeBlock
+                label="teams/<t>/team.yaml"
+                copyable={false}
+                code={[
+                  '# Configured precedence contract in team.yaml',
+                  'precedence: canonical-mandatory > personal > canonical-default > canonical-guidance',
+                  'onConflict: prefer-canonical-and-inform-user',
+                ].join('\n')}
+              />
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {PRECEDENCE_STEPS.map((step) => (
+                  <Card key={step.name} tone={step.tone} padding="sm" className="space-y-1">
+                    <span className="block font-mono text-2xs font-bold uppercase tracking-wider">{step.label}</span>
+                    <span className="block text-sm font-bold text-fg">{step.name}</span>
+                    <p className="text-xs leading-tight">{step.detail}</p>
+                  </Card>
+                ))}
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {STEP_TIERS.map((t) => (
+                  <Badge key={t.tier} tone={tierTone(t.tier)}>
+                    {t.label} — {t.description}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </Section>
+
+          <Section title="4 skill storage layers">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {SKILL_LAYERS.map((layer) => (
+                <Card key={layer.layer} className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-bold text-fg">{layer.title}</span>
+                    <Badge tone={layerTone(layer.authority)}>{layer.authority}</Badge>
+                  </div>
+                  <InlineCode className="block w-fit max-w-full truncate">{layer.location}</InlineCode>
+                  <p className="text-xs leading-relaxed text-fg-muted">{layer.description}</p>
+                  <p className="border-t border-border pt-1 text-2xs italic text-fg-subtle">{layer.overrideRule}</p>
+                </Card>
               ))}
             </div>
+          </Section>
 
-            {/* Selected Skill Viewer */}
-            <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-2">
-                <div>
-                  <span className="text-[11px] font-mono text-indigo-700 font-bold uppercase">{activeRefSkill.id}</span>
-                  <h4 className="font-bold text-slate-900 text-sm">{activeRefSkill.title}</h4>
-                </div>
-                <span className="text-[12px] font-mono text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200 self-start sm:self-center">
-                  {activeRefSkill.location}
-                </span>
+          <Section
+            title="Reference agent skills explorer"
+            description="Pre-packaged skills shipped with Company OS to guide agents through lifecycle milestones."
+            actions={<Badge>{REFERENCE_SKILLS.length} reference skills</Badge>}
+          >
+            <div className="space-y-4">
+              <div className="flex flex-wrap gap-2" role="group" aria-label="Select a reference skill">
+                {REFERENCE_SKILLS.map((skill) => {
+                  const on = skill.id === selectedReferenceSkill;
+                  return (
+                    <button
+                      key={skill.id}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => setSelectedReferenceSkill(skill.id)}
+                      className={cx(
+                        'flex h-11 cursor-pointer items-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition-colors duration-150',
+                        on ? 'bg-accent text-accent-fg' : 'bg-surface-sunken text-fg-muted hover:text-fg'
+                      )}
+                    >
+                      <FileCode className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                      <span>{skill.title}</span>
+                    </button>
+                  );
+                })}
               </div>
 
-              <p className="text-xs text-slate-600 leading-relaxed">
-                {activeRefSkill.summary}
-              </p>
+              <Card tone="neutral" className="space-y-3">
+                <div className="flex flex-col gap-2 border-b border-border pb-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <span className="block font-mono text-2xs font-bold uppercase text-accent-text">
+                      {activeRefSkill.id}
+                    </span>
+                    <h4 className="text-sm font-bold text-fg">{activeRefSkill.title}</h4>
+                  </div>
+                  <InlineCode className="self-start text-2xs sm:self-center">{activeRefSkill.location}</InlineCode>
+                </div>
 
-              <div className="space-y-2 pt-1">
-                <span className="text-xs font-bold text-slate-900 uppercase font-mono tracking-wider">Step Execution Guidance:</span>
+                <p className="text-xs leading-relaxed text-fg-muted">{activeRefSkill.summary}</p>
+
                 <div className="space-y-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-fg">Step execution guidance</span>
                   {activeRefSkill.steps.map((st) => (
-                    <div key={st.number} className="flex items-start gap-2 bg-white p-2.5 rounded-xl border border-slate-200 text-xs">
-                      <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-800 font-bold flex items-center justify-center font-mono shrink-0 text-[12px]">
+                    <div
+                      key={st.number}
+                      className="flex items-start gap-2 rounded-xl border border-border bg-surface p-2.5 text-xs"
+                    >
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-surface-sunken font-mono text-2xs font-bold text-fg">
                         {st.number}
                       </span>
-                      <span className={`px-2 py-0.5 rounded text-[11px] font-bold font-mono uppercase shrink-0 ${
-                        st.tier === 'mandatory' ? 'bg-rose-100 text-rose-800 border border-rose-200' :
-                        st.tier === 'default' ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' :
-                        'bg-slate-100 text-slate-700 border border-slate-200'
-                      }`}>
-                        ({st.tier})
-                      </span>
-                      <span className="text-slate-800 font-mono leading-relaxed">{st.text}</span>
+                      <Badge tone={tierTone(st.tier)} className="shrink-0">
+                        {st.tier}
+                      </Badge>
+                      <span className="font-mono leading-relaxed text-fg-muted">{st.text}</span>
                     </div>
+                  ))}
+                </div>
+              </Card>
+            </div>
+          </Section>
+
+          <Section title="Authoring rules & gate [7/N] constraints">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              {AUTHORING_RULES.map((r, idx) => (
+                <Card key={idx} padding="sm" className="space-y-1">
+                  <div className="flex items-center gap-2 text-xs font-bold text-fg">
+                    <ShieldAlert className="h-3.5 w-3.5 shrink-0 text-accent-text" aria-hidden="true" />
+                    <span>{r.rule}</span>
+                  </div>
+                  <p className="pl-5 text-xs leading-relaxed text-fg-muted">{r.detail}</p>
+                </Card>
+              ))}
+            </div>
+          </Section>
+
+          <Section
+            title="External agent tooling: the GitHub MCP"
+            description="How MCP servers relate to skills — and why the skill layer is the only door they come through."
+            actions={
+              <Badge tone="danger" icon={Plug}>
+                Ships 0 MCP servers
+              </Badge>
+            }
+          >
+            <div className="space-y-4">
+              <Callout tone="info" icon={Plug}>
+                <p>
+                  <strong>Company OS ships no MCP server and no MCP client.</strong> There is no{' '}
+                  <InlineCode>.mcp.json</InlineCode> anywhere in the repo, and no{' '}
+                  <InlineCode>company-os</InlineCode> command talks to the GitHub API —{' '}
+                  <InlineCode>workspace sync</InlineCode> is eight plain git invocations with no{' '}
+                  <InlineCode>push</InlineCode>, <InlineCode>commit</InlineCode>, or HTTP call anywhere.
+                </p>
+                <p className="mt-2">
+                  So the GitHub MCP is <strong>your agent&apos;s</strong> tool, configured in your agent; Company OS
+                  neither knows nor cares that it exists. It becomes part of a governed workflow only when a{' '}
+                  <strong>skill</strong> tells the agent when to reach for it. That inherits the constraint from{' '}
+                  <em>No Execution Authority</em> above: no skill — and therefore no MCP call it suggests — can grant
+                  permission to bypass a mandatory gate, edit <InlineCode>generated/</InlineCode>, or modify a{' '}
+                  <InlineCode>0444</InlineCode> synced slice.
+                </p>
+              </Callout>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-xs font-bold text-fg">
+                  <GitBranch className="h-4 w-4 text-accent-text" aria-hidden="true" />
+                  <span>
+                    Applied to <InlineCode>skill://governance/syncing-knowledge</InlineCode>
+                  </span>
+                </div>
+                <p className="text-xs text-fg-muted">
+                  The skill&apos;s three mandatory steps are all CLI. MCP helps <em>around</em> them, never inside
+                  them:
+                </p>
+
+                <div className="thin-scrollbar overflow-x-auto rounded-xl border border-border">
+                  <table className="w-full min-w-[640px] text-xs">
+                    <thead className="sticky top-0 bg-surface-sunken">
+                      <tr className="border-b border-border">
+                        <th className="w-[26%] px-3 py-2 text-left font-bold text-fg">Moment</th>
+                        <th className="w-[37%] px-3 py-2 text-left font-bold text-success-text">GitHub MCP (read)</th>
+                        <th className="w-[37%] px-3 py-2 text-left font-bold text-accent-text">
+                          company-os CLI (write)
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {MCP_SKILL_STEPS.map((step) => (
+                        <tr key={step.id} className="border-b border-border last:border-0 even:bg-surface-sunken/50">
+                          <td className="px-3 py-2 align-top font-semibold leading-relaxed text-fg">{step.moment}</td>
+                          <td
+                            className={cx(
+                              'px-3 py-2 align-top leading-relaxed',
+                              step.mcp === '—' ? 'text-center text-fg-subtle' : 'text-fg-muted'
+                            )}
+                          >
+                            {step.mcp}
+                          </td>
+                          <td
+                            className={cx(
+                              'px-3 py-2 align-top leading-relaxed',
+                              step.cli === '—' ? 'text-center text-fg-subtle' : 'text-fg-muted'
+                            )}
+                          >
+                            {step.cli}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-xs font-bold text-danger-text">
+                  <XCircle className="h-4 w-4" aria-hidden="true" />
+                  <span>{MCP_BOUNDARY[2].title}</span>
+                </div>
+                <div className="grid grid-cols-1 gap-2.5 md:grid-cols-3">
+                  {MCP_BOUNDARY[2].items.map((item, i) => (
+                    <Card key={i} tone="danger" padding="sm" className="text-2xs leading-relaxed">
+                      {item}
+                    </Card>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2 pt-1">
+                <div className="flex items-center gap-2 text-xs font-bold text-fg">
+                  <MessageSquareCode className="h-4 w-4 text-accent-text" aria-hidden="true" />
+                  <span>MCP-assisted variant of the Sync Knowledge Catalog prompt</span>
+                </div>
+                <p className="text-xs text-fg-muted">
+                  Same skill, same gates — the prompt just uses MCP for the read half and names the boundary out loud
+                  so the agent cannot drift across it:
+                </p>
+                <CodeBlock label="prompt" code={MCP_ASSISTED_PROMPT} />
+              </div>
+
+              <Callout tone="warn" icon={ShieldAlert}>
+                <strong className="text-fg">
+                  An agent may read anything, but the CLI writes the workspace and the lock is the oracle.
+                </strong>{' '}
+                An MCP server that respects that boundary is a convenience. One that crosses it produces a workspace
+                whose validation results are no longer evidence of anything.
+              </Callout>
+            </div>
+          </Section>
+
+          <Section
+            title="Sample prompts for AI agents"
+            description="Ready-to-use structured prompts for instructing AI agents to follow Company OS skills with strict validation boundaries."
+            actions={<Badge>{SAMPLE_PROMPTS.length} agent templates</Badge>}
+          >
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {SAMPLE_PROMPTS.map((prompt) => (
+                  <Card key={prompt.id} className="flex flex-col justify-between space-y-2.5">
+                    <div className="space-y-1.5">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <Badge tone="accent">{prompt.category}</Badge>
+                        {prompt.skillName && (
+                          <Badge tone="accent" icon={FileCode} mono>
+                            {prompt.skillName}
+                          </Badge>
+                        )}
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-fg">{prompt.title}</h4>
+                        {prompt.targetSkillId && (
+                          <p className="mt-1 font-mono text-2xs text-fg-subtle">
+                            ID: <span className="font-semibold text-fg-muted">{prompt.targetSkillId}</span>
+                          </p>
+                        )}
+                      </div>
+                      <p className="text-xs text-fg-muted">{prompt.description}</p>
+                      <CodeBlock code={prompt.promptText} label="prompt" className="max-h-36" />
+                    </div>
+                  </Card>
+                ))}
+              </div>
+
+              <div className="space-y-3 border-t border-border pt-3">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-fg">
+                  <Sparkles className="h-4 w-4 text-accent-text" aria-hidden="true" />
+                  <span>Prompting best practices (what makes these work)</span>
+                </div>
+                <div className="grid grid-cols-1 gap-3 text-xs sm:grid-cols-2 lg:grid-cols-3">
+                  {PROMPTING_RULES.map((pr, idx) => (
+                    <Card key={idx} tone="accent" padding="sm" className="space-y-1">
+                      <div className="text-xs font-bold">{pr.rule}</div>
+                      <p className="leading-relaxed">{pr.detail}</p>
+                    </Card>
                   ))}
                 </div>
               </div>
             </div>
-          </div>
+          </Section>
 
-          {/* Authoring Rules & Gate [7/N] Constraints */}
-          <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 space-y-4">
-            <div className="flex items-center gap-2">
-              <ShieldAlert className="w-5 h-5 text-indigo-600" />
-              <h3 className="text-base font-bold text-slate-900">Authoring Rules & Gate [7/N] Constraints</h3>
+          <Section title="company-os skills list CLI simulator">
+            <div className="space-y-3">
+              <Tabs
+                label="CLI output format"
+                tabs={[
+                  { id: 'text', label: 'Text format' },
+                  { id: 'json', label: '--json envelope' },
+                ]}
+                active={cliFormat}
+                onChange={(id) => setCliFormat(id as typeof cliFormat)}
+              />
+              <Terminal title={`company-os ${cliFormat === 'json' ? '--json ' : ''}skills list`}>
+                <pre className="whitespace-pre-wrap">{cliFormat === 'text' ? MOCK_SKILLS_CLI_TEXT : MOCK_SKILLS_JSON_TEXT}</pre>
+              </Terminal>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {AUTHORING_RULES.map((r, idx) => (
-                <div key={idx} className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
-                  <div className="flex items-center gap-2 text-indigo-900 font-bold text-xs">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                    <span>{r.rule}</span>
-                  </div>
-                  <p className="text-xs text-slate-600 leading-relaxed pl-5">
-                    {r.detail}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* External agent tooling: the GitHub MCP */}
-          <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <Plug className="w-5 h-5 text-indigo-600" />
-                  <h3 className="text-base font-bold text-slate-900">
-                    External Agent Tooling: the GitHub MCP
-                  </h3>
-                </div>
-                <p className="text-xs text-slate-600 mt-1">
-                  How MCP servers relate to skills — and why the skill layer is the only door they come
-                  through.
-                </p>
-              </div>
-              <span className="text-xs font-mono text-rose-700 font-bold bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-100 self-start sm:self-center shrink-0">
-                Ships 0 MCP servers
-              </span>
-            </div>
-
-            {/* The premise */}
-            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-              <p className="text-xs text-slate-700 leading-relaxed">
-                <strong>Company OS ships no MCP server and no MCP client.</strong> There is no{' '}
-                <code className="font-mono text-[12px] px-1 rounded bg-slate-200/70">.mcp.json</code> anywhere
-                in the repo, and no <code className="font-mono text-[12px]">company-os</code> command talks to
-                the GitHub API — <code className="font-mono text-[12px]">workspace sync</code> is eight plain
-                git invocations with no <code className="font-mono text-[12px]">push</code>,{' '}
-                <code className="font-mono text-[12px]">commit</code>, or HTTP call anywhere.
-              </p>
-              <p className="text-xs text-slate-700 leading-relaxed">
-                So the GitHub MCP is <strong>your agent's</strong> tool, configured in your agent; Company OS
-                neither knows nor cares that it exists. It becomes part of a governed workflow only when a{' '}
-                <strong>skill</strong> tells the agent when to reach for it. That inherits the constraint
-                from <em>No Execution Authority</em> above: a skill describes how to author an artifact, so
-                no skill — and therefore no MCP call it suggests — can grant permission to bypass a
-                mandatory gate, edit <code className="font-mono text-[12px]">generated/</code>, or modify a{' '}
-                <code className="font-mono text-[12px]">0444</code> synced slice.
-              </p>
-            </div>
-
-            {/* Step-by-step split against syncing-knowledge */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
-                <GitBranch className="w-4 h-4 text-indigo-600" />
-                <span>
-                  Applied to{' '}
-                  <code className="font-mono text-[12px] text-indigo-800">
-                    skill://governance/syncing-knowledge
-                  </code>
-                </span>
-              </div>
-              <p className="text-xs text-slate-600">
-                The skill's three mandatory steps are all CLI. MCP helps <em>around</em> them, never inside
-                them:
-              </p>
-
-              <div className="overflow-x-auto rounded-xl border border-slate-200">
-                <table className="w-full text-xs min-w-[720px]">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200">
-                      <th className="text-left font-bold text-slate-700 px-3 py-2 w-[26%]">Moment</th>
-                      <th className="text-left font-bold text-emerald-800 px-3 py-2 w-[37%]">
-                        GitHub MCP (read)
-                      </th>
-                      <th className="text-left font-bold text-indigo-800 px-3 py-2 w-[37%]">
-                        company-os CLI (write)
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {MCP_SKILL_STEPS.map((step, i) => (
-                      <tr
-                        key={step.id}
-                        className={`border-b border-slate-100 last:border-0 ${i % 2 ? 'bg-slate-50/50' : 'bg-white'}`}
-                      >
-                        <td className="px-3 py-2 font-semibold text-slate-800 align-top leading-relaxed">
-                          {step.moment}
-                        </td>
-                        <td
-                          className={`px-3 py-2 align-top leading-relaxed ${
-                            step.mcp === '—' ? 'text-slate-300 text-center' : 'text-slate-600'
-                          }`}
-                        >
-                          {step.mcp}
-                        </td>
-                        <td
-                          className={`px-3 py-2 align-top leading-relaxed ${
-                            step.cli === '—' ? 'text-slate-300 text-center' : 'text-slate-600'
-                          }`}
-                        >
-                          {step.cli}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* The three nevers */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-xs font-bold text-rose-900">
-                <XCircle className="w-4 h-4 text-rose-600" />
-                <span>{MCP_BOUNDARY[2].title}</span>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
-                {MCP_BOUNDARY[2].items.map((item, i) => (
-                  <div
-                    key={i}
-                    className="p-3 bg-rose-50/60 border border-rose-200 rounded-xl text-[12px] text-slate-700 leading-relaxed"
-                  >
-                    {item}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* The MCP-assisted prompt */}
-            <div className="space-y-2 pt-1">
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
-                <MessageSquareCode className="w-4 h-4 text-indigo-600" />
-                <span>MCP-assisted variant of the Sync Knowledge Catalog prompt</span>
-              </div>
-              <p className="text-xs text-slate-600">
-                Same skill, same gates — the prompt just uses MCP for the read half and names the boundary
-                out loud so the agent cannot drift across it:
-              </p>
-              <div className="p-3 bg-indigo-950 rounded-lg text-xs font-mono text-slate-200 leading-relaxed border border-indigo-900 shadow-inner">
-                {MCP_ASSISTED_PROMPT}
-              </div>
-              <button
-                onClick={() => handleCopyPrompt('mcp-assisted', MCP_ASSISTED_PROMPT)}
-                className={`w-full py-1.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
-                  copiedPromptId === 'mcp-assisted'
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 shadow-2xs'
-                }`}
-              >
-                {copiedPromptId === 'mcp-assisted' ? (
-                  <>
-                    <Check className="w-3.5 h-3.5" />
-                    <span>Prompt Copied!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-3.5 h-3.5 text-indigo-600" />
-                    <span>Copy Prompt for AI Agent</span>
-                  </>
-                )}
-              </button>
-            </div>
-
-            <div className="p-3 rounded-xl bg-indigo-950 border border-indigo-900 flex items-start gap-2 text-xs text-slate-200">
-              <ShieldAlert className="w-4 h-4 shrink-0 text-amber-400 mt-0.5" />
-              <span className="leading-relaxed">
-                <strong className="text-white">An agent may read anything, but the CLI writes the
-                workspace and the lock is the oracle.</strong>{' '}
-                An MCP server that respects that boundary is a convenience. One that crosses it produces a
-                workspace whose validation results are no longer evidence of anything.
-              </span>
-            </div>
-          </div>
-
-          {/* Sample Prompts for AI Agents */}
-          <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <MessageSquareCode className="w-5 h-5 text-indigo-600" />
-                  <h3 className="text-base font-bold text-slate-900">Sample Prompts for AI Agents</h3>
-                </div>
-                <p className="text-xs text-slate-600 mt-1">
-                  Ready-to-use structured prompts for instructing AI agents to follow Company OS skills with strict validation boundaries:
-                </p>
-              </div>
-              <span className="text-xs font-mono text-indigo-700 font-bold bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100 self-start sm:self-center shrink-0">
-                {SAMPLE_PROMPTS.length} Agent Templates
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {SAMPLE_PROMPTS.map((prompt) => (
-                <div key={prompt.id} className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5 flex flex-col justify-between">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
-                        {prompt.category}
-                      </span>
-                      {prompt.skillName && (
-                        <span className="text-[12px] font-mono font-bold text-indigo-950 bg-indigo-100/80 border border-indigo-200 px-2 py-0.5 rounded flex items-center gap-1">
-                          <FileCode className="w-3 h-3 text-indigo-600" />
-                          <span>{prompt.skillName}</span>
-                        </span>
-                      )}
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-slate-900 text-sm">{prompt.title}</h4>
-                      {prompt.targetSkillId && (
-                        <div className="mt-1 text-[11px] font-mono text-slate-500 bg-slate-100/90 px-2 py-0.5 rounded border border-slate-200/70 inline-block max-w-full overflow-x-auto whitespace-nowrap">
-                          ID: <span className="text-slate-700 font-semibold">{prompt.targetSkillId}</span>
-                        </div>
-                      )}
-                    </div>
-                    <p className="text-xs text-slate-600">{prompt.description}</p>
-                    <div className="p-3 bg-indigo-950 rounded-lg text-xs font-mono text-slate-200 leading-relaxed border border-indigo-900 shadow-inner overflow-x-auto max-h-36">
-                      {prompt.promptText}
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => handleCopyPrompt(prompt.id, prompt.promptText)}
-                    className={`w-full py-1.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
-                      copiedPromptId === prompt.id
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 shadow-2xs'
-                    }`}
-                  >
-                    {copiedPromptId === prompt.id ? (
-                      <>
-                        <Check className="w-3.5 h-3.5" />
-                        <span>Prompt Copied!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3.5 h-3.5 text-indigo-600" />
-                        <span>Copy Prompt for AI Agent</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            {/* Prompting Best Practices */}
-            <div className="pt-3 border-t border-slate-200 space-y-3">
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-900 uppercase font-mono tracking-wider">
-                <Sparkles className="w-4 h-4 text-indigo-600" />
-                <span>Prompting Best Practices (What Makes These Work):</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
-                {PROMPTING_RULES.map((pr, idx) => (
-                  <div key={idx} className="p-3 bg-indigo-50/50 border border-indigo-100/80 rounded-xl space-y-1">
-                    <div className="font-bold text-indigo-950 text-xs">{pr.rule}</div>
-                    <p className="text-slate-600 text-[12px] leading-relaxed">{pr.detail}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* CLI Terminal Output Simulator */}
-          <div className="bg-[#171340] border border-indigo-900 shadow-xl rounded-2xl p-5 space-y-3 font-mono text-xs">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-indigo-900 pb-3">
-              <div className="flex items-center gap-2">
-                <Terminal className="w-4 h-4 text-emerald-400" />
-                <span className="text-slate-200 font-bold">company-os skills list CLI Simulator</span>
-              </div>
-
-              <div className="flex items-center gap-2 bg-indigo-950 p-1 rounded-lg border border-indigo-900">
-                <button
-                  onClick={() => setCliFormat('text')}
-                  className={`px-2.5 py-1 rounded text-[12px] font-semibold transition-all ${
-                    cliFormat === 'text' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  Text Format
-                </button>
-                <button
-                  onClick={() => setCliFormat('json')}
-                  className={`px-2.5 py-1 rounded text-[12px] font-semibold transition-all ${
-                    cliFormat === 'json' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  --json Envelope
-                </button>
-              </div>
-            </div>
-
-            <div className="text-slate-400 text-[12px]">
-              Command: <code className="text-emerald-300">company-os {cliFormat === 'json' ? '--json ' : ''}skills list</code>
-            </div>
-
-            <pre className="p-4 bg-indigo-950 rounded-xl text-slate-200 overflow-x-auto text-[12px] leading-relaxed border border-indigo-900/80 max-h-80">
-              {cliFormat === 'text' ? MOCK_SKILLS_CLI_TEXT : MOCK_SKILLS_JSON_TEXT}
-            </pre>
-          </div>
-
-        </div>
+          </Section>
+        </>
       ) : (
-        <div className="space-y-6">
-          
-          {/* Architecture comparison: Authoring vs Read */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 space-y-3">
-              <span className="text-xs font-bold text-indigo-700 uppercase tracking-wider font-mono">
-                Authoring & Validation Side
-              </span>
-              <h3 className="text-base font-bold text-slate-900">company-os CLI</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Scaffolds discovery briefs, PRDs, reality docs, resolves governance, builds graph tags, and runs validation gates. Never queries external servers or databases.
-              </p>
-              <div className="p-2.5 rounded-xl bg-indigo-950 border border-indigo-900 text-xs font-mono text-indigo-300 shadow-inner">
-                $ company-os validate
-              </div>
+        <>
+          <Section
+            title="Two engines, two jobs"
+            description="company-os writes and validates the workspace. Local Search only reads it — a single Go binary backed by SQLite FTS5."
+          >
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <Card className="space-y-3">
+                <Badge tone="accent">Authoring & validation side</Badge>
+                <h3 className="text-sm font-bold text-fg">company-os CLI</h3>
+                <p className="text-xs leading-relaxed text-fg-muted">
+                  Scaffolds discovery briefs, PRDs, reality docs, resolves governance, builds graph tags, and runs
+                  validation gates. Never queries external servers or databases.
+                </p>
+                <InlineCode>company-os validate</InlineCode>
+              </Card>
+
+              <Card className="space-y-3">
+                <Badge tone="scope">Read & query side</Badge>
+                <h3 className="text-sm font-bold text-fg">Local Search (SQLite FTS5)</h3>
+                <p className="text-xs leading-relaxed text-fg-muted">
+                  Single Go binary that registers workspaces, scans Markdown files, and provides BM25 hybrid search
+                  for terminal users and AI agents.
+                </p>
+                <InlineCode>local-search search &quot;same-day pickup&quot;</InlineCode>
+              </Card>
             </div>
+          </Section>
 
-            <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 space-y-3">
-              <span className="text-xs font-bold text-cyan-700 uppercase tracking-wider font-mono">
-                Read & Query Side
-              </span>
-              <h3 className="text-base font-bold text-slate-900">Local Search (SQLite FTS5)</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Single Go binary that registers workspaces, scans Markdown files, and provides BM25 hybrid search for terminal users and AI agents.
-              </p>
-              <div className="p-2.5 rounded-xl bg-indigo-950 border border-indigo-900 text-xs font-mono text-cyan-300 shadow-inner">
-                $ local-search search "same-day pickup"
-              </div>
-            </div>
-          </div>
-
-          {/* Interactive Search Simulator */}
-          <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 space-y-4">
-            <h3 className="text-sm font-bold text-slate-900">Local Search Query Simulator</h3>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-              <div>
-                <label className="text-slate-700 block mb-1 font-semibold">Search Query</label>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="text-slate-700 block mb-1 font-semibold">Registered Scope</label>
-                <input
-                  type="text"
-                  value={searchScope}
-                  onChange={(e) => setSearchScope(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 font-mono"
-                />
-              </div>
-
-              <div className="flex items-end">
-                <div className="w-full bg-indigo-950 p-2 rounded-lg border border-indigo-900 font-mono text-cyan-300 text-xs truncate shadow-inner">
-                  $ local-search search "{searchQuery}"
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-[#171340] border border-indigo-900 rounded-xl p-4 font-mono text-xs space-y-2 shadow-md">
-              <div className="text-slate-500 text-[11px] border-b border-indigo-900 pb-1">
-                Local Search BM25 Ranked Results (2 matches)
-              </div>
-              <div className="text-emerald-300 space-y-2">
+          <Section
+            title="Local search query simulator"
+            description="Run a query against the offline BM25 index and see ranked results, exactly as an agent would receive them."
+          >
+            <Card className="space-y-4">
+              <form onSubmit={runSearch} className="grid grid-cols-1 gap-3 sm:grid-cols-[2fr_1fr_auto] sm:items-end">
                 <div>
-                  <span className="text-slate-400">[1] score: 0.94 | repo: {searchScope}</span>
-                  <div className="text-white font-bold">platforms/ordering/change-records/active/2026-same-day-pickup-slots/prd.md</div>
-                  <div className="text-slate-400 text-[12px]">...Allow web customers to choose 15-minute same-day pickup slots on current day...</div>
+                  <label htmlFor="search-query" className="mb-1 block text-xs font-semibold text-fg">
+                    Search query
+                  </label>
+                  <input
+                    id="search-query"
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="h-11 w-full rounded-lg border border-border bg-surface-sunken px-3 font-mono text-sm text-fg focus-visible:outline-none"
+                  />
                 </div>
 
-                <div className="pt-2 border-t border-indigo-900/80">
-                  <span className="text-slate-400">[2] score: 0.81 | repo: {searchScope}</span>
-                  <div className="text-white font-bold">teams/web/product/discovery/2026-same-day-pickup-slots/brief.md</div>
-                  <div className="text-slate-400 text-[12px]">...Problem signal: Customers abandon carts when pickup is limited to next-day...</div>
+                <div>
+                  <label htmlFor="search-scope" className="mb-1 block text-xs font-semibold text-fg">
+                    Registered scope
+                  </label>
+                  <input
+                    id="search-scope"
+                    type="text"
+                    value={searchScope}
+                    onChange={(e) => setSearchScope(e.target.value)}
+                    className="h-11 w-full rounded-lg border border-border bg-surface-sunken px-3 font-mono text-sm text-fg focus-visible:outline-none"
+                  />
                 </div>
+
+                <Button type="submit" icon={Search} loading={isSearching}>
+                  Run search
+                </Button>
+              </form>
+
+              <div aria-live="polite">
+                {isSearching ? (
+                  <div className="flex items-center gap-2 rounded-xl border border-border bg-surface-sunken p-6 text-sm text-fg-muted">
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                    <span>Querying local BM25 index…</span>
+                  </div>
+                ) : hasSearched && results.length === 0 ? (
+                  <EmptyState
+                    icon={Search}
+                    title="No matches in the local index"
+                    description={`No documents in "${searchScope}" match "${searchQuery}". Try broader keywords.`}
+                  />
+                ) : (
+                  <Terminal title={`Local Search BM25 ranked results (${results.length} matches)`}>
+                    <div className="space-y-3">
+                      {results.map((doc, i) => (
+                        <div key={doc.id} className={i > 0 ? 'border-t border-term-bg-soft pt-2' : undefined}>
+                          <div className="flex items-center gap-2 text-term-muted">
+                            <span className="tabular">
+                              [{i + 1}] score: {doc.score.toFixed(2)} | repo: {searchScope}
+                            </span>
+                          </div>
+                          <div className="font-bold text-term-fg">{doc.path}</div>
+                          <div className="text-term-muted">{doc.snippet}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </Terminal>
+                )}
               </div>
-            </div>
-          </div>
-
-        </div>
+            </Card>
+          </Section>
+        </>
       )}
-
-    </div>
+    </PageShell>
   );
 };
-

@@ -1,218 +1,208 @@
 import React, { useState } from 'react';
+import { Search, Layers } from 'lucide-react';
 import { EXIT_CODES_DATA } from '../data/commandsData';
 import { TROUBLESHOOTING_DATA } from '../data/troubleshootingData';
-import { BookOpen, Search, AlertTriangle, Layers, Key, Shield, HelpCircle } from 'lucide-react';
+import { PageShell, PageHeader, Section, Card, Badge, Tabs, EmptyState } from './ui';
+
+interface PrecedenceLayer {
+  order: number;
+  name: string;
+  status: 'wired' | 'unwired';
+  path: string;
+}
+
+const PRECEDENCE_LAYERS: PrecedenceLayer[] = [
+  { order: 1, name: 'CLI Flag (Implemented)', status: 'wired', path: 'company-os --root /abs/path ...' },
+  {
+    order: 2,
+    name: 'Environment Variable (Implemented)',
+    status: 'wired',
+    path: 'export COMPANY_OS_WORKSPACE_ROOT=/abs/path',
+  },
+  {
+    order: 3,
+    name: 'Repo-Local Override (Specified in Spec)',
+    status: 'unwired',
+    path: '.company-os.local.yaml (git-ignored)',
+  },
+  {
+    order: 4,
+    name: 'User-Level Config (Specified in Spec)',
+    status: 'unwired',
+    path: '~/.company-os/config.yaml',
+  },
+  {
+    order: 5,
+    name: 'Committed Shared Config (Specified in Spec)',
+    status: 'unwired',
+    path: 'config/repositories.yaml',
+  },
+  { order: 6, name: 'Built-in Default (Implemented)', status: 'wired', path: 'Current working directory (cwd)' },
+];
 
 export const ReferenceMatrix: React.FC = () => {
-  const [activeSection, setActiveSection] = useState<'troubleshooting' | 'precedence' | 'exitcodes'>('troubleshooting');
+  const [activeSection, setActiveSection] = useState<'troubleshooting' | 'precedence' | 'exitcodes'>(
+    'troubleshooting'
+  );
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredTroubleshooting = TROUBLESHOOTING_DATA.filter(item =>
-    item.symptom.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.cause.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.fix.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredTroubleshooting = TROUBLESHOOTING_DATA.filter(
+    (item) =>
+      item.symptom.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.cause.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.fix.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
-    <div className="space-y-6">
-      
-      {/* Intro Header */}
-      <div className="bg-gradient-to-br from-indigo-50 via-white to-slate-50 p-6 rounded-2xl border border-indigo-100 shadow-sm space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-[11px] font-bold text-indigo-700 uppercase tracking-widest font-mono">
-                07 CONFIG MATRIX
-              </span>
-              <span className="px-2 py-0.5 bg-indigo-100/70 rounded-full text-[11px] font-semibold text-indigo-800 border border-indigo-200">
-                DIAGNOSTICS & RULES
-              </span>
-            </div>
-            <h2 className="text-xl font-bold text-slate-900 tracking-tight">Configuration Reference & Troubleshooting</h2>
-          </div>
+    <PageShell width="wide">
+      <PageHeader
+        eyebrow="Lesson 8 of 9"
+        title="Configuration Reference & Troubleshooting"
+        lead="A fast lookup for fixing errors and understanding configuration order: a searchable troubleshooting directory, the workspace-root precedence hierarchy, and the full exit code contract."
+        icon={Layers}
+      />
 
-          <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200 shrink-0">
-            <button
-              onClick={() => setActiveSection('troubleshooting')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                activeSection === 'troubleshooting' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Troubleshooting ({TROUBLESHOOTING_DATA.length})
-            </button>
-            <button
-              onClick={() => setActiveSection('precedence')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                activeSection === 'precedence' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Precedence Layers
-            </button>
-            <button
-              onClick={() => setActiveSection('exitcodes')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                activeSection === 'exitcodes' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Exit Codes
-            </button>
-          </div>
-        </div>
-
-        {/* Why What How Quick Guide */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs border-t border-indigo-100/80">
-          <div className="bg-white/80 p-3 rounded-xl border border-slate-200/80 space-y-1">
-            <span className="font-bold text-indigo-900 block font-mono uppercase text-[11px]">WHY IS THIS HERE?</span>
-            <p className="text-slate-600 text-[12px] leading-relaxed">
-              To give engineers and managers a fast lookup for fixing errors and understanding configuration order.
-            </p>
-          </div>
-          <div className="bg-white/80 p-3 rounded-xl border border-slate-200/80 space-y-1">
-            <span className="font-bold text-indigo-900 block font-mono uppercase text-[11px]">WHAT AM I LOOKING AT?</span>
-            <p className="text-slate-600 text-[12px] leading-relaxed">
-              A searchable troubleshooting directory, precedence hierarchy map, and exit code reference contract.
-            </p>
-          </div>
-          <div className="bg-white/80 p-3 rounded-xl border border-slate-200/80 space-y-1">
-            <span className="font-bold text-indigo-900 block font-mono uppercase text-[11px]">HOW DO I USE IT?</span>
-            <p className="text-slate-600 text-[12px] leading-relaxed">
-              Type any error or symptom (e.g., "missing frontmatter" or "exit code 5") into the search bar!
-            </p>
-          </div>
-        </div>
-      </div>
+      <Tabs
+        label="Reference matrix section"
+        tabs={[
+          { id: 'troubleshooting', label: `Troubleshooting (${TROUBLESHOOTING_DATA.length})` },
+          { id: 'precedence', label: 'Precedence layers' },
+          { id: 'exitcodes', label: 'Exit codes' },
+        ]}
+        active={activeSection}
+        onChange={(id) => setActiveSection(id as typeof activeSection)}
+      />
 
       {activeSection === 'troubleshooting' && (
-        <div className="space-y-4">
-          
-          {/* Search bar */}
-          <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search symptom, error message, or fix (e.g. 'expired deviation', 'reality doc', 'python')..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-white border border-slate-200 shadow-sm rounded-xl pl-9 pr-4 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-indigo-500 font-mono"
-            />
-          </div>
+        <Section
+          title="Troubleshooting directory"
+          description="Type any symptom, error message, or tool name to filter — e.g. &quot;expired deviation&quot;, &quot;reality doc&quot;, or &quot;python&quot;."
+        >
+          <div className="space-y-4">
+            <div className="relative">
+              <label htmlFor="troubleshoot-search" className="sr-only">
+                Search symptom, error message, or fix
+              </label>
+              <Search
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle"
+                aria-hidden="true"
+              />
+              <input
+                id="troubleshoot-search"
+                type="text"
+                placeholder="Search symptom, error message, or fix…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-11 w-full rounded-xl border border-border bg-surface pl-9 pr-4 font-mono text-sm text-fg shadow-xs focus-visible:outline-none"
+              />
+            </div>
 
-          {/* Troubleshooting Table / Cards */}
-          <div className="space-y-3">
-            {filteredTroubleshooting.map((item) => (
-              <div key={item.id} className="bg-white border border-slate-200 shadow-sm rounded-2xl p-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200">
-                    {item.symptom}
-                  </span>
-                  <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
-                    {item.tool} • {item.category}
-                  </span>
-                </div>
-
-                <div className="text-xs space-y-1">
-                  <div>
-                    <span className="font-bold text-slate-700">Root Cause: </span>
-                    <span className="text-slate-800">{item.cause}</span>
-                  </div>
-                  <div>
-                    <span className="font-bold text-emerald-800">Recommended Fix: </span>
-                    <span className="text-emerald-700 font-mono font-medium">{item.fix}</span>
-                  </div>
-                </div>
+            {filteredTroubleshooting.length === 0 ? (
+              <EmptyState
+                icon={Search}
+                title="No matching symptoms"
+                description={`Nothing in the troubleshooting directory matches "${searchQuery}".`}
+              />
+            ) : (
+              <div className="space-y-3">
+                {filteredTroubleshooting.map((item) => (
+                  <Card key={item.id} className="space-y-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <Badge tone="danger" mono>
+                        {item.symptom}
+                      </Badge>
+                      <Badge>
+                        {item.tool} • {item.category}
+                      </Badge>
+                    </div>
+                    <div className="space-y-1 text-xs">
+                      <p>
+                        <span className="font-bold text-fg">Root cause: </span>
+                        <span className="text-fg-muted">{item.cause}</span>
+                      </p>
+                      <p>
+                        <span className="font-bold text-success-text">Recommended fix: </span>
+                        <span className="font-mono font-medium text-success-text">{item.fix}</span>
+                      </p>
+                    </div>
+                  </Card>
+                ))}
               </div>
-            ))}
+            )}
           </div>
-
-        </div>
+        </Section>
       )}
 
       {activeSection === 'precedence' && (
-        <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 space-y-4">
-          <h3 className="text-sm font-bold text-slate-900">Workspace Root Precedence Layers</h3>
-          <p className="text-xs text-slate-600">
-            Company OS resolves the workspace root in six specified layers (highest precedence wins):
-          </p>
-
-          <div className="space-y-2 text-xs">
-            <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center justify-between">
-              <div>
-                <span className="font-bold text-indigo-800 block font-mono">1. CLI Flag (Implemented)</span>
-                <code className="text-slate-900 font-semibold">company-os --root /abs/path ...</code>
-              </div>
-              <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200 text-[11px] font-bold">WIRED</span>
-            </div>
-
-            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
-              <div>
-                <span className="font-bold text-indigo-800 block font-mono">2. Environment Variable (Implemented)</span>
-                <code className="text-slate-900 font-semibold">export COMPANY_OS_WORKSPACE_ROOT=/abs/path</code>
-              </div>
-              <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200 text-[11px] font-bold">WIRED</span>
-            </div>
-
-            <div className="p-3 bg-slate-50/60 border border-slate-200 rounded-xl flex items-center justify-between text-slate-500">
-              <div>
-                <span className="font-bold block font-mono text-slate-700">3. Repo-Local Override (Specified in Spec)</span>
-                <code className="text-slate-600">.company-os.local.yaml (git-ignored)</code>
-              </div>
-              <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-500 border border-slate-200 text-[11px] font-bold">UNWIRED</span>
-            </div>
-
-            <div className="p-3 bg-slate-50/60 border border-slate-200 rounded-xl flex items-center justify-between text-slate-500">
-              <div>
-                <span className="font-bold block font-mono text-slate-700">4. User-Level Config (Specified in Spec)</span>
-                <code className="text-slate-600">~/.company-os/config.yaml</code>
-              </div>
-              <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-500 border border-slate-200 text-[11px] font-bold">UNWIRED</span>
-            </div>
-
-            <div className="p-3 bg-slate-50/60 border border-slate-200 rounded-xl flex items-center justify-between text-slate-500">
-              <div>
-                <span className="font-bold block font-mono text-slate-700">5. Committed Shared Config (Specified in Spec)</span>
-                <code className="text-slate-600">config/repositories.yaml</code>
-              </div>
-              <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-500 border border-slate-200 text-[11px] font-bold">UNWIRED</span>
-            </div>
-
-            <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center justify-between">
-              <div>
-                <span className="font-bold text-indigo-800 block font-mono">6. Built-in Default (Implemented)</span>
-                <code className="text-slate-900 font-semibold">Current working directory (cwd)</code>
-              </div>
-              <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200 text-[11px] font-bold">WIRED</span>
-            </div>
+        <Section
+          title="Workspace root precedence layers"
+          description="Company OS resolves the workspace root in six specified layers (highest precedence wins)."
+        >
+          <div className="thin-scrollbar overflow-x-auto rounded-xl border border-border">
+            <table className="w-full min-w-[560px] text-sm">
+              <thead className="sticky top-0 bg-surface-sunken">
+                <tr className="border-b border-border">
+                  <th className="w-12 px-3 py-2.5 text-left font-semibold text-fg">#</th>
+                  <th className="px-3 py-2.5 text-left font-semibold text-fg">Layer & path</th>
+                  <th className="w-28 px-3 py-2.5 text-left font-semibold text-fg">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {PRECEDENCE_LAYERS.map((layer) => (
+                  <tr key={layer.order} className="border-b border-border last:border-0">
+                    <td className="tabular px-3 py-3 align-top font-mono text-fg-subtle">{layer.order}</td>
+                    <td className="px-3 py-3 align-top">
+                      <p className="font-semibold text-fg">{layer.name}</p>
+                      <code className="mt-0.5 block break-all font-mono text-xs text-fg-muted">{layer.path}</code>
+                    </td>
+                    <td className="px-3 py-3 align-top">
+                      <Badge tone={layer.status === 'wired' ? 'success' : 'neutral'}>
+                        {layer.status === 'wired' ? 'Wired' : 'Unwired'}
+                      </Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </div>
+        </Section>
       )}
 
       {activeSection === 'exitcodes' && (
-        <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 space-y-4">
-          <h3 className="text-sm font-bold text-slate-900">Full Exit Code Contract Matrix</h3>
-          <p className="text-xs text-slate-600">
-            Every subcommand exits with one of eight codes. The exit code meaning is stable across reworded messages.
-          </p>
-
-          <div className="space-y-2 text-xs">
-            {EXIT_CODES_DATA.map((ec) => (
-              <div key={ec.code} className="bg-slate-50 border border-slate-200 p-3 rounded-xl flex items-start gap-3">
-                <span className={`px-2 py-1 rounded font-mono font-bold text-xs shrink-0 ${
-                  ec.code === 0 ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'
-                }`}>
-                  Exit Code {ec.code}
-                </span>
-
-                <div className="space-y-1">
-                  <h4 className="font-bold text-slate-900 text-xs">{ec.meaning}</h4>
-                  <p className="text-slate-600 text-[12px]">{ec.whenOccurs}</p>
-                  <p className="text-emerald-800 font-mono text-[11px]">{ec.recommendedAction}</p>
-                </div>
-              </div>
-            ))}
+        <Section
+          title="Full exit code contract matrix"
+          description="Every subcommand exits with one of eight codes. The exit code meaning is stable across reworded messages."
+        >
+          <div className="thin-scrollbar overflow-x-auto rounded-xl border border-border">
+            <table className="w-full min-w-[720px] text-sm">
+              <thead className="sticky top-0 bg-surface-sunken">
+                <tr className="border-b border-border">
+                  <th className="w-16 px-3 py-2.5 text-left font-semibold text-fg">Code</th>
+                  <th className="px-3 py-2.5 text-left font-semibold text-fg">Meaning</th>
+                  <th className="px-3 py-2.5 text-left font-semibold text-fg">When it occurs</th>
+                  <th className="px-3 py-2.5 text-left font-semibold text-fg">Recommended action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {EXIT_CODES_DATA.map((ec) => (
+                  <tr key={ec.code} className="border-b border-border last:border-0">
+                    <td className="px-3 py-3 align-top">
+                      <Badge tone={ec.code === 0 ? 'success' : 'danger'} mono className="tabular">
+                        {ec.code}
+                      </Badge>
+                    </td>
+                    <td className="px-3 py-3 align-top font-semibold text-fg">{ec.meaning}</td>
+                    <td className="px-3 py-3 align-top text-fg-muted">{ec.whenOccurs}</td>
+                    <td className="px-3 py-3 align-top font-mono text-xs text-success-text">
+                      {ec.recommendedAction}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </div>
+        </Section>
       )}
-
-    </div>
+    </PageShell>
   );
 };
