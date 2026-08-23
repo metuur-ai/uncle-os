@@ -38,7 +38,7 @@ func Graph(w io.Writer, sections []model.GateResult) error {
 						"(%d start, %d end) — not rewriting\n",
 					f.Fields.Str("path"), f.Fields.Int("starts"), f.Fields.Int("ends"))
 			case model.CodeGraphSummary:
-				_, err = fmt.Fprintf(w, "graph build: %d doc(s) scanned, %d updated\n",
+				_, err = fmt.Fprintf(w, "derive: %d doc(s) scanned, %d updated\n",
 					f.Fields.Int("scanned"), f.Fields.Int("updated"))
 			default:
 				err = fmt.Errorf("render: graph: no rule for finding code %q", f.Code)

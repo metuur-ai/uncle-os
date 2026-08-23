@@ -17,8 +17,9 @@ import (
 var portedCommands = map[string]bool{
 	"init": true, "add": true, "reality": true, "scratchpad": true,
 	"today": true, "ids": true, "skills": true, "workspace": true,
-	"graph": true, "governance": true, "deviation": true, "exception": true,
-	"discover": true, "prd": true, "check": true, "validate": true,
+	"graph": true, "derive": true, "governance": true, "exception": true,
+	"deviation": true,
+	"discover":  true, "prd": true, "check": true, "validate": true,
 	// `tui` is listed for the same reason as the rest — it is implemented — but
 	// it is the one entry whose exclusion is load-bearing rather than tidy:
 	// dispatching it from here would consult the real terminal, and on a
@@ -130,6 +131,11 @@ func TestEverySubcommandParses(t *testing.T) {
 		{
 			argv:  []string{"graph", "build"},
 			check: func(t *testing.T, a *Args) { want(t, "action", a.Action, "build") },
+		},
+		{
+			// `derive` takes no action word; `graph build` above is its alias.
+			argv:  []string{"derive"},
+			check: func(t *testing.T, a *Args) { want(t, "action", a.Action, "") },
 		},
 		{
 			argv: []string{"ids", "list", "--team", "core", "--platform", "plat",

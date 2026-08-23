@@ -84,15 +84,18 @@ func TestAdviseOffersGraphBuildForADriftedBlock(t *testing.T) {
 
 	got := advise(ws, ws.Root)
 	if len(got) == 0 {
-		t.Fatal("advise found nothing; it should offer graph build")
+		t.Fatal("advise found nothing; it should offer derive")
 	}
 	first := got[0]
 	if !strings.Contains(first.Title, "drifted") {
 		t.Fatalf("first diagnosis is %q, want the drifted-block one\nall:\n%s",
 			first.Title, titles(got))
 	}
-	if first.Fix == nil || first.Fix.Cmd != "graph" || first.Fix.Action != "build" {
-		t.Fatalf("fix = %+v, want `graph build`", first.Fix)
+	// The advisory chain is where users learn the vocabulary, so it names the
+	// primary spelling. `graph build` still parses and still runs this, but it
+	// is a retained alias and is never what we teach.
+	if first.Fix == nil || first.Fix.Cmd != "derive" || first.Fix.Action != "" {
+		t.Fatalf("fix = %+v, want `derive`", first.Fix)
 	}
 	if !strings.Contains(first.Detail, "teams/core/CLAUDE.md") {
 		t.Errorf("detail does not name the drifted file:\n%s", first.Detail)

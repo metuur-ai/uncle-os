@@ -276,7 +276,7 @@ func Message(code string, f model.Fields) string {
 	// ------------------------------------------------------------- gate 4
 	case model.CodeTagsDrift:
 		return "committed tags drifted from frontmatter derivation " +
-			"— run: company-os graph build"
+			"— run: company-os derive"
 	case model.CodeFrontmatterInSync:
 		return "core fields + tags in sync"
 	case model.CodePointerGuidance:
@@ -290,15 +290,15 @@ func Message(code string, f model.Fields) string {
 	case model.CodeNodeHandOwned:
 		return "hand-owned, no generated markers (-> pass)"
 	case model.CodeNodeDrift:
-		return "generated block drifted — run: company-os graph build"
+		return "generated block drifted — run: company-os derive"
 	case model.CodeNodeInSync:
 		return "context node in sync"
 
 	// ------------------------------------------------------------- gate 6
 	case model.CodeFeatureIndexAbsent:
-		return "no feature-index (absent -> pass; run graph build to enable)"
+		return "no feature-index (absent -> pass; run company-os derive to enable)"
 	case model.CodeFeatureIndexDrift:
-		return "feature-index drifted from derivation — run: company-os graph build"
+		return "feature-index drifted from derivation — run: company-os derive"
 	case model.CodeFeatureIndexUnresolved:
 		return fmt.Sprintf(
 			"feature-index component '%s' references %s '%s' which resolves to no document",

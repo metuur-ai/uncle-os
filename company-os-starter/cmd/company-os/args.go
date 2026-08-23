@@ -244,6 +244,15 @@ var commandSpecs = []cmdSpec{
 		},
 	},
 	{
+		name: "derive", help: "derive tags/graph metadata from frontmatter", goOnly: true,
+	},
+	// `graph build` is the pre-`derive` spelling, kept as a silent alias. It is
+	// not goOnly: the Python oracle has it, and commandNames() feeds two
+	// argparse-mirroring strings the differential harness compares byte-for-byte.
+	// Removing it would break that comparison, so this entry is load-bearing and
+	// not merely a courtesy to muscle memory. Both names dispatch to cmdGraph,
+	// which ignores Args.
+	{
 		name: "graph", help: "derive tags/graph metadata from frontmatter",
 		pos: []posSpec{
 			{name: "action", choices: []string{"build"},

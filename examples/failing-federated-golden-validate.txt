@@ -12,7 +12,7 @@ validating workspace <WORKSPACE>
   [ok] platforms/sliced-alpha: no CLAUDE.md node (absent -> pass)
 
 [6/8] feature-index drift (derived component->artifact map)
-  [ok] sliced-alpha: no feature-index (absent -> pass; run graph build to enable)
+  [ok] sliced-alpha: no feature-index (absent -> pass; run company-os derive to enable)
 
 [7/8] custom skills layering (shadowing + extends resolution)
   [ok] skills layered cleanly (0 canonical, 0 team; no shadowing or dangling extends)

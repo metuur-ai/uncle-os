@@ -22,6 +22,7 @@ type Renderer func(io.Writer, []model.GateResult) error
 // will: one encoder covers the whole surface because every command returns the
 // same record type (R-3.4b, internal/render/json.go).
 var renderers = map[string]Renderer{
+	"derive":     render.Graph,
 	"graph":      render.Graph,
 	"ids":        render.IDs,
 	"today":      render.Today,

@@ -35,6 +35,7 @@ var commands = map[string]Command{
 	"exception":  cmdException,
 	"scratchpad": cmdScratchpad,
 	"today":      cmdToday,
+	"derive":     cmdGraph,
 	"graph":      cmdGraph,
 	"ids":        cmdIDs,
 	"skills":     cmdSkills,
