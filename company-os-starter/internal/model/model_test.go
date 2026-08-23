@@ -1,7 +1,9 @@
 package model_test
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -460,5 +462,85 @@ func TestExitCodeForReport(t *testing.T) {
 	bad := model.Report{Gates: []model.GateResult{{Ordinal: 1, Findings: []model.Finding{{Severity: model.SevFail}}}}}
 	if got := bad.ExitCode(); got != model.ExitValidation {
 		t.Errorf("ExitCode() = %d, want 1", got)
+	}
+}
+
+// TestErrorUnwrapExposesCause pins the classification channel R-0.1 opens.
+//
+// The failure this prevents: a repair pass cannot distinguish a write refused by
+// a read-only synced slice from any other write failure, so it reports "cannot
+// write ..." to someone who has no idea the file exists. Before Unwrap, errors.Is
+// against fs.ErrPermission returned false for every writer error in the tree.
+//
+// @spec req://uncle-os/derived-drift-repair@0.1#R-0.1
+func TestErrorUnwrapExposesCause(t *testing.T) {
+	cause := &os.PathError{Op: "open", Path: "p", Err: fs.ErrPermission}
+	err := model.Wrapf(model.ExitArtifact, cause, "cannot write %s: %v", "p", cause)
+
+	if !errors.Is(err, fs.ErrPermission) {
+		t.Fatalf("errors.Is(err, fs.ErrPermission) = false, want true")
+	}
+	var pe *os.PathError
+	if !errors.As(err, &pe) {
+		t.Fatalf("errors.As(err, *os.PathError) = false, want true")
+	}
+	if pe.Path != "p" {
+		t.Errorf("unwrapped PathError.Path = %q, want %q", pe.Path, "p")
+	}
+}
+
+// TestErrorfCarriesNoCause guards the other direction: Errorf must not acquire a
+// cause by accident. A nil Unwrap keeps errors.Is honest for the ~200 existing
+// call sites, none of which have been reviewed for what they'd now match.
+//
+// @spec req://uncle-os/derived-drift-repair@0.1#R-0.1
+func TestErrorfCarriesNoCause(t *testing.T) {
+	err := model.Errorf(model.ExitArtifact, "cannot write %s: %v", "p", fs.ErrPermission)
+	if errors.Is(err, fs.ErrPermission) {
+		t.Fatalf("Errorf acquired a cause it was never given")
+	}
+}
+
+// TestCodeOfSurvivesWrapping is the regression R-0.1's doc comment claims.
+// CodeOf stops at the outermost ExitCoder; a wrapped cause that carries its own
+// code must not win. If this breaks, exit codes start depending on what failed
+// underneath rather than on what the producer decided.
+//
+// @spec req://uncle-os/derived-drift-repair@0.1#R-0.1
+func TestCodeOfSurvivesWrapping(t *testing.T) {
+	inner := model.Errorf(model.ExitUsage, "inner")
+	outer := model.Wrapf(model.ExitArtifact, inner, "outer")
+
+	if got := model.CodeOf(outer); got != model.ExitArtifact {
+		t.Errorf("CodeOf(wrapped) = %v, want %v (outermost wins)", got, model.ExitArtifact)
+	}
+	if got := model.CodeOf(model.Wrapf(model.ExitArtifact, nil, "no cause")); got != model.ExitArtifact {
+		t.Errorf("CodeOf(nil-cause) = %v, want %v", got, model.ExitArtifact)
+	}
+}
+
+// TestWrapfRendersIdenticallyToErrorf is R-0.3 at the constructor seam: the wrap
+// must be invisible in the message. Same format, same operands, same bytes.
+//
+// @spec req://uncle-os/derived-drift-repair@0.1#R-0.3
+func TestWrapfRendersIdenticallyToErrorf(t *testing.T) {
+	cause := &os.PathError{Op: "open", Path: "x", Err: fs.ErrPermission}
+	cases := []struct {
+		name   string
+		format string
+		args   []any
+	}{
+		{"writer shape", "cannot write %s: %v", []any{"a/b.md", cause}},
+		{"no operands", "plain message", nil},
+		{"percent literal", "100%% done: %s", []any{"x"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			want := model.Errorf(model.ExitArtifact, tc.format, tc.args...).Error()
+			got := model.Wrapf(model.ExitArtifact, cause, tc.format, tc.args...).Error()
+			if got != want {
+				t.Errorf("Wrapf rendered %q, Errorf rendered %q", got, want)
+			}
+		})
 	}
 }

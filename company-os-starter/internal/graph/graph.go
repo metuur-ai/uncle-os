@@ -23,24 +23,11 @@ func Build(ws *workspace.Workspace) ([]model.GateResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	tagged := model.GateResult{Ordinal: 1, Slug: model.SectionTags, Title: "derived tags"}
-	changed := 0
-	for _, d := range docs {
-		wrote, err := RewriteFrontmatterTags(d.Path, d.Tags)
-		if err != nil {
-			return nil, err
-		}
-		if !wrote {
-			continue
-		}
-		changed++
-		tagged.Findings = append(tagged.Findings, model.Finding{
-			Severity: model.SevOK,
-			Code:     model.CodeGraphTagged,
-			Path:     d.Rel,
-			Fields:   model.Fields{"path": d.Rel, "tags": d.Tags},
-		})
+	tagged, err := retag(docs, 1)
+	if err != nil {
+		return nil, err
 	}
+	changed := len(tagged.Findings)
 
 	aggregates, err := rebuild(ws, docs, 2)
 	if err != nil {
@@ -60,21 +47,63 @@ func Build(ws *workspace.Workspace) ([]model.GateResult, error) {
 // aggregates through the same code path as `graph build`, so a freshly
 // scaffolded workspace validates green without a separate build step.
 //
-// It returns only the aggregate sections. That is not an omission — Python's
-// rebuild_generated calls rewrite_frontmatter_tags directly, without cmd_graph's
-// print, and emits no summary line either. The scaffolding commands print these
-// lines BEFORE their own output, which is why the seam is ordered.
+// It returns the tag section as well as the aggregates (R-0.4). Python's
+// rebuild_generated called rewrite_frontmatter_tags for its EFFECT and dropped
+// the answer; that was fine while nothing downstream asked what had been
+// rewritten, and stopped being fine when the repair path had to report exactly
+// that. The list is returned, not re-derived (R-0.6).
+//
+// It still emits no summary line — that tally is cmd_graph's alone. The
+// scaffolding commands print these lines BEFORE their own output, which is why
+// the seam is ordered.
 func Rebuild(ws *workspace.Workspace) ([]model.GateResult, error) {
 	docs, err := IterGraphDocs(ws)
 	if err != nil {
 		return nil, err
 	}
-	for _, d := range docs {
-		if _, err := RewriteFrontmatterTags(d.Path, d.Tags); err != nil {
-			return nil, err
-		}
+	tagged, err := retag(docs, 1)
+	if err != nil {
+		return nil, err
 	}
-	return rebuild(ws, docs, 1)
+	aggregates, err := rebuild(ws, docs, 2)
+	if err != nil {
+		return nil, err
+	}
+	return append([]model.GateResult{tagged}, aggregates...), nil
+}
+
+// retag is the single tag-rewriting traversal, shared by both entry points.
+//
+// It exists because of R-0.6. The repair path needs to report which documents
+// it re-tagged, and the cheap way to get that list — walk the docs again
+// afterwards and diff — would be a second traversal whose answer can disagree
+// with what the first one actually wrote (a file changed underneath, a write
+// that reported no-op). The set of rewritten files is therefore produced BY the
+// writing loop, as its return value, and there is exactly one such loop.
+//
+// The findings are the section `graph build` has always emitted, unchanged, so
+// sharing them with Rebuild costs `graph build` nothing (R-0.5).
+//
+// @spec req://uncle-os/derived-drift-repair@0.1#R-0.4
+// @spec req://uncle-os/derived-drift-repair@0.1#R-0.6
+func retag(docs []Doc, ordinal int) (model.GateResult, error) {
+	tagged := model.GateResult{Ordinal: ordinal, Slug: model.SectionTags, Title: "derived tags"}
+	for _, d := range docs {
+		wrote, err := RewriteFrontmatterTags(d.Path, d.Tags)
+		if err != nil {
+			return model.GateResult{}, err
+		}
+		if !wrote {
+			continue
+		}
+		tagged.Findings = append(tagged.Findings, model.Finding{
+			Severity: model.SevOK,
+			Code:     model.CodeGraphTagged,
+			Path:     d.Rel,
+			Fields:   model.Fields{"path": d.Rel, "tags": d.Tags},
+		})
+	}
+	return tagged, nil
 }
 
 // rebuild is write_feature_indexes followed by write_claude_nodes, in that

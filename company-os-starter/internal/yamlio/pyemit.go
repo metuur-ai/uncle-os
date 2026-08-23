@@ -237,16 +237,24 @@ func PyDumpCanonical(v PyValue) (string, error) {
 }
 
 // PyWriteCanonical is dump_canonical_yaml (bin/company-os:102-106).
+//
+// The two filesystem errors are wrapped, not flattened: this is the writer
+// WriteFeatureIndexes delegates to, so it is one of the three graph write paths
+// R-0.2 names. The sibling PyWriteFile below is deliberately NOT wrapped — it is
+// not on a graph write path, and R-0.2 is scoped to the writers whose failures a
+// repair pass has to classify. Widen it when something needs to.
+//
+// @spec req://uncle-os/derived-drift-repair@0.1#R-0.2
 func PyWriteCanonical(path string, v PyValue) error {
 	text, err := PyDumpCanonical(v)
 	if err != nil {
 		return model.Errorf(model.ExitArtifact, "cannot serialize %s: %v", path, err)
 	}
 	if err := os.MkdirAll(filepath.Dir(path), 0o777); err != nil {
-		return model.Errorf(model.ExitArtifact, "cannot create %s: %v", filepath.Dir(path), err)
+		return model.Wrapf(model.ExitArtifact, err, "cannot create %s: %v", filepath.Dir(path), err)
 	}
 	if err := os.WriteFile(path, []byte(text), 0o666); err != nil {
-		return model.Errorf(model.ExitArtifact, "cannot write %s: %v", path, err)
+		return model.Wrapf(model.ExitArtifact, err, "cannot write %s: %v", path, err)
 	}
 	return nil
 }

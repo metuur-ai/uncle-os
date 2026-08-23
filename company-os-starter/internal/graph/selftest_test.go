@@ -109,9 +109,12 @@ func TestRewriteFrontmatterTagsPreservesUnknownKeys(t *testing.T) {
 // ---------------------------------------------- generated-block states
 
 // rewriteBlock is selftest.py's rewrite() helper (`:24-31`): write initial (or
-// leave the file absent), rewrite, return whether it changed plus the resulting
-// text.
-func rewriteBlock(t *testing.T, initial *string, block string) (bool, *markerImbalance, string) {
+// leave the file absent), rewrite, return the outcome plus the resulting text.
+//
+// The outcome is an enum, not the selftest's boolean: three distinct outcomes
+// write no bytes, and a bool collapses them, so a test could not tell "left a
+// hand-owned file alone" from "refused an ambiguous one" from "already in sync".
+func rewriteBlock(t *testing.T, initial *string, block string) (nodeOutcome, *markerImbalance, string) {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "CLAUDE.md")
 	if initial != nil {
@@ -119,18 +122,18 @@ func rewriteBlock(t *testing.T, initial *string, block string) (bool, *markerImb
 			t.Fatal(err)
 		}
 	}
-	changed, bad, err := rewriteGeneratedBlock(path, block)
+	outcome, bad, err := rewriteGeneratedBlock(path, block)
 	if err != nil {
 		t.Fatalf("rewriteGeneratedBlock: %v", err)
 	}
 	raw, readErr := os.ReadFile(path)
 	if os.IsNotExist(readErr) {
-		return changed, bad, ""
+		return outcome, bad, ""
 	}
 	if readErr != nil {
 		t.Fatal(readErr)
 	}
-	return changed, bad, string(raw)
+	return outcome, bad, string(raw)
 }
 
 func ptr(s string) *string { return &s }
@@ -138,9 +141,9 @@ func ptr(s string) *string { return &s }
 // TestRewriteGeneratedBlockCreatesWhenAbsent is selftest.py:53-55 (ST-005),
 // R-3.4.
 func TestRewriteGeneratedBlockCreatesWhenAbsent(t *testing.T) {
-	changed, bad, txt := rewriteBlock(t, nil, "B1")
-	if !changed {
-		t.Error("creating an absent node did not report a change")
+	outcome, bad, txt := rewriteBlock(t, nil, "B1")
+	if outcome != nodeWritten {
+		t.Errorf("creating an absent node = %v, want nodeWritten", outcome)
 	}
 	if bad != nil {
 		t.Errorf("marker imbalance reported on a fresh file: %+v", bad)
@@ -160,26 +163,29 @@ func TestRewriteGeneratedBlockCreatesWhenAbsent(t *testing.T) {
 	}
 }
 
-// TestRewriteGeneratedBlockAppendsPreservingProse is selftest.py:57-60 (ST-006),
-// R-3.5: zero markers plus hand-written prose appends rather than overwrites.
-func TestRewriteGeneratedBlockAppendsPreservingProse(t *testing.T) {
+// TestRewriteGeneratedBlockLeavesMarkerLessNodeAlone replaces selftest.py:57-60
+// (ST-006). The selftest asserted the opposite: that a marker-less file with
+// prose got a generated region APPENDED to it. That behaviour was withdrawn —
+// R-3.5 now says a file a human wrote and never marked is not ours to write.
+// Adoption-by-append silently converted hand-owned docs into managed ones on
+// the next unrelated `graph build`, which is the drift the repair path exists
+// to report, not to cause.
+func TestRewriteGeneratedBlockLeavesMarkerLessNodeAlone(t *testing.T) {
 	const prose = "# Hand-written\n\nkeep this prose\n"
-	changed, bad, txt := rewriteBlock(t, ptr(prose), "B1")
-	if !changed {
-		t.Error("appending a region to a marker-less node did not report a change")
+	outcome, bad, txt := rewriteBlock(t, ptr(prose), "B1")
+	// nodeHandOwned, not merely "not written": the caller reports this outcome
+	// to the user (R-2.12), so silently returning nodeInSync here would be a
+	// regression even though neither writes bytes.
+	if outcome != nodeHandOwned {
+		t.Errorf("marker-less node = %v, want nodeHandOwned", outcome)
 	}
 	if bad != nil {
 		t.Errorf("marker imbalance reported for a marker-less node: %+v", bad)
 	}
-	if !strings.Contains(txt, "keep this prose") {
-		t.Errorf("hand-written prose was destroyed:\n%s", txt)
-	}
-	if !strings.Contains(txt, genStart) || !strings.Contains(txt, "B1") {
-		t.Errorf("the generated region was not appended:\n%s", txt)
-	}
-	// Appended, not prepended: the prose keeps the top of the file.
-	if !strings.HasPrefix(txt, prose) {
-		t.Errorf("the region landed before the prose:\n%s", txt)
+	// Byte-identical, not merely "prose survived": an appended region would
+	// also keep the prose, and that is precisely what must not happen.
+	if txt != prose {
+		t.Errorf("hand-owned node was modified:\n got: %q\nwant: %q", txt, prose)
 	}
 }
 
@@ -188,9 +194,9 @@ func TestRewriteGeneratedBlockAppendsPreservingProse(t *testing.T) {
 // say which half broke.
 func TestRewriteGeneratedBlockReplacesInteriorOnly(t *testing.T) {
 	before := "PRE\n" + RenderGeneratedRegion("OLD") + "\nPOST\n"
-	changed, bad, txt := rewriteBlock(t, ptr(before), "NEW")
-	if !changed {
-		t.Error("replacing the interior did not report a change")
+	outcome, bad, txt := rewriteBlock(t, ptr(before), "NEW")
+	if outcome != nodeWritten {
+		t.Errorf("replacing the interior = %v, want nodeWritten", outcome)
 	}
 	if bad != nil {
 		t.Errorf("marker imbalance reported for one balanced pair: %+v", bad)
@@ -214,9 +220,9 @@ func TestRewriteGeneratedBlockReplacesInteriorOnly(t *testing.T) {
 // graph build` stops being a no-op diff and CI churns on every run.
 func TestRewriteGeneratedBlockIdenticalIsNoop(t *testing.T) {
 	same := "PRE\n" + RenderGeneratedRegion("NEW") + "\nPOST\n"
-	changed, bad, txt := rewriteBlock(t, ptr(same), "NEW")
-	if changed {
-		t.Error("rewriting an identical block reported a change")
+	outcome, bad, txt := rewriteBlock(t, ptr(same), "NEW")
+	if outcome != nodeInSync {
+		t.Errorf("rewriting an identical block = %v, want nodeInSync", outcome)
 	}
 	if bad != nil {
 		t.Errorf("marker imbalance reported for one balanced pair: %+v", bad)
@@ -231,9 +237,9 @@ func TestRewriteGeneratedBlockIdenticalIsNoop(t *testing.T) {
 // change nothing.
 func TestRewriteGeneratedBlockUnbalancedMarkersNoMutation(t *testing.T) {
 	bad := "x\n" + genStart + "\nonly start\n"
-	changed, imbalance, txt := rewriteBlock(t, ptr(bad), "NEW")
-	if changed {
-		t.Error("an unbalanced node reported a change")
+	outcome, imbalance, txt := rewriteBlock(t, ptr(bad), "NEW")
+	if outcome != nodeImbalanced {
+		t.Errorf("unbalanced node = %v, want nodeImbalanced", outcome)
 	}
 	if txt != bad {
 		t.Errorf("an unbalanced node was mutated\n got: %q\nwant: %q", txt, bad)
@@ -251,9 +257,9 @@ func TestRewriteGeneratedBlockUnbalancedMarkersNoMutation(t *testing.T) {
 // so the fail-safe answer is the same as for an imbalance.
 func TestRewriteGeneratedBlockDuplicateMarkersNoMutation(t *testing.T) {
 	dup := RenderGeneratedRegion("A") + "\n" + RenderGeneratedRegion("B") + "\n"
-	changed, imbalance, txt := rewriteBlock(t, ptr(dup), "NEW")
-	if changed {
-		t.Error("a node with two marker pairs reported a change")
+	outcome, imbalance, txt := rewriteBlock(t, ptr(dup), "NEW")
+	if outcome != nodeImbalanced {
+		t.Errorf("two marker pairs = %v, want nodeImbalanced", outcome)
 	}
 	if txt != dup {
 		t.Errorf("a node with two marker pairs was mutated\n got: %q\nwant: %q", txt, dup)

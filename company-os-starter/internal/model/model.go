@@ -204,9 +204,29 @@ const (
 type Error struct {
 	Code ExitCode
 	Msg  string
+	// Err is the underlying cause, when one exists. It is never part of the
+	// rendered message — Msg is already fully formatted by the constructor — and
+	// exists so callers can classify structurally with errors.Is rather than by
+	// parsing Msg.
+	//
+	// @spec req://uncle-os/derived-drift-repair@0.1#R-0.1
+	Err error
 }
 
 func (e *Error) Error() string { return e.Msg }
+
+// Unwrap exposes the cause to errors.Is and errors.As.
+//
+// This is what makes errors.Is(err, fs.ErrPermission) truthful on a write that a
+// read-only synced slice refused. Before it existed, os.IsPermission on any
+// writer error returned false unconditionally, because Errorf flattens its
+// operands through fmt.Sprintf.
+//
+// CodeOf is unaffected: it stops at the OUTERMOST ExitCoder, and *Error is one,
+// so wrapping a cause never moves an exit code.
+//
+// @spec req://uncle-os/derived-drift-repair@0.1#R-0.1
+func (e *Error) Unwrap() error { return e.Err }
 
 // ExitCode makes *Error an ExitCoder. It is the reason CodeOf needs exactly one
 // lookup rather than one per error type.
@@ -230,6 +250,20 @@ type ExitCoder interface {
 // Errorf builds an *Error with the given code.
 func Errorf(code ExitCode, format string, a ...any) error {
 	return &Error{Code: code, Msg: fmt.Sprintf(format, a...)}
+}
+
+// Wrapf builds an *Error that carries cause, without letting cause influence the
+// rendered message. The format string is the whole message, exactly as with
+// Errorf — pass cause into it explicitly if it belongs in the text.
+//
+// Use this at any site whose failure a caller might need to classify. The three
+// graph writers do, because a repair pass has to tell "this file is inside a
+// read-only slice" apart from every other write failure, and that distinction
+// cannot survive being rendered to a string.
+//
+// @spec req://uncle-os/derived-drift-repair@0.1#R-0.1
+func Wrapf(code ExitCode, cause error, format string, a ...any) error {
+	return &Error{Code: code, Msg: fmt.Sprintf(format, a...), Err: cause}
 }
 
 // CodeOf reports the exit code an error should produce.

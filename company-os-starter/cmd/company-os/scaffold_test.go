@@ -71,8 +71,12 @@ func TestScaffoldGuidanceChain(t *testing.T) {
 		"next: company-os reality new --platform second billing-api",
 	})
 
+	// The `tagged` line is the third write category. `Rebuild` reports all
+	// three since R-0.4; before it, this command printed the index and node
+	// writes but silently swallowed the tag write it had just performed.
 	out = runOK(t, "--root", root, "reality", "new", "--platform", "second", "billing-api")
 	wantLines(t, out, []string{
+		"  tagged platforms/second/reality/components/billing-api.md",
 		"  wrote index platforms/second/generated/feature-index.yaml",
 		"  node platforms/second/CLAUDE.md",
 		"created platforms/second/reality/components/billing-api.md",

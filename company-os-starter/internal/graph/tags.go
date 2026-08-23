@@ -280,6 +280,11 @@ func graphRoots(ws *workspace.Workspace) []string {
 // default_flow_style=None, which is what makes committed frontmatter read
 // `tags: [a, b]` inline. Dumping in block style would rewrite every document on
 // the first build.
+//
+// The write error carries its cause; the serialize error above it does not,
+// because a YAML emitter failure is not a filesystem condition anyone classifies.
+//
+// @spec req://uncle-os/derived-drift-repair@0.1#R-0.2
 func RewriteFrontmatterTags(path string, tags []string) (bool, error) {
 	meta, body, err := ReadFrontmatter(path)
 	if err != nil {
@@ -305,7 +310,7 @@ func RewriteFrontmatterTags(path string, tags []string) (bool, error) {
 	}
 	text := "---\n" + strings.TrimSpace(fm) + "\n---\n" + string(body)
 	if err := os.WriteFile(path, []byte(text), 0o666); err != nil {
-		return false, model.Errorf(model.ExitArtifact, "cannot write %s: %v", path, err)
+		return false, model.Wrapf(model.ExitArtifact, err, "cannot write %s: %v", path, err)
 	}
 	return true, nil
 }
