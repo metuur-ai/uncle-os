@@ -135,6 +135,78 @@ download_failed() {
   exit 1
 }
 
+# ── Integrity ─────────────────────────────────────────────────────────────────
+# TLS proves who served the bytes, not that they are the bytes `make release`
+# produced. SHA256SUMS ships as a release asset next to the binaries; check
+# against it before putting anything on PATH.
+#
+# Scope, stated plainly: this detects a corrupted or swapped asset. It is NOT a
+# signature — anyone who can replace the binary in a release can replace
+# SHA256SUMS in the same release. Only signing would close that, and this
+# project deliberately does not sign (R-6.3).
+
+# sha256_of <file> — echo the hex digest, or return 1 if no hasher exists.
+sha256_of() {
+  if   command -v sha256sum &>/dev/null; then sha256sum   "$1" | awk '{print $1}'
+  elif command -v shasum    &>/dev/null; then shasum -a 256 "$1" | awk '{print $1}'
+  else return 1
+  fi
+}
+
+# fetch_quiet <url> <dest> — like download(), but a failure is the caller's to
+# interpret rather than fatal.
+fetch_quiet() {
+  if   command -v curl &>/dev/null; then curl -fsSL "$1" -o "$2" 2>/dev/null
+  elif command -v wget &>/dev/null; then wget -q    "$1" -O "$2" 2>/dev/null
+  else return 1
+  fi
+}
+
+# verify_checksum <file> <asset-name>
+#
+# A MISMATCH is always fatal. A missing SHA256SUMS (a release predating it, or a
+# custom BASE_URL) and a missing hasher are both reported as skipped rather than
+# fatal: sha256sum/shasum are effectively universal, and refusing to install on
+# the rare host with neither buys no security — a missing coreutils is not an
+# attacker. What is never acceptable is claiming a check that did not run.
+verify_checksum() {
+  local file="$1" name="$2" sums expected actual
+  sums="$(mktemp)"
+
+  if ! fetch_quiet "$BASE_URL/SHA256SUMS" "$sums"; then
+    rm -f "$sums"
+    warn "no SHA256SUMS published at this release — integrity NOT verified"
+    return 0
+  fi
+
+  # `shasum -a 256 *` writes "<hash>  <name>"; a leading '*' appears in the
+  # binary-mode format some tools emit.
+  expected="$(awk -v n="$name" '$2 == n || $2 == "*"n {print $1; exit}' "$sums")"
+  rm -f "$sums"
+
+  if [[ -z "$expected" ]]; then
+    warn "$name absent from SHA256SUMS — integrity NOT verified"
+    return 0
+  fi
+
+  if ! actual="$(sha256_of "$file")"; then
+    warn "no sha256sum/shasum on this system — integrity NOT verified"
+    return 0
+  fi
+
+  if [[ "$actual" != "$expected" ]]; then
+    red "Error: checksum mismatch for $name" >&2
+    echo >&2
+    echo "  expected  $expected" >&2
+    echo "  actual    $actual" >&2
+    echo >&2
+    echo "  The download does not match the published SHA256SUMS. Not installing." >&2
+    echo "  Retry; if it persists, report it at https://github.com/$REPO/issues" >&2
+    exit 1
+  fi
+  info "Verified sha256 ${actual:0:16}…"
+}
+
 # resolve_binary — echo a path to the platform binary, downloading if needed.
 resolve_binary() {
   local plat="$1" name="$TOOL_NAME-$1" p
@@ -147,6 +219,9 @@ resolve_binary() {
   local tmp
   tmp="$(mktemp -d)/$TOOL_NAME"
   download "$BASE_URL/$name" "$tmp"
+  # Downloads only. A binary already on disk in a checkout is the user's own
+  # build; there is nothing authoritative to check it against.
+  verify_checksum "$tmp" "$name" >&2
   echo "$tmp"
 }
 
