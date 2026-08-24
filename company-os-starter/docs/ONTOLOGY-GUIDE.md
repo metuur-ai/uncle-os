@@ -13,12 +13,13 @@ Three questions, three mechanisms, one graph:
 | Question | Mechanism | Source of truth |
 |---|---|---|
 | What does this thing *mean*? | Ontology (canonical IDs + concept notes) | `company-ontology/` |
-| What is this doc *about*? | Tags + wikilinks (derived from frontmatter) | frontmatter → generated |
+| What is this doc *about*? | Tags (derived from frontmatter) | frontmatter → generated |
 | Does the code *satisfy* the requirement? | EARS clauses + `@spec` annotations | `requirements.yaml` → code/tests |
 
 The invariant that keeps all three honest: **IDs are canonical; tags and links
 are derived.** Humans and agents write stable IDs in frontmatter; tooling
-generates the Obsidian-friendly tags and wikilinks from them. Never the reverse.
+generates the Obsidian-friendly tags from them. Never the reverse. (Derived
+wikilinks are §2.3 roadmap; they are not written today.)
 
 ---
 
@@ -132,8 +133,9 @@ and the integration style (ACL, published language…). Context maps are the
 Directories give you *one* hierarchy. Tags give you every other slice: "all
 mandatory requirements touching message-delivery, across every platform and
 team," regardless of which repo the files sit in. In an assembled Obsidian
-vault (every OS repo mounted as a folder), tags + wikilinks turn the
-federation into one navigable graph.
+vault (every OS repo mounted as a folder), tags turn the federation into one
+navigable surface — and Local Search turns the same frontmatter into a
+queryable graph.
 
 ## 2.1 The tag namespace (nested, faceted)
 
@@ -164,10 +166,10 @@ Tags duplicate information that already exists in frontmatter IDs — so hand
 writing them would create drift. The rule:
 
 ```text
-frontmatter IDs  ──(company-os graph build)──►  tags: [...] block + wikilinks
+frontmatter IDs  ──(company-os derive)──►  tags: [...] + generated CLAUDE.md blocks
 ```
 
-`graph build` reads `platform:`, `team:`, `components:`, `boundedContext:`,
+`derive` reads `platform:`, `team:`, `components:`, `boundedContext:`,
 requirement references, and `status:` from each doc's frontmatter and rewrites
 a generated `tags:` array (Obsidian reads frontmatter tags natively). Editing
 a tag by hand is futile — the next build overwrites it. Change the frontmatter
@@ -175,6 +177,14 @@ instead. `validate --ontology` fails if committed tags differ from a fresh
 derivation, same pattern as `effective-governance.yaml`.
 
 ## 2.3 Wikilinks and hub notes: making the graph mean something
+
+> **Roadmap, not shipped.** `derive` emits tags and generated `CLAUDE.md`
+> blocks today; it does **not** write wikilinks. Obsidian's graph pane
+> currently draws edges only from links you write by hand. Local Search
+> reads the frontmatter directly and does not need them. This section
+> describes the intended end state — see
+> [user-guide/explanation/obsidian-and-local-search.md](user-guide/explanation/obsidian-and-local-search.md)
+> for what is real today.
 
 Tags classify; **wikilinks draw the edges** Obsidian's graph renders. The trick
 that makes cross-repo correlation work: every ontology entry (concept,
@@ -288,10 +298,10 @@ def test_exhausted_retries_move_to_recoverable_dlq():
 Scenario: non-urgent message held during quiet hours
 ```
 
-And in OKF docs, `graph build` converts `@spec` mentions into the tag
-`#spec/communications/delivery-reliability` plus a wikilink to the
-requirement's hub note — so specs, code pointers, PRDs, and tests all orbit
-the same node in the Obsidian graph.
+And in OKF docs, `derive` converts `@spec` mentions into the tag
+`#spec/communications/delivery-reliability` — so specs, code pointers, PRDs,
+and tests are all reachable from one tag filter. (The hub-note wikilink that
+would make them orbit a single node in the graph pane is §2.3 roadmap.)
 
 ## 3.4 The spec-driven development loop
 
@@ -344,7 +354,7 @@ Extending the kit's CI gate with semantic checks:
 [5/6] vocabulary lint        canonical docs declaring boundedContext X must not use
                              X's forbiddenTerms (e.g. "Customer" in a Communications
                              reality doc → FAIL with "use Recipient")
-[6/6] derivation freshness   committed tags/graph blocks match a fresh `graph build`;
+[6/6] derivation freshness   committed tags/graph blocks match a fresh `derive`;
                              @spec annotations parse and resolve to live clauses;
                              mandatory-clause test coverage per `spec trace`
 ```
@@ -363,6 +373,6 @@ original words); only `authority: canonical` docs are held to it.
 4. Add `boundedContext:` and ontology IDs to frontmatter of canonical docs.
 5. Rewrite one mandatory requirement's checklist as numbered EARS clauses.
 6. Annotate its implementation and tests with `@spec id@version#clause`.
-7. Wire `graph build` (tags + hub wikilinks) and `validate --ontology` into CI.
-8. Open the assembled vault in Obsidian: filter `#capability/...`, click a hub,
-   watch the federation become one graph.
+7. Wire `derive` (tags + generated aggregates) and `validate --ontology` into CI.
+8. Open the assembled vault in Obsidian: filter `#capability/...` and see every
+   doc across the federation that touches it.

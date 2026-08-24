@@ -116,7 +116,7 @@ deliberate:
 - It gets a generated `CLAUDE.md` context node listing every area and document, and
   it appears in every sibling root's Federation-roots cross-links — so an agent can
   find it. Gate `[8/8]` hash-locks it like any other slice.
-- It is **not** walked by `graph build` or validate gates `[1/8]`–`[7/8]`. Foreign
+- It is **not** walked by `derive` or validate gates `[1/8]`–`[7/8]`. Foreign
   docs carry no `type:`/`id:` frontmatter, so gate `[4/8]` would reject them; and
   the slice is `0444`, so tag rewriting would fail against read-only files. The
   catalog is indexed for navigation, never governed.
@@ -234,13 +234,13 @@ PASS
 ```
 
 > **Derived artifacts must be built upstream.** The slice carries whatever the
-> source repo committed at the pinned SHA — including `graph build` outputs
+> source repo committed at the pinned SHA — including `derive` outputs
 > (`generated/feature-index.yaml`, and the generated block in each `CLAUDE.md`).
 > You cannot regenerate them in the workspace: the slice is read-only, and a
 > source repo on its own is not a workspace root. If those artifacts are stale at
 > the pin, gates `[5/8]`/`[6/8]` fail and the *only* fix is upstream — run
-> `graph build` in a full workspace that contains the source repo, commit it back
-> to the source repo, cut a new pin, re-sync. Keep `graph build && git diff
+> `derive` in a full workspace that contains the source repo, commit it back
+> to the source repo, cut a new pin, re-sync. Keep `derive && git diff
 > --exit-code` in each source repo's own CI so a pin can never carry drift.
 
 ---
@@ -506,7 +506,7 @@ jobs:
           rm -rf platforms/communications
           mkdir -p platforms/communications
           cp -R ../pr/. platforms/communications/
-          company-os graph build        # keep feature-index / CLAUDE.md nodes current
+          company-os derive        # keep feature-index / CLAUDE.md nodes current
 
       - name: validate
         working-directory: ws
@@ -586,7 +586,7 @@ cache, prefer validating the committed slices directly (§5, Pattern A).
 - **Derived artifacts are pinned, not computed locally.** `feature-index.yaml` and
   each `CLAUDE.md` generated block ride along in the slice at the pinned SHA and
   cannot be regenerated in the read-only workspace — keep them current in the
-  source repo (`graph build` + `git diff --exit-code` in that repo's CI) before you
+  source repo (`derive` + `git diff --exit-code` in that repo's CI) before you
   cut the tag you pin.
 - **`sync` and `resolve` are separate on purpose** (§2). Bumping a pin never
   regenerates a team's governance for you — run `governance resolve` and commit it.

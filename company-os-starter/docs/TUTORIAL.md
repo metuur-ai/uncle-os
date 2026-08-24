@@ -403,7 +403,7 @@ Per `team.yaml` precedence, `canonical-mandatory > personal > canonical-default
 > canonical-guidance` — her rules can reshape how the PRD gets written, never
 whether it passes `prd validate`.
 
-## 9.5 Tags everywhere: `graph build`
+## 9.5 Tags everywhere: `derive`
 
 Every artifact in the kit now carries a `tags:` block — skills, templates,
 docs, standards, YAML configs, and workspace documents. Two kinds exist:
@@ -413,19 +413,19 @@ docs, standards, YAML configs, and workspace documents. Two kinds exist:
 - **Derived facets** on workspace docs, generated from frontmatter IDs by:
 
 ```bash
-$ company-os graph build
+$ company-os derive
   tagged platforms/communications/archive/prds/2026-per-channel-quiet-hours/prd.md
   ...
-graph build: 11 doc(s) scanned, 9 updated
-$ company-os graph build
-graph build: 11 doc(s) scanned, 0 updated     # idempotent
+derive: 11 doc(s) scanned, 9 updated
+$ company-os derive
+derive: 11 doc(s) scanned, 0 updated     # idempotent
 ```
 
 The archived PRD, for instance, ends up with
 `[component/customer-notification-service, discovery/2026-..., kind/prd,
 platform/communications, status/completed, team/customer-engagement]` — all
 derived from fields it already had. Scaffolds (`discover new`, `prd new`,
-`prd complete`) emit starter tags at creation; `graph build` keeps them true
+`prd complete`) emit starter tags at creation; `derive` keeps them true
 as `status:` and other fields change. Hand-edited tags in derived facets are
 overwritten on the next build — change the frontmatter, not the tag. Manually
 curated `ontology/*`, `capability/*`, `req/*`, and `spec/*` facets are
@@ -435,7 +435,7 @@ Open the workspace as an Obsidian vault and the tag pane gives you the
 cross-repo slices from the Ontology Guide: `#kind/prd` for every PRD across
 platforms, `#component/customer-notification-service` for everything touching
 that component, `#team/customer-engagement #status/completed` for the team's
-shipped work. Wire `graph build && git diff --exit-code` into CI (same pattern
+shipped work. Wire `derive && git diff --exit-code` into CI (same pattern
 as `governance resolve`) so committed tags can never drift from the
 frontmatter they derive from.
 

@@ -1,0 +1,28 @@
+generatedAt: '2026-08-24T00:15:35Z'
+team: fraud-detection
+components:
+  transaction-screening:
+    platforms: []
+    requirements:
+      company: []
+      platform: {}
+    warning: no component descriptor found in any platform catalog
+  card-issuing:
+    platforms: []
+    requirements:
+      company: []
+      platform: {}
+    warning: no component descriptor found in any platform catalog
+  payment-gateway:
+    platforms: []
+    requirements:
+      company: []
+      platform: {}
+    warning: no component descriptor found in any platform catalog
+  auth-service:
+    platforms: []
+    requirements:
+      company: []
+      platform: {}
+    warning: no component descriptor found in any platform catalog
+deviationsApplied: []

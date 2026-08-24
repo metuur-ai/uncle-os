@@ -129,7 +129,7 @@ Three things the gates care about:
 
 - **`type: skill` is required.** Without it the frontmatter gate `[1/N]` fails.
 - **Never hand-write `tags:`.** Leave the list empty and run
-  `company-os graph build` — it derives them from the frontmatter (`authority:
+  `company-os derive` — it derives them from the frontmatter (`authority:
   canonical` becomes `authority/canonical`) and rewrites the file in place. A
   hand-written facet the deriver would not produce fails the derived-tag gate.
 - **`id` is `skill://<scope>/<name>`** and must be unique across the layers that
@@ -138,7 +138,7 @@ Three things the gates care about:
 Then:
 
 ```bash
-$ company-os graph build
+$ company-os derive
 $ company-os validate
 ```
 
@@ -314,7 +314,7 @@ entry before you write it.
 Follow skill://governance/syncing-knowledge to add
 github.com/acme/component-library's docs/sdd to the catalog at
 knowledge/components/component-library, pinned to tag v1.2.0. Write the
-workspace.yaml entry, run workspace status, then sync, then graph build, then
+workspace.yaml entry, run workspace status, then sync, then derive, then
 validate. Do not edit anything under knowledge/ directly.
 ```
 
@@ -326,7 +326,7 @@ Our team always attaches the Figma frame to UI-visible PRDs. Write that as a
 team skill under teams/customer-engagement/skills/ that extends the platform's
 creating-prd rather than redefining it: distinct id and file name, `extends:
 platform-skill://communications/creating-prd`, `type: skill`, empty tags. Then
-run graph build and validate and show me gate [7/N].
+run derive and validate and show me gate [7/N].
 ```
 
 **When a mandatory step blocks you.** The failure mode to prompt against is an

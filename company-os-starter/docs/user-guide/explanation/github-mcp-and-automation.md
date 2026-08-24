@@ -95,7 +95,7 @@ The through-line: the CLI stays offline-fast, and only `workspace sync` touches
 the network at all.
 
 One more thing worth not misreading — the `CLAUDE.md` files in a workspace are
-**generated context nodes**, produced by `graph build` and drift-checked by gate
+**generated context nodes**, produced by `derive` and drift-checked by gate
 `[5/N]`. They are indexes of what a root contains, not agent configuration and
 not an MCP manifest.
 

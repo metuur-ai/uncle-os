@@ -77,7 +77,7 @@ would catch up within seconds.
 ## Why this matters for Company OS specifically
 
 The research explicitly calls out Company OS's ontology (`component://`,
-`capability://`, `req://`, `context://` canonical IDs, `graph build`'s
+`capability://`, `req://`, `context://` canonical IDs, `derive`'s
 derived tags) as the richest input this vision has seen — Company OS
 workspaces would plausibly become a first-class extraction profile before
 generic repos do. None of that changes anything about how you use

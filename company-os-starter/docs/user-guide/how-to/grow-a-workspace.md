@@ -74,7 +74,7 @@ anything (you shouldn't — see
 sure, run:
 
 ```bash
-$ company-os graph build
+$ company-os derive
 $ company-os validate
 ```
 
@@ -85,4 +85,4 @@ $ company-os validate
 | `add component requires --platform <platform-id>` | forgot `--platform` | pass an existing platform id — check with `company-os ids list --prefix platform://` |
 | `validate` gate `[1/7]` fails after adding a component | `ownership.accountableTeam` in the descriptor doesn't match the team's `ownership/components.yaml` | edit one of the two to agree — the descriptor is authoritative |
 | `reality new` refuses with "already exists" | the reality doc was already scaffolded | edit the existing file instead of re-running `reality new` |
-| Newly added platform/team/component missing from `company-os today` | generated views are stale | run `company-os graph build` |
+| Newly added platform/team/component missing from `company-os today` | generated views are stale | run `company-os derive` |

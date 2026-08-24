@@ -7,7 +7,7 @@ tags: [doc/company-os-starter, kind/frontmatter-core]
 
 The smallest field set a Markdown document needs to participate in the
 operating system. This core — not the document's section structure — is the
-whole interop contract between teams, the company layer, `graph build`,
+whole interop contract between teams, the company layer, `derive`,
 `validate`, Obsidian, and any other tool that reads Markdown + YAML
 frontmatter.
 
@@ -45,9 +45,12 @@ fromDiscovery: 2026-faster-webhooks        # traceability edge
 prd: 2026-faster-webhooks                  # outcome reviews → their PRD
 ```
 
-Every tag and wikilink Obsidian sees is derived from these fields by
-`company-os graph build` (Ontology Guide §2.2). Hand-written tags are
-overwritten; change the frontmatter instead.
+Every tag Obsidian shows, and every context-index link it follows, is
+derived from these fields by `company-os derive`. Local Search reads the
+same fields into typed graph edges — `components:` → `has_component`,
+`dependsOn:` → `depends_on`, and so on. Hand-written tags are overwritten;
+change the frontmatter instead. See
+[user-guide/explanation/obsidian-and-local-search.md](user-guide/explanation/obsidian-and-local-search.md).
 
 ## Tier 4 — Process accountability (required by specific gates)
 
@@ -123,7 +126,7 @@ them without collision.
 tags: [kind/prd, platform/communications, team/customer-engagement, status/proposed]
 ```
 
-Two derived artifacts also exist now, both produced by `graph build`,
+Two derived artifacts also exist now, both produced by `derive`,
 drift-checked by `validate`, and never hand-edited:
 
 - `platforms/<p>/generated/feature-index.yaml` — the derived component→artifact
@@ -141,7 +144,7 @@ Unknown fields are preserved, never rejected.
 | Field tier | Checked by | Blocking? |
 | --- | --- | --- |
 | Identity + lifecycle | `validate` gate 4, `discover validate`, `prd validate` | Yes, everywhere |
-| References → tag derivation | `validate` gate 4 (drift vs `graph build`) | Yes, everywhere |
+| References → tag derivation | `validate` gate 4 (drift vs `derive`) | Yes, everywhere |
 | Process accountability | `prd validate` / `prd complete` gates | Yes, at that gate |
 | Section structure (templates/) | `discover validate`, `prd validate` | No — warnings, unless the team opts in |
 

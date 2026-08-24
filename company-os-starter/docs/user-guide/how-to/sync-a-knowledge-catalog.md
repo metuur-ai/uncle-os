@@ -37,7 +37,7 @@ Then:
 
 ```bash
 $ company-os workspace sync
-$ company-os graph build     # refresh knowledge/CLAUDE.md so agents can find it
+$ company-os derive     # refresh knowledge/CLAUDE.md so agents can find it
 $ company-os validate
 ```
 
@@ -72,7 +72,7 @@ Two rules the CLI enforces:
 | | |
 |---|---|
 | It gets | a generated `CLAUDE.md` context node listing every area and document, cross-links from every sibling root, and gate `[8/8]` hash integrity |
-| It skips | `graph build` tag derivation and validate gates `[1/8]`–`[7/8]` |
+| It skips | `derive` tag derivation and validate gates `[1/8]`–`[7/8]` |
 
 The reason is that knowledge slices come from repos that are not Company OS
 workspaces. Their docs carry no `type:`/`id:` frontmatter, so the frontmatter
@@ -98,7 +98,7 @@ Run this before every sync. It reports three kinds of drift:
   file-level check alone would report green.
 - **missing / drifted slices** — files absent, or hand-edited
 
-To take a new upstream release: bump `pin:`, `sync`, `graph build`, commit.
+To take a new upstream release: bump `pin:`, `sync`, `derive`, commit.
 
 **Never edit a synced file.** Slices are `0444` derived content and gate
 `[8/8]` fails on any hand-edit, naming the file. The fix is always upstream —

@@ -207,7 +207,7 @@ is broken.
    company-os --help
    mkdir demo && cd demo
    company-os init --company Acme --team core --platform web
-   company-os graph build                    # init scaffolds; this derives
+   company-os derive                    # init scaffolds; this derives
    company-os validate                       # exits 0
    company-os add platform api
    company-os add team payments
@@ -217,7 +217,7 @@ is broken.
    company-os governance explain svc-pay
    company-os discover new --team payments "First brief"
    company-os check ready  --team payments --components svc-pay
-   company-os graph build && company-os graph build   # second run is a no-op
+   company-os derive && company-os derive   # second run is a no-op
    company-os ids list
    company-os skills list
    company-os today --role developer
@@ -301,7 +301,7 @@ disturb an existing install at all — the launcher keeps working, indefinitely,
 running a Python CLI that no longer exists upstream. It will not error. It will
 not warn. If `$COMPANY_OS_PREFIX/bin` sits ahead of the new binary on your
 `PATH`, the stale launcher silently **shadows** the binary you just installed.
-Every real subcommand — `validate`, `graph build`, `governance resolve` — then
+Every real subcommand — `validate`, `derive`, `governance resolve` — then
 runs the old implementation and succeeds, so nothing looks wrong. The Python
 CLI had no `--version` flag of its own, so the one command that would expose
 the substitution answers with an argparse usage banner and exit 2 instead of a
@@ -374,7 +374,7 @@ What that rests on, and what it costs:
   when the format moves, not when the binary does.
 - **Generated output is a pure function of workspace state.** Verified: two
   builds with different stamped versions, run over the same fixture, produce
-  byte-identical trees; re-running `graph build` and `governance resolve` under
+  byte-identical trees; re-running `derive` and `governance resolve` under
   a different build than wrote them is a no-op diff. So a shared workspace does
   not churn, and CI's regenerate-and-diff gate does not fail because a
   teammate is a version behind.

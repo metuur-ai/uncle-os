@@ -354,22 +354,30 @@ company-os today [--role ROLE]
 $ company-os today --role product-owner
 ```
 
-## `graph`
+## `derive`
 
 Re-derive tags and generated aggregates (feature-index, `CLAUDE.md` context
-nodes) from frontmatter across the whole workspace.
+nodes) from frontmatter across the whole workspace. This is what makes the
+workspace legible to the two read-side tools — Local Search indexes the
+derived `tags:`, and Obsidian reads the same frontmatter tags natively. See
+[explanation/obsidian-and-local-search.md](../explanation/obsidian-and-local-search.md).
 
 ```text
-company-os graph build
+company-os derive
 ```
 
 ```bash
-$ company-os graph build
-graph build: 12 doc(s) scanned, 3 updated
+$ company-os derive
+derive: 12 doc(s) scanned, 3 updated
 ```
 
 Run this after any change that would drift derived content — `validate`
 gates `[4/N]`–`[6/N]` will otherwise fail.
+
+> `company-os graph build` is the pre-`derive` spelling. It still works and
+> dispatches to exactly the same code, so existing scripts and muscle memory
+> keep working, but `derive` is the name to use and the one the CLI's own
+> remediation hints print.
 
 ## `ids`
 

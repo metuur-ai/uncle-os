@@ -47,11 +47,13 @@ Jump to a how-to:
 | Understand why `company-os validate` failed, or wire it into CI | [how-to/run-the-validation-gate.md](how-to/run-the-validation-gate.md) |
 | Pull a repo's docs into the knowledge catalog, without its source code | [how-to/sync-a-knowledge-catalog.md](how-to/sync-a-knowledge-catalog.md) |
 | Keep Local Search's index fresh and scoped correctly | [how-to/keep-search-fresh.md](how-to/keep-search-fresh.md) |
+| Open the workspace in Obsidian without breaking the derived state | [how-to/open-your-workspace-in-obsidian.md](how-to/open-your-workspace-in-obsidian.md) |
 | Upgrade my CLI, or find out whether my teammate's older build is a problem | [how-to/release-and-upgrade.md](how-to/release-and-upgrade.md) |
 
 ## I want the bigger picture
 
 - **[explanation/how-it-fits-together.md](explanation/how-it-fits-together.md)** — how Company OS, Team OS, Local Search, and Claude skills cooperate.
+- **[explanation/obsidian-and-local-search.md](explanation/obsidian-and-local-search.md)** — what `derive` actually writes, what Obsidian and Local Search each read, and which parts of the integration story are roadmap rather than shipped.
 - **[explanation/github-mcp-and-automation.md](explanation/github-mcp-and-automation.md)** — why sync is plain git rather than a GitHub MCP integration, what that means if you use GitHub MCP anyway, and where the boundary is.
 - **[explanation/observer-roadmap.md](explanation/observer-roadmap.md)** — where the knowledge-graph vision (codename Observer) is headed. **Not shipped yet** — read this as roadmap, not a manual.
 
