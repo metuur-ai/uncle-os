@@ -70,7 +70,7 @@ func runValidate(t *testing.T, root string) (string, model.ExitCode, []model.Gat
 // The five are not redundant. golden-validate is the 8-gate all-pass path;
 // federated-golden-validate is the same workspace shape with gate 9 present, and
 // is what proves the [N/M] denominator is computed rather than stored;
-// failing-workspace drives at least one [FAIL] through every one of gates 1-8
+// failing-workspace drives at least one [FAIL] through every one of gates 1-7
 // plus the single warn site and gate 4's conditional [ok]; and the two federated
 // failure fixtures split the five federated_slice_problems shapes, because the
 // absent-lock branch returns early and therefore cannot co-occur with the other
@@ -107,8 +107,8 @@ func TestGoldensReproduceByteForByte(t *testing.T) {
 			if code != tc.want {
 				t.Errorf("exit code = %d, want %d", code, tc.want)
 			}
-			// Gate 8 exists only in federated mode, and the ordinals must be 1..N
-			// with no renumbering of gates 1-7.
+			// The federated slice gate exists only in federated mode, and the
+			// ordinals must be 1..N with no renumbering of gates 1-8.
 			gates := sections[1:]
 			if len(gates) != tc.gates {
 				t.Fatalf("got %d gates, want %d", len(gates), tc.gates)

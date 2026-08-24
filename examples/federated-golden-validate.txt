@@ -1,16 +1,16 @@
 validating workspace <WORKSPACE>
 
-[1/8] ownership reconciliation
+[1/9] ownership reconciliation
   [ok] customer-notification-service: registry and descriptor agree (communications)
 
-[2/8] deviation and exception expiry
+[2/9] deviation and exception expiry
   [ok] customer-engagement: deviation platform-standard://communications/prd-structure current (review 2035-01-15)
   [ok] customer-engagement: deviation company-standard://estimation/story-points current (review 2035-01-14)
   [ok] customer-engagement: exception platform-standard://communications/message-schema valid until 2035-12-31
 
-[3/8] active PRD contracts
+[3/9] active PRD contracts
 
-[4/8] frontmatter core and tag derivation (interop contract)
+[4/9] frontmatter core and tag derivation (interop contract)
   [ok] company-os/onboarding/developer.md: core fields + tags in sync
   [ok] platforms/communications/reality/components/customer-notification-service.md: core fields + tags in sync
   [ok] platforms/communications/skills/creating-prd.SKILL.md: core fields + tags in sync
@@ -23,19 +23,21 @@ validating workspace <WORKSPACE>
   [ok] company-ontology/context-maps/crm-to-communications.md: core fields + tags in sync
   [ok] company-ontology/contexts/communications.md: core fields + tags in sync
 
-[5/8] CLAUDE.md context node drift (fail-safe, absence-tolerant)
+[5/9] CLAUDE.md context node drift (fail-safe, absence-tolerant)
   [ok] company-os/CLAUDE.md: context node in sync
   [ok] platforms/communications/CLAUDE.md: context node in sync
   [ok] teams/customer-engagement/CLAUDE.md: context node in sync
   [ok] company-ontology/CLAUDE.md: context node in sync
 
-[6/8] feature-index drift (derived component->artifact map)
+[6/9] feature-index drift (derived component->artifact map)
   [ok] communications: feature-index in sync (1 component(s))
 
-[7/8] custom skills layering (shadowing + extends resolution)
+[7/9] custom skills layering (shadowing + extends resolution)
   [ok] skills layered cleanly (1 canonical, 0 team; no shadowing or dangling extends)
 
-[8/8] federated slice integrity (read-only derived content)
+[8/9] promotion integrity (promoted drafts match their change records)
+
+[9/9] federated slice integrity (read-only derived content)
   [ok] federated slices match workspace.lock.yaml (4 file(s) across 1 repo(s); no hand-edits)
 
 PASS

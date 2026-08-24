@@ -142,6 +142,7 @@ func TestPassingGoldenIsReproducibleFromRecords(t *testing.T) {
 					"skills layered cleanly (2 canonical, 0 team; no shadowing or dangling extends)",
 					model.Fields{"canonical": 2, "team": 0}),
 			}},
+			{Ordinal: 8, Slug: "promotion-integrity", Title: "promotion integrity (promoted drafts match their change records)"},
 		},
 	}
 
@@ -230,7 +231,7 @@ func TestFailingGoldenIsReproducibleFromRecords(t *testing.T) {
 				warn(brief, model.CodePointerGuidance, "pointers[2]: must be a mapping — pointer guidance (not blocking)",
 					model.Fields{"index": 2, "problem": "must be a mapping"}),
 				fail("teams/ghost/product/discovery/2035-drifted-tags/brief.md", model.CodeTagsDrift,
-					"committed tags drifted from frontmatter derivation — run: company-os graph build", nil),
+					"committed tags drifted from frontmatter derivation — run: company-os derive", nil),
 				coreOK("teams/ghost/skills/creating-prd.SKILL.md"),
 				coreOK("teams/ghost/skills/reviewing-prd.SKILL.md"),
 			}},
@@ -239,7 +240,7 @@ func TestFailingGoldenIsReproducibleFromRecords(t *testing.T) {
 			{Ordinal: 5, Slug: "claude-node-drift", Title: "CLAUDE.md context node drift (fail-safe, absence-tolerant)", Findings: []model.Finding{
 				ok("company-os/CLAUDE.md", model.CodeNodeHandOwned, "hand-owned, no generated markers (-> pass)", nil),
 				fail("platforms/alpha/CLAUDE.md", model.CodeNodeDrift,
-					"generated block drifted — run: company-os graph build", nil),
+					"generated block drifted — run: company-os derive", nil),
 				ok("platforms/beta/CLAUDE.md", model.CodeNodeInSync, "context node in sync", nil),
 				fail("teams/ghost/team.yaml", model.CodeNodeIdentity, "roster[1]: needs 'name' and 'role'",
 					model.Fields{"index": 1}),
@@ -248,7 +249,7 @@ func TestFailingGoldenIsReproducibleFromRecords(t *testing.T) {
 			}},
 			{Ordinal: 6, Slug: "feature-index-drift", Title: "feature-index drift (derived component->artifact map)", Findings: []model.Finding{
 				fail("alpha", model.CodeFeatureIndexDrift,
-					"feature-index drifted from derivation — run: company-os graph build",
+					"feature-index drifted from derivation — run: company-os derive",
 					model.Fields{"platform": "alpha"}),
 				fail("beta", model.CodeFeatureIndexUnresolved,
 					"feature-index component 'svc-beta' references discovery '2035-no-such-brief' which resolves to no document",
@@ -257,7 +258,7 @@ func TestFailingGoldenIsReproducibleFromRecords(t *testing.T) {
 					"feature-index component 'svc-beta' references prd '2035-renamed-change' which resolves to no document",
 					model.Fields{"platform": "beta", "component": "svc-beta", "kind": "prd", "ref": "2035-renamed-change"}),
 			}},
-			// Gates 7 and 8 use no prefix at all: Subject is empty.
+			// Gates 7 and 9 use no prefix at all: Subject is empty.
 			{Ordinal: 7, Slug: "skills-layering", Title: "custom skills layering (shadowing + extends resolution)", Findings: []model.Finding{
 				fail("", model.CodeSkillShadowing,
 					"skill shadowing: teams/ghost/skills/creating-prd.SKILL.md reuses the canonical "+
@@ -272,6 +273,7 @@ func TestFailingGoldenIsReproducibleFromRecords(t *testing.T) {
 					model.Fields{"skill": "teams/ghost/skills/reviewing-prd.SKILL.md",
 						"extends": "platform-skill://alpha/no-such-base"}),
 			}},
+			{Ordinal: 8, Slug: "promotion-integrity", Title: "promotion integrity (promoted drafts match their change records)"},
 		},
 	}
 
@@ -285,10 +287,10 @@ func TestFailingGoldenIsReproducibleFromRecords(t *testing.T) {
 	}
 }
 
-// TestFederatedGoldenAddsGateEight proves the dynamic denominator is derived
-// from the gate list rather than stored: the same records render [N/7] or [N/8]
-// purely by whether gate 8 is present.
-func TestFederatedGoldenAddsGateEight(t *testing.T) {
+// TestFederatedGoldenAddsGateNine proves the dynamic denominator is derived
+// from the gate list rather than stored: the same records render [N/8] or [N/9]
+// purely by whether the federated slice gate is present.
+func TestFederatedGoldenAddsGateNine(t *testing.T) {
 	r := model.Report{
 		Root: "<WORKSPACE>",
 		Gates: []model.GateResult{
@@ -301,7 +303,7 @@ func TestFederatedGoldenAddsGateEight(t *testing.T) {
 			}},
 			{Ordinal: 6, Slug: "feature-index-drift", Title: "feature-index drift (derived component->artifact map)", Findings: []model.Finding{
 				ok("sliced-alpha", model.CodeFeatureIndexAbsent,
-					"no feature-index (absent -> pass; run graph build to enable)",
+					"no feature-index (absent -> pass; run company-os derive to enable)",
 					model.Fields{"platform": "sliced-alpha"}),
 			}},
 			{Ordinal: 7, Slug: "skills-layering", Title: "custom skills layering (shadowing + extends resolution)", Findings: []model.Finding{
@@ -309,7 +311,8 @@ func TestFederatedGoldenAddsGateEight(t *testing.T) {
 					"skills layered cleanly (0 canonical, 0 team; no shadowing or dangling extends)",
 					model.Fields{"canonical": 0, "team": 0}),
 			}},
-			{Ordinal: 8, Slug: "federated-slice-integrity", Title: "federated slice integrity (read-only derived content)", Findings: []model.Finding{
+			{Ordinal: 8, Slug: "promotion-integrity", Title: "promotion integrity (promoted drafts match their change records)"},
+			{Ordinal: 9, Slug: "federated-slice-integrity", Title: "federated slice integrity (read-only derived content)", Findings: []model.Finding{
 				fail("", model.CodeSliceSetDrift,
 					"repo 'sliced-alpha': slice set in workspace.yaml differs from workspace.lock.yaml "+
 						"(a target or allowlist changed without a re-sync) — run: company-os workspace sync",

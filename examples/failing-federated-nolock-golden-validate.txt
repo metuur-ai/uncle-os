@@ -1,21 +1,23 @@
 validating workspace <WORKSPACE>
 
-[1/8] ownership reconciliation
+[1/9] ownership reconciliation
 
-[2/8] deviation and exception expiry
+[2/9] deviation and exception expiry
 
-[3/8] active PRD contracts
+[3/9] active PRD contracts
 
-[4/8] frontmatter core and tag derivation (interop contract)
+[4/9] frontmatter core and tag derivation (interop contract)
 
-[5/8] CLAUDE.md context node drift (fail-safe, absence-tolerant)
+[5/9] CLAUDE.md context node drift (fail-safe, absence-tolerant)
 
-[6/8] feature-index drift (derived component->artifact map)
+[6/9] feature-index drift (derived component->artifact map)
 
-[7/8] custom skills layering (shadowing + extends resolution)
+[7/9] custom skills layering (shadowing + extends resolution)
   [ok] skills layered cleanly (0 canonical, 0 team; no shadowing or dangling extends)
 
-[8/8] federated slice integrity (read-only derived content)
+[8/9] promotion integrity (promoted drafts match their change records)
+
+[9/9] federated slice integrity (read-only derived content)
   [FAIL] workspace.yaml present but workspace.lock.yaml is missing or malformed — run: company-os workspace sync
 
 FAIL — 1 problem(s)
