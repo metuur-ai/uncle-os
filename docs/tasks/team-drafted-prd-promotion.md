@@ -112,33 +112,33 @@ cannot be folded into the story that changes behaviour.
 
 ## Unit 8: Retiring a draft
 
-- [ ] 8.1 `prd abandon` (deps: 1.1, est: ~1h30m)
+- [x] 8.1 `prd abandon` (deps: 1.1, est: ~1h30m)
   - why: R-8.3 is the point — not every draft becomes real, and without a terminal state dead drafts pollute the gate in Unit 7 and the listing in Unit 9. R-8.4 keeps it terminal on purpose: a resurrected draft would have provenance nobody can reason about.
   - acceptance: R-8.1 — `prd abandon --team <t> <draft-id>` sets `status: abandoned`; R-8.2 — IF `status` is not `draft`, refuse with a conflict error stating the status found; R-8.3 — WHILE `abandoned`, exclude the draft from every gate, from promotion, and from role views; R-8.4 — provide no transition out of `abandoned`; R-8.5 — rebuild derived artifacts before returning
   - verify: `go test ./internal/product/... -run Abandon`; after abandoning, `company-os validate` exits 0 and `company-os today --team <t>` no longer lists the draft
-  - landed:
+  - landed: 8606e3d — internal/product/abandon.go, internal/product/abandon_test.go. Verified end-to-end in a scratch copy of `examples/workspace`: abandon keeps the file and prints "this is final"; `today --team` drops it; `validate` exits 0 before and after; re-abandon and `prd promote` both exit 8 with a conflict error naming the status found.
 
 ## Unit 9: Draft discoverability
 
-- [ ] 9.1 Drafts in `today --team` (deps: 3.2, 8.1, est: ~2h)
+- [x] 9.1 Drafts in `today --team` (deps: 3.2, 8.1, est: ~2h)
   - why: R-9.1 — a drafting stage nobody can find is a scratchpad with extra steps. R-9.3 matters more than it looks: the scaffold writes placeholders, so without it the common case renders a listing full of literal placeholder text.
   - acceptance: R-9.1 — `today --team <t>` lists drafts carrying `status: draft` with each draft's id, title and target platform; R-9.2 — exclude `promoted` and `abandoned` drafts; R-9.3 — WHERE title or target platform is still a placeholder, render it as unset rather than printing the placeholder; R-9.4 — with no open drafts, omit the section rather than rendering an empty one; R-9.5 — list only the scoped team's drafts
   - verify: `go test ./internal/roles/...`; `company-os today --team <t>` in `examples/workspace` before and after creating a draft
-  - landed:
+  - landed: 8606e3d — internal/product/drafts.go, internal/product/drafts_test.go, internal/roles/drafts.go, internal/roles/today.go, internal/render/today.go. Verified in a scratch copy: `today --team customer-engagement` omits the section with no drafts, lists a scaffolded draft as `2026-e2e-probe-widget: unset — communications` (placeholder title rendered as unset), and drops it again after `prd abandon`.
 
 ## Unit 10: Compatibility
 
-- [ ] 10.1 Golden re-baseline as an isolated commit (deps: 7.2, 9.1, est: ~1h30m)
+- [x] 10.1 Golden re-baseline as an isolated commit (deps: 7.2, 9.1, est: ~1h30m)
   - why: R-10.4 requires the re-baseline to carry no behavioural change, so it must be the last commit and nothing else may ride along. Adding gate 8 shifts the ordinal of everything after the insertion point (R-10.3), which is exactly the kind of diff that hides a regression if it is mixed with real edits.
   - acceptance: R-10.1 — slug, title, finding codes and intra-gate finding order of every existing gate are unchanged; R-10.3 — the count and ordinal shift is accepted and recorded as declared in the spec; R-10.4 — the re-baseline lands as an isolated commit containing no behavioural change
   - verify: `make golden`, then review the diff line by line — every change is an ordinal, a denominator, or a new gate-8 line; `make check`; `examples/acceptance.sh` passes
-  - landed:
+  - landed: 1e05451 (five `examples/*-golden-validate.txt` snapshots + the two hand-maintained gate-count oracles in `internal/validate/golden_test.go` and `internal/model/model_test.go`), after 42365f8 corrected the federated oracle. R-10.4 caveat: the re-baseline is **two** commits, not one — both are test-data-only and neither touches `internal/product/`, `internal/validate/` logic or `cmd/`. Diff reviewed line by line: 38 removed lines are all gate headers, zero non-header deletions; every added line is an ordinal shift (`[8/8]`→`[9/9]`, 3), a denominator-only shift (`[1/8]`→`[1/9]`, 35), or the new promotion-integrity gate header and its blank lines (10). `make check` and `examples/acceptance.sh` (`ACCEPTANCE: PASS`) both green.
 
-- [ ] 10.2 Non-regression and architecture constraints (deps: 10.1, est: ~1h30m)
+- [x] 10.2 Non-regression and architecture constraints (deps: 10.1, est: ~1h30m)
   - why: R-10.5 is the promise to everyone not using drafts; R-10.7 and R-10.9 are the standing repo constraints this change is most likely to break, since it adds commands that want to print and a digest that wants a library.
   - acceptance: R-10.5 — `prd new` without `--draft`, `prd complete`, `discover new`, `discover validate` and `--from-discovery` behave unchanged for all inputs that exist today; R-10.6 — every document written here matches the `^---\n...\n---\n` frontmatter parser contract exactly; R-10.7 — printing and process exit stay in `cmd/` and `internal/render/`, every added command returns `[]model.GateResult`; R-10.8 — built-in scaffolding templates stay in sync with the section names the promotion contract checks, so a scaffolded draft satisfies R-5.4 without edits to the template; R-10.9 — no runtime dependency beyond the standard library and existing imports
   - verify: `make check`; `grep -rn "fmt.Print\|os.Exit" internal/` shows no new sites; `go list -deps ./... | grep -v '^\(internal/\|company-os\)'` unchanged from `main`
-  - landed:
+  - landed: verification-only — no production code changed. R-10.5 by differential test: a `main` binary built from a detached worktree and the HEAD binary were run over seven legacy commands (`discover new`, `discover validate`, `prd new --from-discovery`, `prd validate`, `prd complete`, `today --role product-owner`, `check ready`) on byte-identical fixture copies; combined output is **identical**, and `prd new` without `--draft` still writes straight to `platforms/<p>/change-records/active/` carrying no promotion keys. R-10.6 — every written document opens `^---\n`; the `frontmatter()` contract is exercised by the suite. R-10.7 — `grep -rn --include='*.go' -e 'fmt\.Print' -e 'os\.Exit' internal/` outside `internal/render/` returns one hit and it is a comment in `internal/model/model.go:202`; `internal/render/` itself has zero print sites (renderers return strings, `cmd/` prints); `PRDPromote`, `PRDAbandon`, `DraftNew`, `PRDNew` all return `([]model.GateResult, error)` (`DraftsSection` is a `today` section helper, `model.GateResult`, matching its peers). R-10.8 — a draft scaffolded by `prd new --draft` promoted cleanly with **only** core frontmatter fields filled and zero body edits; the seven scaffolded `## ` headings satisfy the R-5.4 section contract as written. R-10.9 — `go list -deps` (138 non-module packages) and `go.mod` are byte-identical to `main`, and no new package was added. Gate: `make check` green, `gofmt -l` clean, `go vet` clean, `go test ./...` 1111 passed / 17 packages, `examples/acceptance.sh` `ACCEPTANCE: PASS`.
 
 ## Unit 11: Skill and reference guidance
 
