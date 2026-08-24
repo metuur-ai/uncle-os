@@ -60,6 +60,18 @@ func (i Issue) finding(sev model.Severity) model.Finding {
 // CoreFieldErrors is core_field_errors (`bin/company-os:128-145`): the
 // process-level contract only, never the body format.
 //
+// It is also the WHOLE contract a `status: draft` PRD is held to (R-3.1). Nothing
+// here branches on status, and nothing should: a draft passes because the list
+// below stops at type / identity / status, so `title`, `platform`, `components`,
+// `governanceSnapshot` and `decisionOwner` are never demanded of any document
+// from here. Those five are gate 3's business (internal/product/check.go), and
+// gate 3 does not walk drafts. Adding a sixth check below would apply it to
+// drafts as a side effect and quietly end the drafting stage.
+//
+// The one thing a draft is NOT excused is `status` itself (R-3.5) — `prd` is in
+// LifecycleTypes, and without a status there is no way to tell a draft from a
+// record, which is the distinction the whole relaxation rests on.
+//
 // Order is the oracle's — type, identity, status, updated, role — because the
 // caller renders them in list order and the golden fixes that order.
 func CoreFieldErrors(meta yamlio.PyMap) []Issue {

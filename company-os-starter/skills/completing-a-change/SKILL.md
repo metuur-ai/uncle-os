@@ -1,6 +1,6 @@
 ---
 id: skill://product/completing-a-change
-version: '1.2'
+version: '1.3'
 authority: canonical
 appliesTo: ['company://all-platforms']
 inputs: [an active PRD whose implementation has shipped]
@@ -11,6 +11,16 @@ tags: [authority/canonical, kind/skill, process/change-completion]
 # Completing a Change
 
 A change is NOT done when the code merges. It is done when reality is updated.
+
+**Precondition (mandatory): this skill takes an active platform change record,
+never a team draft.** A PRD carrying `status: draft` under
+`teams/<team>/product/change-records/draft/` cannot be completed — there is no
+`prd complete --team` form, and `prd complete` addresses records by platform
+only. Promote the draft first with
+`company-os --json prd promote --team <team> <draft-id>`
+(skill://product/creating-prd step 11), then complete the change record that
+promotion produced. A promoted record is byte-for-byte a normal change record;
+nothing below treats it differently.
 
 **Agents: run every command with `--json` and branch on the exit code.** The
 envelope carries `exitCode`, a per-finding `severity`/`code`, and a `guidance`

@@ -36,6 +36,7 @@ type Args struct {
 	Components    string
 	Title         string
 	FromDiscovery string
+	Draft         bool
 	Force         bool
 	Repair        bool
 	Rationale     string
@@ -156,7 +157,7 @@ var commandSpecs = []cmdSpec{
 	{
 		name: "prd", help: "PRD workflow",
 		pos: []posSpec{
-			{name: "action", choices: []string{"new", "validate", "complete"},
+			{name: "action", choices: []string{"new", "validate", "complete", "promote", "abandon"},
 				dest: func(a *Args) *string { return &a.Action }},
 			{name: "id", optional: true, dest: func(a *Args) *string { return &a.ID }},
 		},
@@ -167,6 +168,7 @@ var commandSpecs = []cmdSpec{
 				str: func(a *Args) *string { return &a.Components }},
 			strFlag("title", func(a *Args) *string { return &a.Title }),
 			strFlag("from-discovery", func(a *Args) *string { return &a.FromDiscovery }),
+			boolFlag("draft", func(a *Args) *bool { return &a.Draft }),
 			boolFlag("force", func(a *Args) *bool { return &a.Force }),
 		},
 	},
@@ -241,6 +243,10 @@ var commandSpecs = []cmdSpec{
 					"architect", "vp-engineering", "director-of-product"},
 				str: func(a *Args) *string { return &a.Role },
 			},
+			// R-9.5: the drafts listing is scoped to one team, so the scope is
+			// a flag rather than a walk over every team. Omitted, `today` runs
+			// exactly as it did before — see roles.Today.
+			strFlag("team", func(a *Args) *string { return &a.Team }),
 		},
 	},
 	{
@@ -585,9 +591,30 @@ func parseSubcommand(a *Args, spec cmdSpec, argv []string) ([]string, error) {
 		}
 	}
 	for _, f := range spec.flags {
-		if f.required && !seen[f.name] {
-			missing = append(missing, "--"+f.name)
+		if !f.required || seen[f.name] {
+			continue
 		}
+		// `prd --platform` is the platform a change record is written into. A
+		// team draft is not written into one — R-2.4 leaves `platform` a
+		// placeholder and R-2.5 makes supplying it optional — so `--draft`
+		// suspends the requirement rather than forcing an invented value.
+		//
+		// `prd promote` suspends it for the opposite reason: the platform is
+		// already decided, by the draft's own `promoteTo.platform` (R-4.1).
+		// Accepting one on the command line would invite a second answer, and
+		// R-4.4 exists because two answers to that question have to be refused
+		// rather than silently reconciled. Positionals are bound above this
+		// loop, so args.Action is the parsed value here.
+		//
+		// `prd abandon` suspends it for a third reason: a draft being retired is
+		// going to no platform at all, so requiring one would make the command
+		// unreachable for the draft that most needs it — the one whose
+		// `promoteTo.platform` is still TODO.
+		if spec.name == "prd" && f.name == "platform" &&
+			(seen["draft"] || a.Action == "promote" || a.Action == "abandon") {
+			continue
+		}
+		missing = append(missing, "--"+f.name)
 	}
 	if len(missing) > 0 {
 		return nil, subErrf(spec.name, "the following arguments are required: %s",

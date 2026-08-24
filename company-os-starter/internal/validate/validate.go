@@ -32,14 +32,15 @@ const (
 	FrontmatterGateTitle = "frontmatter core and tag derivation (interop contract)"
 )
 
-// Run is cmd_validate: the workspace banner followed by seven or eight gates.
+// Run is cmd_validate: the workspace banner followed by eight or nine gates.
 //
 // The first section is the banner (`:924`) rather than a gate. It carries the
 // workspace root, which is the one thing in the output that no gate can derive,
-// and the [N/M] denominator — 7 without a federation manifest, 8 with (`:930`).
+// and the [N/M] denominator — 8 without a federation manifest, 9 with (`:930`).
 // The renderer identifies it by model.SlugWorkspace so it stays out of the gate
-// list. Gate 8 is self-suppressing on purpose: in monorepo mode it does not
-// exist at all, which is what keeps the monorepo golden byte-identical.
+// list. The federation gate is self-suppressing on purpose: in monorepo mode it
+// does not exist at all, which is what keeps the monorepo golden byte-identical
+// apart from the ordinal shift R-10.3 declares.
 //
 // The denominator is CARRIED on that record rather than derived from the length
 // of the gate list (R-2.6a). `:930` decides it from manifest presence before any
@@ -87,6 +88,12 @@ func Run(ws *workspace.Workspace) ([]model.GateResult, error) {
 		func(n int) (model.GateResult, error) { return graph.NodeGate(ws, n) },
 		func(n int) (model.GateResult, error) { return graph.FeatureIndexGate(ws, n) },
 		func(n int) (model.GateResult, error) { return skills.Gate(ws, n) },
+		// Gate 8 (R-7.1): promotion integrity, after the skills gate and before
+		// the conditional federation gate, which stays last in every mode
+		// (R-10.2). Inserting here shifts the federation gate to 9 when a manifest
+		// is present; the denominator below is len(steps) and needs no edit,
+		// because it was already a property of the list rather than a constant.
+		func(n int) (model.GateResult, error) { return promotionGate(ws, n) },
 	}
 	if manifest != nil {
 		steps = append(steps, func(n int) (model.GateResult, error) {

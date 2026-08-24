@@ -14,9 +14,9 @@ repos:
   pin:
     commit: 714635868b0048af719450b9dd333f245cf541df
   resolvedCommit: 714635868b0048af719450b9dd333f245cf541df
-  sliceHash: c7461bb4d7a9162ac6d5ad3ccf4f8a141bfde2ac9fa686ba09f603ae630e5756
+  sliceHash: 0b42039825bf8254833c13d06e253e270a90b30a05dad4fe7ea3a6b26b248b5a
   files:
     platforms/communications/governance/requirements.yaml: 7481ac4c3b661dec1794d07f971392dab64331e6e12845b9b5cf9a1e588c63bd
     platforms/communications/components/customer-notification-service.yaml: 9047752c2226f5a11a6aeaa1988628e9d6aed6f1a2ce015e34b019d6e8c1a599
     platforms/communications/reality/components/customer-notification-service.md: b7b91d7053878610f172e2ed9344ddc3d4d28297b8235bac3e063076227e36ec
-    platforms/communications/skills/creating-prd.SKILL.md: f3582f500fce46e23f7eb3db89ff5389f93a5759c32951b094f31b29af313fd8
+    platforms/communications/skills/creating-prd.SKILL.md: 58bd2dce78f05cecdfc370414ae9ca576351b644e7c151dcfbd1ed82fc54b0ac

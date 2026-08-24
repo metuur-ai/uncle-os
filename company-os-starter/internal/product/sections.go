@@ -113,8 +113,38 @@ func Message(code string, f model.Fields) string {
 	case model.CodePRDNext:
 		return fmt.Sprintf("fill Proposed change + decisionOwner, then: "+
 			"company-os prd validate --platform %s %s", f.Str("platform"), f.Str("prd"))
+	case model.CodePRDDraftNext:
+		return fmt.Sprintf("edit %s — fill %s and the body sections",
+			f.Str("path"), strings.Join(draftPlaceholderFields, ", "))
 	case model.CodePRDProcessField:
 		return fmt.Sprintf("process contract field '%s' missing or TODO", f.Str("field"))
+
+	// -------------------------------------------------------------- promote
+	// R-5.5: these three sentences say a draft is UNFINISHED and name what
+	// finishes it. None of them says the file is wrong, because it is not.
+	case model.CodePromoteNotReady:
+		return fmt.Sprintf("draft '%s' is not ready to promote yet — fill these in, "+
+			"then run the same command again:", f.Str("draft"))
+	case model.CodePromoteFieldMissing:
+		return fmt.Sprintf("frontmatter '%s' — still to supply", f.Str("field"))
+	case model.CodePromoteSectionMissing:
+		return fmt.Sprintf("section '## %s' — still to write", f.Str("section"))
+	case model.CodePRDPromoted:
+		return "promoted -> " + f.Str("path")
+	case model.CodePRDDraftLinked:
+		return fmt.Sprintf("draft '%s' kept at %s, linked to %s/%s (%s)",
+			f.Str("draft"), f.Str("path"), f.Str("platform"), f.Str("prd"), f.Str("digest"))
+	case model.CodePRDPromoteNext:
+		return fmt.Sprintf("company-os prd validate --platform %s %s",
+			f.Str("platform"), f.Str("prd"))
+	// -------------------------------------------------------------- abandon
+	// R-8.4: the sentence names no next command because there is none. It says
+	// the state is final and where the file still is, so a reader who abandoned
+	// the wrong draft knows both that undo is not on offer and what to read.
+	case model.CodePRDAbandoned:
+		return fmt.Sprintf("draft '%s' abandoned — %s kept, this is final",
+			f.Str("draft"), f.Str("path"))
+
 	case model.CodePRDContractOK:
 		return fmt.Sprintf("PRD '%s' passes the process contract", f.Str("prd"))
 	case model.CodePRDValidateNext:

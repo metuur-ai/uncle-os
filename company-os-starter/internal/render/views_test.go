@@ -121,7 +121,7 @@ func TestToday_ReproducesPythonStdout(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.role, func(t *testing.T) {
-			sections, err := roles.Today(ws, tc.role)
+			sections, err := roles.Today(ws, tc.role, "", nil)
 			if err != nil {
 				t.Fatalf("Today: %v", err)
 			}
@@ -144,7 +144,7 @@ func TestToday_MissingGovernanceLine(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(ws.Teams, "solo"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	sections, err := roles.Today(ws, "developer")
+	sections, err := roles.Today(ws, "developer", "", nil)
 	if err != nil {
 		t.Fatalf("Today: %v", err)
 	}

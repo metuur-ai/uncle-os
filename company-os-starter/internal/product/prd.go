@@ -49,58 +49,11 @@ func PRDNew(ws *workspace.Workspace, team, platform, components, title, fromDisc
 	}
 	ids := splitComponents(components)
 
-	pid := ""
-	if title != "" {
-		pid = strconv.Itoa(today().Year()) + "-" + scaffold.Slugify(title)
+	title, problem, metrics, discovery, err := carryDiscovery(ws, team, fromDiscovery, title)
+	if err != nil {
+		return nil, err
 	}
-	problem, metrics, discovery := "<!-- Why now? -->", "<!-- Measurable. -->", "none"
-
-	if fromDiscovery != "" {
-		if team == "" {
-			// `ws.team_dir(None)` is a TypeError traceback that writes nothing.
-			// --team is not marked required on the `prd` sub-parser, so this is
-			// argparse's own diagnostic for the requirement it could not
-			// express (R-0.7a(l)).
-			return nil, model.Usagef("prd",
-				"the following arguments are required: --team")
-		}
-		tdir, err := ws.TeamDir(team)
-		if err != nil {
-			return nil, err
-		}
-		brief := filepath.Join(tdir, "product", "discovery", fromDiscovery, "brief.md")
-		if _, err := os.Stat(brief); err != nil {
-			return nil, model.Errorf(model.ExitWorkspace, "discovery brief not found: %s", brief)
-		}
-		meta, body, err := graph.ReadFrontmatter(brief)
-		if err != nil {
-			return nil, err
-		}
-		if status := strOf(meta, "status"); status != "validated" {
-			// Exit 5: the brief exists and is well-formed, the WORKFLOW
-			// precondition is unmet (.devlocal/go-port/exit-code-map.md:53).
-			return nil, model.Errorf(model.ExitPrecondition,
-				"discovery '%s' is '%s', not 'validated'. Run discover validate first.",
-				fromDiscovery, status)
-		}
-		discovery = fromDiscovery
-		if title == "" {
-			// `meta["title"]` is a KeyError on a brief with no title.
-			t := meta.Get("title")
-			if t == nil {
-				return nil, model.Errorf(model.ExitArtifact,
-					"%s: missing required key 'title'", brief)
-			}
-			title = yamlio.PyString(t)
-			pid = strconv.Itoa(today().Year()) + "-" + scaffold.Slugify(title)
-		}
-		if c, ok := sectionContentRaw(body, "Problem signal"); ok && c != "" {
-			problem = c
-		}
-		if c, ok := sectionContentRaw(body, "Success criteria"); ok && c != "" {
-			metrics = c
-		}
-	}
+	pid := derivePRDID(title)
 
 	if pid == "" {
 		// Ruling G of the exit-code map: a hand-rolled conditional-requirement
@@ -187,6 +140,79 @@ func PRDNew(ws *workspace.Workspace, team, platform, components, title, fromDisc
 		model.Fields{"platform": platform, "prd": pid,
 			model.FieldNext: "company-os prd validate --platform " + platform + " " + pid}))
 	return section(), nil
+}
+
+// derivePRDID is `f"{date.today().year}-{slugify(title)}"` (`:583`), the one
+// derivation both `prd new` and `prd new --draft` use. An empty title derives no
+// id, which is the condition each caller turns into its own usage error.
+func derivePRDID(title string) string {
+	if title == "" {
+		return ""
+	}
+	return strconv.Itoa(today().Year()) + "-" + scaffold.Slugify(title)
+}
+
+// carryDiscovery is the `--from-discovery` copy-forward (`:584-598`), lifted out
+// of PRDNew so `prd new --draft` reuses it verbatim rather than growing a second
+// reading of the same brief (R-2.7).
+//
+// It returns the title to derive the id from — the supplied one, or the brief's
+// when none was given — alongside the Problem/Success text and the provenance
+// value for `fromDiscovery:`. With no --from-discovery it returns the scaffold
+// hints unchanged, so callers need no second branch.
+func carryDiscovery(ws *workspace.Workspace, team, fromDiscovery, title string) (
+	outTitle, problem, metrics, discovery string, err error) {
+
+	problem, metrics, discovery = "<!-- Why now? -->", "<!-- Measurable. -->", "none"
+	outTitle = title
+	if fromDiscovery == "" {
+		return outTitle, problem, metrics, discovery, nil
+	}
+	if team == "" {
+		// `ws.team_dir(None)` is a TypeError traceback that writes nothing.
+		// --team is not marked required on the `prd` sub-parser, so this is
+		// argparse's own diagnostic for the requirement it could not
+		// express (R-0.7a(l)).
+		return "", "", "", "", model.Usagef("prd",
+			"the following arguments are required: --team")
+	}
+	tdir, err := ws.TeamDir(team)
+	if err != nil {
+		return "", "", "", "", err
+	}
+	brief := filepath.Join(tdir, "product", "discovery", fromDiscovery, "brief.md")
+	if _, err := os.Stat(brief); err != nil {
+		return "", "", "", "", model.Errorf(model.ExitWorkspace,
+			"discovery brief not found: %s", brief)
+	}
+	meta, body, err := graph.ReadFrontmatter(brief)
+	if err != nil {
+		return "", "", "", "", err
+	}
+	if status := strOf(meta, "status"); status != "validated" {
+		// Exit 5: the brief exists and is well-formed, the WORKFLOW
+		// precondition is unmet (.devlocal/go-port/exit-code-map.md:53).
+		return "", "", "", "", model.Errorf(model.ExitPrecondition,
+			"discovery '%s' is '%s', not 'validated'. Run discover validate first.",
+			fromDiscovery, status)
+	}
+	discovery = fromDiscovery
+	if outTitle == "" {
+		// `meta["title"]` is a KeyError on a brief with no title.
+		t := meta.Get("title")
+		if t == nil {
+			return "", "", "", "", model.Errorf(model.ExitArtifact,
+				"%s: missing required key 'title'", brief)
+		}
+		outTitle = yamlio.PyString(t)
+	}
+	if c, ok := sectionContentRaw(body, "Problem signal"); ok && c != "" {
+		problem = c
+	}
+	if c, ok := sectionContentRaw(body, "Success criteria"); ok && c != "" {
+		metrics = c
+	}
+	return outTitle, problem, metrics, discovery, nil
 }
 
 // sectionContentRaw is `grab()` (`:594-596`): the section body stripped, but

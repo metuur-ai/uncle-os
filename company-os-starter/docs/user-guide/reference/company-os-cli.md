@@ -222,10 +222,11 @@ company-os prd validate --platform ID <prd-id>
 company-os prd complete --platform ID <prd-id> [--force]
 ```
 
-`--platform` is required for every action. `--components` defaults to an
-empty string — pass a comma-separated list. `--force` overrides the
-done-check on `complete` (use sparingly; it exists for genuinely exceptional
-cases, not to skip the reality-update rule routinely).
+`--platform` is required for every platform-addressed action.
+`--components` defaults to an empty string — pass a comma-separated list.
+`--force` overrides the done-check on `complete` (use sparingly; it exists
+for genuinely exceptional cases, not to skip the reality-update rule
+routinely).
 
 ```bash
 $ company-os prd new --team web --platform ordering \
@@ -240,6 +241,69 @@ $ company-os prd complete 2026-same-day-pickup-slots --platform ordering
 `prd complete` refuses to archive while any governance checklist item in the
 PRD is unchecked, or while the reality doc for any listed component has an
 `updated:` date older than the PRD's `created:` date.
+
+### Team drafts
+
+A draft is a PRD a team works up before it becomes platform-visible. It lives
+at `teams/<team>/product/change-records/draft/<draft-id>/prd.md`, carries
+`status: draft`, and `validate` tolerates it. `promote` copies it forward into
+a normal change record; nothing appears under `platforms/` before that.
+
+```text
+company-os prd new --team ID --draft ["<title>"] [--platform ID] \
+    [--from-discovery BRIEF-ID] [id]
+company-os prd validate --team ID <draft-id>
+company-os prd promote --team ID <draft-id>
+company-os prd abandon --team ID <draft-id>
+```
+
+`--team` is required for all four. `--draft` is what selects the draft branch
+of `prd new`; without it `prd new` behaves exactly as documented above.
+`--platform` is **optional** on `prd new --draft`: it presets the draft's
+`promoteTo.platform`, and when omitted you set that key in the draft's
+frontmatter before promoting. The remaining process fields (`title`,
+`components`, `governanceSnapshot`, `decisionOwner`) are scaffolded as
+placeholders — they are a promotion-time requirement, not a creation-time
+one.
+
+`prd promote` takes no `--platform`: the target is read from the draft's
+`promoteTo.platform`, which must name a platform that exists and must agree
+with the draft's frontmatter `platform` field. Promotion writes
+`platforms/<platform>/change-records/active/<id>/prd.md` with
+`status: proposed`, flips the draft to `status: promoted`, and records a
+digest of the draft on the new record — after which editing the draft fails
+the promotion-integrity gate in `company-os validate`.
+
+`prd abandon` sets `status: abandoned`, a terminal state ignored by every
+gate, by `today`, and by promotion. There is no transition back.
+
+```bash
+$ company-os prd new --team web --draft "Same-day pickup slots" \
+    --platform ordering --from-discovery 2026-same-day-pickup-slots
+
+$ company-os prd validate 2026-same-day-pickup-slots --team web
+
+$ company-os prd promote 2026-same-day-pickup-slots --team web
+
+$ company-os prd abandon 2026-same-day-pickup-slots --team web
+```
+
+Exit codes on the draft branch, all drawn from the table above:
+
+| Code | `prd new --draft` | `prd validate --team` | `prd promote` | `prd abandon` |
+|---|---|---|---|---|
+| `0` | draft created | draft is well-formed for its stage | promoted | abandoned |
+| `1` | — | core frontmatter incomplete (`core.type-missing`, `core.identity-missing`, `core.status-missing`) | — | — |
+| `3` | team or named platform does not exist | no draft by that id for that team | `promoteTo.platform` names a platform that does not exist | no draft by that id for that team |
+| `4` | — | — | the draft declares no target platform (`promoteTo.platform` absent or still a placeholder) | — |
+| `5` | `--from-discovery` brief is not `status: validated` | — | not ready: a process field (`title`, `team`, `platform`, `components`, `governanceSnapshot`, `decisionOwner`) is missing or `TODO`, or a required section (`Problem statement`, `Success metrics`, `Proposed change`) is absent — every omission is reported in one pass and no file is written | — |
+| `8` | a draft with that id already exists | — | the draft is not `status: draft`, or a record with that id already exists on the target platform | the draft is not `status: draft` |
+
+Draft validation is deliberately weaker than PRD validation:
+`prd validate --team` checks the core frontmatter contract only (`type`, an
+`id` identity, `status`) and does not check the body for PRD section
+headings. `title`, `platform`, `components`, `governanceSnapshot` and
+`decisionOwner` are required by **promotion**, not by draft validation.
 
 ## `governance`
 

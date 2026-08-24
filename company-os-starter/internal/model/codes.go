@@ -110,6 +110,11 @@ const (
 	SlugTeam = "team"
 	// SlugOnboarding is the trailing pointer to a matching onboarding guide.
 	SlugOnboarding = "onboarding"
+	// SlugDrafts is the open-draft listing `today --team <t>` adds (R-9.1). It
+	// is a section of its own rather than findings inside SlugTeam because
+	// R-9.4 omits it entirely when the team has no open drafts, and an empty
+	// section is exactly what a shared block cannot express.
+	SlugDrafts = "drafts"
 
 	// CodeHeader is `:1169`.
 	CodeHeader = "today.header"
@@ -128,6 +133,13 @@ const (
 	CodeComponent = "today.component"
 	// CodeOnboarding is `:1203`.
 	CodeOnboarding = "today.onboarding"
+	// CodeDraftsHeader is the banner above the open-draft listing (R-9.1).
+	CodeDraftsHeader = "today.drafts"
+	// CodeDraft is one open draft: id, title and target platform (R-9.1).
+	// A title or platform still carrying the scaffold's placeholder is reported
+	// as unset (R-9.3), so the field values here are already resolved — a
+	// consumer never sees the placeholder token.
+	CodeDraft = "today.draft"
 )
 
 // -------------------------------------------------------------- ids list
@@ -296,10 +308,13 @@ const (
 	// SlugDiscoverValidate is `discover validate`'s.
 	SlugDiscoverValidate = "discover-validate"
 	// SlugPRDNew, SlugPRDValidate and SlugPRDComplete are the three `prd`
-	// actions.
+	// actions, and SlugPRDPromote the fourth (R-5.1).
 	SlugPRDNew      = "prd-new"
 	SlugPRDValidate = "prd-validate"
 	SlugPRDComplete = "prd-complete"
+	SlugPRDPromote  = "prd-promote"
+	// SlugPRDAbandon is `prd abandon`'s output block (R-8.1).
+	SlugPRDAbandon = "prd-abandon"
 	// SlugCheckBaseline is compose_checklist's team-baseline half (`:717-722`)
 	// and SlugCheckGovernance its applicable-governance half (`:724-729`). They
 	// are two sections rather than one because the oracle separates them with a
@@ -352,6 +367,11 @@ const (
 	CodePRDRealityNote = "prd.reality-note"
 	// CodePRDNext is `:621-622`.
 	CodePRDNext = "prd.next"
+	// CodePRDDraftNext is `prd new --draft`'s closing line (R-2.9). It carries
+	// no FieldNext: the next move on a draft is editing the file it names, and
+	// R-2.9 forbids naming `prd promote` here — a draft nobody has filled in is
+	// not a thing to promote.
+	CodePRDDraftNext = "prd.draft-next"
 	// CodePRDContractOK is `:666`.
 	CodePRDContractOK = "prd.contract-ok"
 	// CodePRDValidateNext is `:667-669`.
@@ -359,6 +379,41 @@ const (
 	// CodePRDProcessField is `:630`, one of the six process-contract fields
 	// missing or still TODO.
 	CodePRDProcessField = "prd.process-field"
+
+	// `prd promote` (R-5.1 … R-5.12, R-6.5).
+	//
+	// The three readiness codes are a family of their own rather than a reuse of
+	// CodePRDProcessField and CodeSectionHeadingMissing, and that is R-5.5 rather
+	// than a taxonomy preference: those two say a document is MALFORMED, which is
+	// the wrong thing to tell an author whose draft is merely unfinished. A
+	// consumer that wants to branch on "not ready yet" versus "broken" can, and a
+	// reader gets a sentence that names what to supply.
+
+	// CodePromoteNotReady is the banner above the readiness list (R-5.5).
+	CodePromoteNotReady = "promote.not-ready"
+	// CodePromoteFieldMissing is one of the six process fields still absent or
+	// still TODO (R-5.3).
+	CodePromoteFieldMissing = "promote.field-missing"
+	// CodePromoteSectionMissing is one required body section the draft omits
+	// (R-5.4).
+	CodePromoteSectionMissing = "promote.section-missing"
+	// CodePRDPromoted names the change record promotion wrote (R-5.1).
+	CodePRDPromoted = "prd.promoted"
+	// CodePRDDraftLinked is the provenance line: the draft now points at the
+	// record and the record at the draft, under the digest that ties them
+	// (R-6.1, R-6.2).
+	CodePRDDraftLinked = "prd.draft-linked"
+	// CodePRDPromoteNext is R-5.12.
+	CodePRDPromoteNext = "prd.promote-next"
+
+	// CodePRDAbandoned names the draft `prd abandon` retired (R-8.1).
+	//
+	// It has no next-step sibling, and that absence is R-8.4 rather than an
+	// oversight: `abandoned` is terminal, so there is no next command to name.
+	// The sentence says the state is final instead, which is the same service
+	// the guidance chain performs everywhere else — telling the reader where
+	// they now are.
+	CodePRDAbandoned = "prd.abandoned"
 
 	// CodeSectionHeadingMissing is the ALWAYS-blocking artifact-contract failure
 	// at `:441` / `:640`: a required `## ` heading is absent whatever template

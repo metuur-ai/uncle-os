@@ -79,7 +79,7 @@ func TestTodayRefusesAWrongShapedGovernanceFile(t *testing.T) {
 			ws, root := govWorkspace(t)
 			writeGov(t, root, c.body)
 
-			_, err := Today(ws, "developer")
+			_, err := Today(ws, "developer", "", nil)
 			if err == nil {
 				t.Fatal("expected a refusal; Python raises here and exits 1")
 			}
@@ -112,7 +112,7 @@ func TestTodayCountsLenTheWayPythonDoes(t *testing.T) {
 			ws, root := govWorkspace(t)
 			writeGov(t, root, "generatedAt: 2026-01-01\n"+c.body)
 
-			sections, err := Today(ws, "developer")
+			sections, err := Today(ws, "developer", "", nil)
 			if err != nil {
 				t.Fatalf("Today: %v", err)
 			}
@@ -151,7 +151,7 @@ func TestTodayOutcomeDueRendersLikePython(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			sections, err := Today(ws, "product-owner")
+			sections, err := Today(ws, "product-owner", "", nil)
 			if err != nil {
 				t.Fatalf("Today: %v", err)
 			}
@@ -176,7 +176,7 @@ func TestTodayPRDFieldsRenderContainers(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	sections, err := Today(ws, "product-owner")
+	sections, err := Today(ws, "product-owner", "", nil)
 	if err != nil {
 		t.Fatalf("Today: %v", err)
 	}

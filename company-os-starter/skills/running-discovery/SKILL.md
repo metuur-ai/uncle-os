@@ -1,6 +1,6 @@
 ---
 id: skill://product/running-discovery
-version: '1.1'
+version: '1.2'
 authority: canonical
 appliesTo: ['company://all-teams']
 inputs: ['a problem signal (tickets, metrics, stakeholder ask)']
@@ -67,3 +67,21 @@ Full envelope:
    Invalidated discoveries are kept: a killed idea with a reason is knowledge.
    Only a brief whose `discovery.validated` finding reports
    `fields.status: "validated"` can be passed to `prd new --from-discovery`.
+9. (default) Choose where the validated brief is carried forward to. There are
+   two targets, and both use `--from-discovery` to copy the Problem and
+   Success sections:
+
+   ```bash
+   # straight to a platform change record, when the change is already scoped
+   company-os --json prd new --team <team-id> --platform <platform> \
+      --components <id,...> --from-discovery <brief-id>
+
+   # to a team draft, when the change still needs working up
+   company-os --json prd new --team <team-id> --draft \
+      --from-discovery <brief-id>
+   ```
+
+   The draft is team-private and carries no platform, components or
+   governance snapshot until it is promoted; see
+   skill://product/creating-prd. Either target requires the brief to be
+   `status: validated` — a brief that is not is refused with exit `5`.

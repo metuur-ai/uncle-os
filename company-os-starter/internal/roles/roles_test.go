@@ -77,7 +77,7 @@ func TestGlossaryIsPureRead(t *testing.T) {
 // architect is in neither, so its view is the banner and whatever onboarding
 // guide exists — never a platform or team block.
 func TestToday_ArchitectRendersHeaderOnly(t *testing.T) {
-	sections, err := roles.Today(exampleWorkspace(t), "architect")
+	sections, err := roles.Today(exampleWorkspace(t), "architect", "", nil)
 	if err != nil {
 		t.Fatalf("Today: %v", err)
 	}
@@ -95,7 +95,7 @@ func TestToday_ArchitectRendersHeaderOnly(t *testing.T) {
 // as ints, so the text renderer reads numbers rather than re-parsing a sentence
 // (R-2.3), plus the per-platform split the sentence discards.
 func TestToday_DeveloperCarriesGovernanceCounts(t *testing.T) {
-	sections, err := roles.Today(exampleWorkspace(t), "developer")
+	sections, err := roles.Today(exampleWorkspace(t), "developer", "", nil)
 	if err != nil {
 		t.Fatalf("Today: %v", err)
 	}
@@ -123,7 +123,7 @@ func TestToday_MissingGovernanceIsAWarning(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(ws.Teams, "solo"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	sections, err := roles.Today(ws, "developer")
+	sections, err := roles.Today(ws, "developer", "", nil)
 	if err != nil {
 		t.Fatalf("Today: %v", err)
 	}
@@ -143,7 +143,7 @@ func TestToday_MissingGovernanceIsAWarning(t *testing.T) {
 // comes from the directory listing, and an archived outcome surfaces only while
 // its status is pending.
 func TestToday_ProductOwnerReadsPRDsAndOutcomes(t *testing.T) {
-	sections, err := roles.Today(exampleWorkspace(t), "product-owner")
+	sections, err := roles.Today(exampleWorkspace(t), "product-owner", "", nil)
 	if err != nil {
 		t.Fatalf("Today: %v", err)
 	}

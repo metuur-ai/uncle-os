@@ -93,6 +93,16 @@ func Check(ws *workspace.Workspace, team, components, kind string) ([]model.Gate
 // holding no prd.md — both are `continue`s in the oracle and neither produces a
 // line, which is why a workspace with no active PRDs renders a gate header
 // followed by nothing (golden-validate.txt:11-12).
+//
+// The corpus is `platforms/*/change-records/active` and NOTHING ELSE, and that
+// scope is now load-bearing rather than incidental: team drafts under
+// `teams/<t>/product/change-records/draft` are deliberately outside it (R-3.3).
+// The four-field process contract is what a PLATFORM requires before it will
+// carry a change; a draft has not asked a platform for anything yet, and holding
+// it to that contract would erase the drafting stage. Widening this walk to
+// "every prd.md in the workspace" is the refactor that would do it — see
+// internal/validate/draft_posture_test.go. What a draft still owes is the CORE
+// contract (type/identity/status), which gate 4 collects through CoreFieldErrors.
 func Gate(ws *workspace.Workspace, ordinal int) (model.GateResult, error) {
 	g := model.GateResult{Ordinal: ordinal, Slug: GateSlug, Title: GateTitle}
 	for _, pdir := range ws.AllPlatforms() {

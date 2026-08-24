@@ -40,10 +40,29 @@ func cmdDiscover(ws *workspace.Workspace, args *Args, _ io.Writer) ([]model.Gate
 func cmdPRD(ws *workspace.Workspace, args *Args, _ io.Writer) ([]model.GateResult, error) {
 	switch args.Action {
 	case "new":
+		if args.Draft {
+			// `prd new --draft "<title>"` (R-2.1) takes its title where
+			// `discover new` does — the positional — while --title keeps
+			// working for symmetry with the non-draft path.
+			title := args.Title
+			if title == "" {
+				title = args.ID
+			}
+			return product.DraftNew(ws, args.Team, args.Platform, title,
+				args.FromDiscovery, rebuildSections)
+		}
 		return product.PRDNew(ws, args.Team, args.Platform, args.Components,
 			args.Title, args.FromDiscovery)
 	case "validate":
 		return product.PRDValidate(ws, args.Platform, args.ID)
+	case "promote":
+		// `prd promote --team <t> <draft-id>` (R-5.1). The target platform is
+		// the draft's, never the flag's, so nothing here reads args.Platform.
+		return product.PRDPromote(ws, args.Team, args.ID, rebuildSections)
+	case "abandon":
+		// `prd abandon --team <t> <draft-id>` (R-8.1). Like promote, it reads no
+		// platform: a draft that is never going anywhere has no target.
+		return product.PRDAbandon(ws, args.Team, args.ID, rebuildSections)
 	}
 	return product.PRDComplete(ws, args.Platform, args.ID, args.Force, rebuildSections)
 }

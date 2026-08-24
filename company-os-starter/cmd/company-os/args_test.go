@@ -605,10 +605,11 @@ func TestArgumentErrorDiagnostics(t *testing.T) {
 // Usage lines long enough to be worth naming once.
 const (
 	todayUsage = "usage: company-os today [-h] [--role {developer,team-lead," +
-		"product-owner,architect,vp-engineering,director-of-product}]"
+		"product-owner,architect,vp-engineering,director-of-product}] [--team TEAM]"
 	prdUsage = "usage: company-os prd [-h] [--team TEAM] --platform PLATFORM " +
 		"[--components COMPONENTS] [--title TITLE] " +
-		"[--from-discovery FROM_DISCOVERY] [--force] {new,validate,complete} [id]"
+		"[--from-discovery FROM_DISCOVERY] [--draft] [--force] " +
+		"{new,validate,complete,promote,abandon} [id]"
 	exceptionUsage = "usage: company-os exception [-h] --team TEAM " +
 		"--component COMPONENT --expires EXPIRES [--reason REASON] {request} rule"
 )
@@ -707,7 +708,7 @@ func TestSubcommandHelpIsScoped(t *testing.T) {
 	}{
 		{[]string{"validate", "--help"}, []string{"usage: company-os validate"}},
 		{[]string{"prd", "-h"}, []string{"usage: company-os prd",
-			"--from-discovery FROM_DISCOVERY", "{new,validate,complete}"}},
+			"--from-discovery FROM_DISCOVERY", "{new,validate,complete,promote,abandon}"}},
 		{[]string{"--help"}, []string{"usage: company-os [--root ROOT]"}},
 	} {
 		var stdout, stderr bytes.Buffer

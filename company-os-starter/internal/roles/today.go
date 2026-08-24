@@ -19,8 +19,20 @@ var (
 	engineeringRoles = map[string]bool{"developer": true, "team-lead": true, "vp-engineering": true}
 )
 
-// Today is cmd_today (`bin/company-os:1168-1203`), as records.
-func Today(ws *workspace.Workspace, role string) ([]model.GateResult, error) {
+// Today is cmd_today (`bin/company-os:1168-1203`), as records, plus the open-draft
+// listing of R-9.1 … R-9.5.
+//
+// team is the drafts scope and nothing else. It does NOT narrow the platform or
+// team blocks above it: those are the role's view of the whole workspace and
+// were before this change. An empty team is therefore not "all teams" but "no
+// drafts section", which is the only reading that keeps `today` with no --team
+// byte-identical to `today` before Unit 9 existed.
+//
+// drafts is the injected listing; see DraftsSection for why it is injected. A
+// nil one is a `today` with no drafts section, which is what the TUI and any
+// caller that has no product package to hand gets.
+func Today(ws *workspace.Workspace, role, team string, drafts DraftsSection) (
+	[]model.GateResult, error) {
 	sections := []model.GateResult{{
 		Ordinal: 1,
 		Slug:    model.SlugHeader,
@@ -49,6 +61,18 @@ func Today(ws *workspace.Workspace, role string) ([]model.GateResult, error) {
 			if err != nil {
 				return nil, err
 			}
+			sections = append(sections, s)
+		}
+	}
+
+	// R-9.4: the listing reports whether it has anything to say, and a `false`
+	// appends nothing — an empty block is not rendered anywhere, in any role.
+	if team != "" && drafts != nil {
+		s, ok, err := drafts(ws, team, len(sections)+1)
+		if err != nil {
+			return nil, err
+		}
+		if ok {
 			sections = append(sections, s)
 		}
 	}

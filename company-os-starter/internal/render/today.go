@@ -52,6 +52,20 @@ func Today(w io.Writer, sections []model.GateResult) error {
 					f.Fields.Str("component"),
 					f.Fields.Int("platformRequirements"),
 					f.Fields.Int("companyControls"))
+			// R-9.1. The leading blank line follows the platform/team blocks'
+			// convention (`:1177`, `:1194`) rather than deriving one: this is a
+			// new block in the same view, and it separates itself from whatever
+			// precedes it exactly as they do.
+			case model.CodeDraftsHeader:
+				_, err = fmt.Fprintf(w, "\nteam %s: %d open draft(s)\n",
+					f.Fields.Str("team"), f.Fields.Int("drafts"))
+			// title and platform are already resolved to "unset" by
+			// roles.draftsSection (R-9.3), so this line never has to know what a
+			// placeholder looks like.
+			case model.CodeDraft:
+				_, err = fmt.Fprintf(w, "  - %s: %s -> %s\n",
+					f.Fields.Str("draft"), f.Fields.Str("title"),
+					f.Fields.Str("platform"))
 			case model.CodeOnboarding:
 				_, err = fmt.Fprintf(w, "\nonboarding: %s\n", f.Fields.Str("guide"))
 			default:

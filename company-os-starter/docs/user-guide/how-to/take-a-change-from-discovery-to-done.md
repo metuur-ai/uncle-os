@@ -41,6 +41,33 @@ company-os prd validate <prd-id> --platform <platform>
 
 Fixes frontmatter and required-section gaps until it passes.
 
+### 2b. The draft branch — when the change isn't platform-ready yet
+
+Step 2 assumes you already know the platform and the components. When you
+don't, draft it in the team tree first and promote it later:
+
+```bash
+company-os prd new --team <team> --draft "<title>" \
+  [--platform <platform>] [--from-discovery <brief-id>]
+# ...work the draft up in teams/<team>/product/change-records/draft/<id>/prd.md...
+company-os prd validate <draft-id> --team <team>
+company-os prd promote <draft-id> --team <team>
+```
+
+A draft carries `status: draft` and stays team-private. `validate` tolerates
+it: only the core frontmatter contract applies, so `title`, `platform`,
+`components`, `governanceSnapshot` and `decisionOwner` can stay `TODO` while
+you think. `prd promote` is where the full PRD contract binds — it copies the
+draft forward into exactly the change record step 2 would have produced,
+under `platforms/<platform>/change-records/active/<id>/`, and refuses while
+any of those fields or the required sections are still missing. The target
+platform comes from the draft's `promoteTo.platform`, not from a flag.
+
+From there, rejoin the recipe at step 3 — a promoted record is a normal
+change record. A draft cannot skip promotion: `prd complete` addresses
+records by platform only. To retire a draft you decide not to pursue, run
+`company-os prd abandon <draft-id> --team <team>` rather than deleting it.
+
 ## 3. Check readiness before pulling into a sprint
 
 ```bash

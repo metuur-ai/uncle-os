@@ -13,6 +13,7 @@ import (
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/graph"
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/ids"
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/model"
+	"github.com/metuur-ai/uncle-os/company-os-starter/internal/product"
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/roles"
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/workspace"
 )
@@ -28,7 +29,10 @@ func cmdIDs(ws *workspace.Workspace, args *Args, _ io.Writer) ([]model.GateResul
 
 // cmdToday is cmd_today (bin/company-os:1168-1203).
 func cmdToday(ws *workspace.Workspace, args *Args, _ io.Writer) ([]model.GateResult, error) {
-	return roles.Today(ws, args.Role)
+	// product.DraftsSection is injected rather than imported by internal/roles,
+	// which would close the loop roles <- ids <- governance <- product. Same
+	// seam, same place, same reason as rebuildSections.
+	return roles.Today(ws, args.Role, args.Team, product.DraftsSection)
 }
 
 // cmdGraph is cmd_graph (bin/company-os:1787-1797). `build` is the only action

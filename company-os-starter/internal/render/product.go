@@ -46,6 +46,9 @@ func productLine(w io.Writer, f model.Finding) error {
 	// Plain print() lines, no indent.
 	case model.CodeDiscoveryCreated,
 		model.CodePRDCreated,
+		model.CodePRDPromoted,
+		model.CodePRDAbandoned,
+		model.CodePromoteNotReady,
 		model.CodePRDArchived,
 		model.CodeOutcomeScheduled,
 		model.CodeLogAppended,
@@ -66,9 +69,20 @@ func productLine(w io.Writer, f model.Finding) error {
 	case model.CodeDiscoveryNext,
 		model.CodeDiscoveryValidateNext,
 		model.CodePRDNext,
+		model.CodePRDDraftNext,
 		model.CodePRDValidateNext,
+		model.CodePRDPromoteNext,
 		model.CodePRDCompleteNext:
 		return writeLines(w, "next: "+f.Message)
+
+	// The readiness list (R-5.5). It renders as a bulleted to-do under its
+	// banner and NOT as `[FAIL]` lines, because the marker is half the sentence:
+	// `[FAIL] frontmatter 'title'` reads as an accusation about the file, which
+	// is the tone the rule exists to rule out. The severity stays SevFail so
+	// --json consumers and HasFailure still see a refusal.
+	case model.CodePromoteFieldMissing,
+		model.CodePromoteSectionMissing:
+		return writeLines(w, "  - "+f.Message)
 
 	// Two-space indented notes that are not ok()/warn()/fail() lines.
 	case model.CodeTemplateSource:
@@ -79,7 +93,7 @@ func productLine(w io.Writer, f model.Finding) error {
 		return writeLines(w, "  fix: "+f.Message)
 
 	// ok() (`:47-48`).
-	case model.CodeDiscoveryValidated, model.CodePRDContractOK:
+	case model.CodeDiscoveryValidated, model.CodePRDContractOK, model.CodePRDDraftLinked:
 		return writeLines(w, "  [ok] "+f.Message)
 
 	// warn() (`:50-51`) — stdout, two-space indent, so these lines are part of
