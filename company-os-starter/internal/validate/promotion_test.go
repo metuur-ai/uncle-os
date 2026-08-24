@@ -154,8 +154,8 @@ func TestPromotionGateMatchingDigestPasses(t *testing.T) {
 		promotedFromBlock("core", "2026-thing", digest))
 
 	f := onlyFinding(t, runPromotionGate(t, ws))
-	if f.Severity != model.SevOK || f.Code != CodePromotionInSync {
-		t.Fatalf("finding = %v/%s, want ok/%s", f.Severity, f.Code, CodePromotionInSync)
+	if f.Severity != model.SevOK || f.Code != model.CodePromotionInSync {
+		t.Fatalf("finding = %v/%s, want ok/%s", f.Severity, f.Code, model.CodePromotionInSync)
 	}
 	if f.Subject != "core/2026-thing" {
 		t.Errorf("subject = %q, want core/2026-thing", f.Subject)
@@ -179,8 +179,8 @@ func TestPromotionGateArchivedRecordPasses(t *testing.T) {
 		promotedFromBlock("core", "2026-thing", digest))
 
 	f := onlyFinding(t, runPromotionGate(t, ws))
-	if f.Severity != model.SevOK || f.Code != CodePromotionInSync {
-		t.Fatalf("finding = %v/%s, want ok/%s", f.Severity, f.Code, CodePromotionInSync)
+	if f.Severity != model.SevOK || f.Code != model.CodePromotionInSync {
+		t.Fatalf("finding = %v/%s, want ok/%s", f.Severity, f.Code, model.CodePromotionInSync)
 	}
 	if f.Fields.Str("location") != "archived" {
 		t.Errorf("location = %q, want archived", f.Fields.Str("location"))
@@ -208,8 +208,8 @@ func TestPromotionGateDigestDriftFails(t *testing.T) {
 	writeFile(t, path, string(body)+"\nA paragraph nobody carried forward.\n")
 
 	f := onlyFinding(t, runPromotionGate(t, ws))
-	if f.Severity != model.SevFail || f.Code != CodePromotionDigestDrift {
-		t.Fatalf("finding = %v/%s, want FAIL/%s", f.Severity, f.Code, CodePromotionDigestDrift)
+	if f.Severity != model.SevFail || f.Code != model.CodePromotionDigestDrift {
+		t.Fatalf("finding = %v/%s, want FAIL/%s", f.Severity, f.Code, model.CodePromotionDigestDrift)
 	}
 	for _, want := range []string{"2026-thing", "payments/2026-thing"} {
 		if !strings.Contains(f.Subject+" "+f.Message, want) {
@@ -228,9 +228,9 @@ func TestPromotionGateUnresolvedTargetFails(t *testing.T) {
 		promotedToBlock("payments", "2026-ghost"))
 
 	f := onlyFinding(t, runPromotionGate(t, ws))
-	if f.Severity != model.SevFail || f.Code != CodePromotionTargetUnresolved {
+	if f.Severity != model.SevFail || f.Code != model.CodePromotionTargetUnresolved {
 		t.Fatalf("finding = %v/%s, want FAIL/%s", f.Severity, f.Code,
-			CodePromotionTargetUnresolved)
+			model.CodePromotionTargetUnresolved)
 	}
 	if !strings.Contains(f.Message, "payments/2026-ghost") {
 		t.Errorf("%q does not name the unresolved target", f.Message)
@@ -247,8 +247,8 @@ func TestPromotionGateInterruptedPromotionIsNotDrift(t *testing.T) {
 	writeRecord(t, ws, "payments", filepath.Join("change-records", "active"), "2026-thing", "")
 
 	f := onlyFinding(t, runPromotionGate(t, ws))
-	if f.Code != CodePromotionInterrupted {
-		t.Fatalf("code = %s, want %s", f.Code, CodePromotionInterrupted)
+	if f.Code != model.CodePromotionInterrupted {
+		t.Fatalf("code = %s, want %s", f.Code, model.CodePromotionInterrupted)
 	}
 	if strings.Contains(f.Message, "drift") {
 		t.Errorf("interrupted promotion reported as drift: %q", f.Message)

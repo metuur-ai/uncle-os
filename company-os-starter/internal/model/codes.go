@@ -75,7 +75,24 @@ const (
 	CodeSkillDanglingExtends = "skills.dangling-extends"
 	CodeSkillsClean          = "skills.clean"
 
-	// Gate 8 — federated slice integrity (:1100 decomposed, :1103).
+	// Gate 8 — promotion integrity (promoted drafts match their change
+	// records). The gate's slug and title live in internal/validate, which
+	// produces it; only the codes are here, the same split gate 4 uses.
+	//
+	// CodePromotionTargetUnresolved is R-7.4: `promotedTo` names a record that
+	// is at neither the active nor the archive location.
+	CodePromotionTargetUnresolved = "promotion.target-unresolved"
+	// CodePromotionInterrupted is R-7.5: the record exists but carries no usable
+	// `promotedFrom`, so the promotion never finished writing provenance.
+	CodePromotionInterrupted = "promotion.interrupted"
+	// CodePromotionDigestDrift is R-7.3: both sides exist and no longer agree.
+	CodePromotionDigestDrift = "promotion.digest-drift"
+	// CodePromotionInSync is the pass line for one promoted draft (R-7.2, R-7.6).
+	CodePromotionInSync = "promotion.in-sync"
+
+	// Gate 9 — federated slice integrity (:1100 decomposed, :1103). It was
+	// gate 8 until promotion integrity was inserted above it; the federation
+	// gate is appended dynamically and stays last.
 	CodeSliceLockMissing      = "federation.lock-missing"
 	CodeRepoNotLocked         = "federation.repo-not-locked"
 	CodeSliceSetDrift         = "federation.slice-set-drift"

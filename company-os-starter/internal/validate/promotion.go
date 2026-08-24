@@ -46,20 +46,10 @@ const (
 	PromotionGateTitle = "promotion integrity (promoted drafts match their change records)"
 )
 
-// Finding codes for the gate. They are declared here rather than in
-// model/codes.go for the same reason as the slug: no other package emits them.
-const (
-	// CodePromotionTargetUnresolved is R-7.4: `promotedTo` names a record that
-	// is at neither the active nor the archive location.
-	CodePromotionTargetUnresolved = "promotion.target-unresolved"
-	// CodePromotionInterrupted is R-7.5: the record exists but carries no usable
-	// `promotedFrom`, so the promotion never finished writing provenance.
-	CodePromotionInterrupted = "promotion.interrupted"
-	// CodePromotionDigestDrift is R-7.3: both sides exist and no longer agree.
-	CodePromotionDigestDrift = "promotion.digest-drift"
-	// CodePromotionInSync is the pass line for one promoted draft (R-7.2, R-7.6).
-	CodePromotionInSync = "promotion.in-sync"
-)
+// The gate's finding codes are model.CodePromotion*, in model/codes.go with
+// every other gate's. Only the identity above is local — the same split gate 4
+// uses, and for the same reason: the codes are part of the --json surface the
+// renderers switch on, the slug is not.
 
 // statusPromoted is the one draft status this gate speaks about. `draft` and
 // `abandoned` are matched by exclusion (R-7.7) rather than enumerated, so a
@@ -126,7 +116,7 @@ func checkPromotedDraft(
 	recordPath, location, ok := resolveRecord(ws, to)
 	if !ok {
 		fields["location"] = ""
-		return promotionFinding(model.SevFail, CodePromotionTargetUnresolved, subject, fields), nil
+		return promotionFinding(model.SevFail, model.CodePromotionTargetUnresolved, subject, fields), nil
 	}
 	fields["location"] = location
 	fields["recordPath"] = rel(ws.Root, recordPath)
@@ -141,7 +131,7 @@ func checkPromotedDraft(
 	// re-running the same command, so they are one finding rather than two.
 	from, present := product.ReadPromotedFrom(recordMeta)
 	if !present || from.Digest == "" {
-		return promotionFinding(model.SevFail, CodePromotionInterrupted, subject, fields), nil
+		return promotionFinding(model.SevFail, model.CodePromotionInterrupted, subject, fields), nil
 	}
 	fields["recorded"] = from.Digest
 
@@ -155,9 +145,9 @@ func checkPromotedDraft(
 	// exactly the same comparison as the active one, which is why `location` is a
 	// field and not a branch.
 	if digest != from.Digest {
-		return promotionFinding(model.SevFail, CodePromotionDigestDrift, subject, fields), nil
+		return promotionFinding(model.SevFail, model.CodePromotionDigestDrift, subject, fields), nil
 	}
-	return promotionFinding(model.SevOK, CodePromotionInSync, subject, fields), nil
+	return promotionFinding(model.SevOK, model.CodePromotionInSync, subject, fields), nil
 }
 
 // resolveRecord locates the change record named by `promotedTo`, active first
@@ -213,7 +203,7 @@ func promotionFinding(sev model.Severity, code, subject string, f model.Fields) 
 func PromotionMessage(code string, f model.Fields) string {
 	target := f.Str("platform") + "/" + f.Str("record")
 	switch code {
-	case CodePromotionTargetUnresolved:
+	case model.CodePromotionTargetUnresolved:
 		if f.Str("platform") == "" || f.Str("record") == "" {
 			return "promoted draft records no target: promotedTo names neither a platform " +
 				"nor a change record, so the promotion cannot be verified"
@@ -222,17 +212,17 @@ func PromotionMessage(code string, f model.Fields) string {
 			"unresolved target: promotedTo names change record '%s', which exists at "+
 				"neither change-records/active/%s/ nor archive/prds/%s/",
 			target, f.Str("record"), f.Str("record"))
-	case CodePromotionInterrupted:
+	case model.CodePromotionInterrupted:
 		return fmt.Sprintf(
 			"interrupted promotion: change record '%s' carries no promotedFrom — "+
 				"re-run `company-os prd promote --team %s %s`",
 			target, f.Str("team"), f.Str("draft"))
-	case CodePromotionDigestDrift:
+	case model.CodePromotionDigestDrift:
 		return fmt.Sprintf(
 			"digest drift: draft no longer matches change record '%s' "+
 				"(recorded %s, recomputed %s)",
 			target, f.Str("recorded"), f.Str("digest"))
-	case CodePromotionInSync:
+	case model.CodePromotionInSync:
 		return fmt.Sprintf("matches %s change record '%s'", f.Str("location"), target)
 	}
 	return ""
