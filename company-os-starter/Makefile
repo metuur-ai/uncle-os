@@ -66,7 +66,7 @@ BUILDFLAGS := -trimpath
 PLATFORMS  := darwin/arm64 darwin/amd64 linux/amd64
 
 .PHONY: help build install uninstall run dev test test-v cover fmt fmt-check \
-        vet lint check acceptance golden clean release tidy \
+        vet lint version-check check acceptance golden clean release tidy \
         deps-check arch-test repro
 
 # --- help ----------------------------------------------------------------
@@ -141,6 +141,12 @@ vet: ## go vet
 
 lint: fmt-check vet ## fmt-check + vet
 
+# The release tag is stamped into the binary from git, but it is also written by
+# hand into the CI-pinning examples in docs/ and into install.sh's usage comment.
+# Those copies drift silently — install.sh sat at v0.4.0 while docs said v1.0.0.
+version-check: ## Fail if the hardcoded release-tag literals disagree
+	@scripts/bump-version.sh --check
+
 # --- behaviour suite -----------------------------------------------------
 # acceptance.sh freezes `validate` output against golden snapshots, on the
 # passing path and the failure path, and proves the generated artifacts are
@@ -158,7 +164,7 @@ acceptance: ## Golden-snapshot suite over `validate` (examples/acceptance.sh)
 golden: ## Re-baseline the acceptance snapshots — review the diff before committing
 	@$(EXAMPLES)/acceptance.sh --update
 
-check: lint test acceptance ## Everything CI runs
+check: lint version-check test acceptance ## Everything CI runs
 
 # --- release -------------------------------------------------------------
 # Artifact names carry no version: `/releases/latest/download/<name>` needs a
