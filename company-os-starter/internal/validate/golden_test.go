@@ -67,10 +67,10 @@ func runValidate(t *testing.T, root string) (string, model.ExitCode, []model.Gat
 // TestGoldensReproduceByteForByte is the R-0.4/R-0.9 gate: five fixtures, five
 // committed snapshots, no tolerance.
 //
-// The five are not redundant. golden-validate is the 7-gate all-pass path;
-// federated-golden-validate is the same workspace shape with gate 8 present, and
+// The five are not redundant. golden-validate is the 8-gate all-pass path;
+// federated-golden-validate is the same workspace shape with gate 9 present, and
 // is what proves the [N/M] denominator is computed rather than stored;
-// failing-workspace drives at least one [FAIL] through every one of gates 1-7
+// failing-workspace drives at least one [FAIL] through every one of gates 1-8
 // plus the single warn site and gate 4's conditional [ok]; and the two federated
 // failure fixtures split the five federated_slice_problems shapes, because the
 // absent-lock branch returns early and therefore cannot co-occur with the other
@@ -83,12 +83,12 @@ func TestGoldensReproduceByteForByte(t *testing.T) {
 		want    model.ExitCode
 		gates   int
 	}{
-		{"workspace", "golden-validate.txt", model.ExitOK, 7},
-		{"federated", "federated-golden-validate.txt", model.ExitOK, 8},
-		{"failing-workspace", "failing-workspace-golden-validate.txt", model.ExitValidation, 7},
-		{"failing-federated", "failing-federated-golden-validate.txt", model.ExitValidation, 8},
+		{"workspace", "golden-validate.txt", model.ExitOK, 8},
+		{"federated", "federated-golden-validate.txt", model.ExitOK, 9},
+		{"failing-workspace", "failing-workspace-golden-validate.txt", model.ExitValidation, 8},
+		{"failing-federated", "failing-federated-golden-validate.txt", model.ExitValidation, 9},
 		{"failing-federated-nolock", "failing-federated-nolock-golden-validate.txt",
-			model.ExitValidation, 8},
+			model.ExitValidation, 9},
 	}
 	for _, tc := range cases {
 		t.Run(tc.fixture, func(t *testing.T) {
