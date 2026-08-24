@@ -82,7 +82,7 @@ export const HomeOverview: React.FC<HomeOverviewProps> = ({
           </div>
 
           <p className="mt-6 font-mono text-xs text-fg-subtle">
-            9 interactive lessons · no signup · runs entirely in your browser
+            {tutorials.length} interactive lessons · no signup · runs entirely in your browser
           </p>
         </div>
       </section>
@@ -215,7 +215,7 @@ export const HomeOverview: React.FC<HomeOverviewProps> = ({
 
       {/* ================= LESSON INDEX ==================================== */}
       <Section
-        title="All 9 lessons"
+        title={`All ${tutorials.length} lessons`}
         description="The lessons build on each other, but every one stands alone if you already know the basics."
       >
         <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

@@ -2,6 +2,8 @@ import React, { useEffect, useId, useMemo, useState } from 'react';
 import {
   Search,
   ArrowRight,
+  Building2,
+  Users,
   Download,
   FolderTree,
   Terminal,
@@ -29,6 +31,8 @@ interface GlobalSearchModalProps {
 
 const ICONS: Record<string, LucideIcon> = {
   Layers,
+  Building2,
+  Users,
   Download,
   FolderTree,
   Terminal,

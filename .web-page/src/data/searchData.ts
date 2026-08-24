@@ -21,6 +21,26 @@ export const STATIC_SEARCH_ITEMS: SearchResultItemData[] = [
     keywords: ['home', 'index', 'company os', 'team os', 'overview', 'dual core', 'federated', 'standalone', 'what is'],
   },
   {
+    id: 'company-os-explainer',
+    title: 'What is Company OS? Rules, catalog, reality, ontology',
+    category: 'Overview & Index',
+    snippet:
+      'The shared layer in plain terms: what it is, what it does, how the loop works (ids, governance resolve, derive, validate, workspace sync), and why you need it.',
+    targetTab: 'company-os',
+    iconName: 'Building2',
+    keywords: ['company os', 'what is', 'explain', 'standards', 'platform', 'catalog', 'reality', 'ontology', 'knowledge', 'baseline', 'shared layer', 'why'],
+  },
+  {
+    id: 'team-os-explainer',
+    title: 'What is Team OS? Discovery, ownership, deviations, done',
+    category: 'Overview & Index',
+    snippet:
+      'The squad layer in plain terms: discovery to PRD to complete, your ownership registry, comply-or-explain deviations, and why reality must be updated before done.',
+    targetTab: 'team-os',
+    iconName: 'Users',
+    keywords: ['team os', 'what is', 'explain', 'squad', 'discovery', 'prd', 'ownership', 'deviation', 'exception', 'definition of ready', 'definition of done', 'standalone', 'why'],
+  },
+  {
     id: 'install-cli',
     title: 'Install the company-os CLI (one-line installer)',
     category: 'Install & Setup',

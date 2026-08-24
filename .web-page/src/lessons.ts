@@ -1,5 +1,7 @@
 import {
   Home,
+  Building2,
+  Users,
   Download,
   FolderTree,
   Terminal,
@@ -37,6 +39,22 @@ export const LESSONS: Lesson[] = [
     icon: Home,
     whyText:
       'Start here for a high-level summary of how Company OS connects product, engineering, and governance.',
+  },
+  {
+    id: 'company-os',
+    label: 'What is Company OS',
+    shortLabel: 'Company OS',
+    icon: Building2,
+    whyText:
+      'The shared layer in plain terms: the rules everyone inherits, the catalog of what the company owns, and why it is files instead of a dashboard.',
+  },
+  {
+    id: 'team-os',
+    label: 'What is Team OS',
+    shortLabel: 'Team OS',
+    icon: Users,
+    whyText:
+      'The squad layer in plain terms: what your team owns, how a question becomes a shipped change, and how to disagree with a rule out loud.',
   },
   {
     id: 'install',

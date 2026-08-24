@@ -27,6 +27,20 @@ export const DIRECTORY_CATEGORIES_DATA: DirectoryCategoryData[] = [
         description: 'Learn what Company OS and Team OS are, their key differences, and mode switching.',
         targetTab: 'home',
         tag: 'Home View',
+      },
+      {
+        title: 'What is Company OS?',
+        description:
+          'The shared layer explained plainly: what it is, what it does, how the loop runs, and why you need it.',
+        targetTab: 'company-os',
+        tag: 'Explainer',
+      },
+      {
+        title: 'What is Team OS?',
+        description:
+          'The squad layer explained plainly: discovery to done, ownership, deviations, and why reality gates completion.',
+        targetTab: 'team-os',
+        tag: 'Explainer',
       }
     ]
   },

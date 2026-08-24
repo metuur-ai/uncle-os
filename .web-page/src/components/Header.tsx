@@ -1,10 +1,11 @@
 import React from 'react';
 import { GitBranch, Layers, HelpCircle, Search, ListFilter } from 'lucide-react';
 import { Tooltip } from './Tooltip';
+import type { TabType } from '../types';
 
 interface HeaderProps {
-  isStandalone: boolean;
-  setIsStandalone: (val: boolean) => void;
+  activeTab: TabType;
+  onNavigateTab: (tab: TabType) => void;
   onOpenGuide: () => void;
   onOpenDirectory: () => void;
   onOpenSearch: () => void;
@@ -12,14 +13,14 @@ interface HeaderProps {
 
 /**
  * Global header. Identity on the left, search in the middle, tools and the
- * Company OS / Team OS scope switch on the right.
+ * Company OS / Team OS layer links on the right.
  *
  * The "Easy Read" toggle that used to live here is gone: the base type scale is
  * now the accessible scale, so there is one type system instead of two.
  */
 export const Header: React.FC<HeaderProps> = ({
-  isStandalone,
-  setIsStandalone,
+  activeTab,
+  onNavigateTab,
   onOpenGuide,
   onOpenDirectory,
   onOpenSearch,
@@ -118,25 +119,22 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           </Tooltip>
 
-          {/* Scope switch. Two mutually exclusive views of the same workspace,
-              so it is a radiogroup rather than two independent buttons. */}
+          {/* Layer links. Shortcuts to the two pages that explain each layer. */}
           <Tooltip
-            title="Why switch scope?"
-            content="Toggle between Company OS (company-wide canonical view) and Team OS (single team workspace)."
+            title="The two layers"
+            content="Jump to the page that explains Company OS (company-wide canonical view) or Team OS (single team workspace)."
             position="bottom"
           >
-            <div
-              role="radiogroup"
-              aria-label="Workspace scope"
+            <nav
+              aria-label="Operating system layers"
               className="flex h-10 shrink-0 items-center gap-0.5 rounded-lg border border-border bg-surface-sunken p-1"
             >
               <button
                 type="button"
-                role="radio"
-                aria-checked={!isStandalone}
-                onClick={() => setIsStandalone(false)}
+                aria-current={activeTab === 'company-os' ? 'page' : undefined}
+                onClick={() => onNavigateTab('company-os')}
                 className={`flex h-8 cursor-pointer items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition-colors duration-150 ${
-                  !isStandalone
+                  activeTab === 'company-os'
                     ? 'bg-accent text-accent-fg shadow-xs'
                     : 'text-fg-muted hover:text-fg'
                 }`}
@@ -147,18 +145,19 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
               <button
                 type="button"
-                role="radio"
-                aria-checked={isStandalone}
-                onClick={() => setIsStandalone(true)}
+                aria-current={activeTab === 'team-os' ? 'page' : undefined}
+                onClick={() => onNavigateTab('team-os')}
                 className={`flex h-8 cursor-pointer items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition-colors duration-150 ${
-                  isStandalone ? 'bg-scope text-scope-fg shadow-xs' : 'text-fg-muted hover:text-fg'
+                  activeTab === 'team-os'
+                    ? 'bg-scope text-scope-fg shadow-xs'
+                    : 'text-fg-muted hover:text-fg'
                 }`}
               >
                 <GitBranch className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                 <span className="hidden sm:inline">Team OS</span>
                 <span className="sm:hidden">Team</span>
               </button>
-            </div>
+            </nav>
           </Tooltip>
         </div>
       </div>

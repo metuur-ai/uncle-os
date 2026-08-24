@@ -5,6 +5,7 @@ import { hashForTab, tabFromHash } from './routing';
 import { Header } from './components/Header';
 import { Navbar } from './components/Navbar';
 import { HomeOverview } from './components/HomeOverview';
+import { OsLayerView } from './components/OsLayerView';
 import { InstallSetupView } from './components/InstallSetupView';
 import { ArchitectureView } from './components/ArchitectureView';
 import { CliTerminalView } from './components/CliTerminalView';
@@ -113,8 +114,8 @@ export default function App() {
       </a>
 
       <Header
-        isStandalone={isStandalone}
-        setIsStandalone={setIsStandalone}
+        activeTab={activeTab}
+        onNavigateTab={goToTab}
         onOpenGuide={() => setIsGuideOpen(true)}
         onOpenDirectory={() => setIsDirectoryOpen(true)}
         onOpenSearch={() => setIsSearchOpen(true)}
@@ -138,6 +139,10 @@ export default function App() {
             isStandalone={isStandalone}
             setIsStandalone={setIsStandalone}
           />
+        )}
+
+        {(activeTab === 'company-os' || activeTab === 'team-os') && (
+          <OsLayerView tab={activeTab} onNavigateTab={goToTab} />
         )}
 
         {activeTab === 'install' && <InstallSetupView />}

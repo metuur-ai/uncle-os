@@ -1,5 +1,7 @@
 export type TabType =
   | 'home'
+  | 'company-os'
+  | 'team-os'
   | 'install'
   | 'architecture'
   | 'cli' 
