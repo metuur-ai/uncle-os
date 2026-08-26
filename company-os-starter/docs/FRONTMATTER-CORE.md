@@ -26,6 +26,40 @@ type: prd            # doc kind; known kinds derive a #kind/* tag
 id: 2026-faster-webhooks   # stable, unique; outcome reviews may use `prd:` instead
 ```
 
+## Recommended on every document
+
+```yaml
+description: "Fans out webhook delivery; retries are best-effort and unbounded."
+```
+
+`description:` is recommended on every document and **blocks nothing**. Its
+consumer is the generated per-directory `index.md`, which renders each document's
+title and description so a reader — human or agent — can decide what to open
+without opening anything.
+
+An index of titles alone is `ls` with extra steps. Two rules keep it from becoming
+that. Both are tests you run against a specific document, not advice:
+
+1. **Carry at least one fact not derivable from the document's filename,
+   `title:`, `type:`, or directory path.** If a reader could reconstruct your
+   sentence from the four things the index already displays, the sentence costs
+   space and earns nothing.
+2. **Do not let it read as true when pasted onto a sibling document in the same
+   directory.** Copy the sentence onto the file next to it. If it still reads
+   true, it describes the directory rather than the document, and it needs
+   rewriting.
+
+Applied to `platforms/communications/reality/customer-notification-service.md`:
+
+| Description | Verdict |
+| --- | --- |
+| `"Reality doc for the customer notification service"` | Fails rule 1 — every word already appears in the filename, the `type:`, and the path |
+| `"Current state of the customer notification service"` | Fails rule 2 — reads true pasted onto any reality doc in that directory |
+| `"Fans out webhook delivery; retries are best-effort and unbounded."` | Passes — the retry semantics appear in neither the filename nor the type |
+
+**Quote the value.** A useful description usually contains a colon, and
+`description: One sentence: what this says` is a YAML parse error.
+
 ## Tier 2 — Lifecycle (required per doc family)
 
 ```yaml
@@ -144,6 +178,7 @@ Unknown fields are preserved, never rejected.
 | Field tier | Checked by | Blocking? |
 | --- | --- | --- |
 | Identity + lifecycle | `validate` gate 4, `discover validate`, `prd validate` | Yes, everywhere |
+| `description` (recommended) | Nothing — consumed by the generated `index.md` | No, ever |
 | References → tag derivation | `validate` gate 4 (drift vs `derive`) | Yes, everywhere |
 | Process accountability | `prd validate` / `prd complete` gates | Yes, at that gate |
 | Section structure (templates/) | `discover validate`, `prd validate` | No — warnings, unless the team opts in |
