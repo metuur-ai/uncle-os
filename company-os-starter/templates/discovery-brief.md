@@ -2,6 +2,7 @@
 type: discovery-brief
 id: <year>-<slug>
 title: <Title>
+description: "<one sentence; a fact not in the title or filename>"
 status: draft
 team: <team-id>
 created: <YYYY-MM-DD>

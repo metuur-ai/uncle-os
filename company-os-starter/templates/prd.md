@@ -2,6 +2,7 @@
 type: prd
 id: <year>-<slug>
 title: <Title>
+description: "<one sentence; a fact not in the title or filename>"
 status: proposed
 team: <team-id>
 platform: <platform-id>

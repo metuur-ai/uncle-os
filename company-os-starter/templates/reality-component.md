@@ -1,6 +1,7 @@
 ---
 id: reality-<component-id>
 type: component-reality
+description: "<one sentence; a fact not in the title or filename>"
 authority: canonical
 updated: <YYYY-MM-DD>
 tags: [authority/canonical, kind/reality]

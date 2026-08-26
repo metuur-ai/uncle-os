@@ -19,15 +19,20 @@ import (
 // embedding those files would change what `discover new` and `prd new` write.
 // The third, reality-component, is the embedded file — see templates/embed.go.
 //
-// Both constants are byte-for-byte ports of the Python module strings; the
+// Both constants were byte-for-byte ports of the Python module strings; the
 // literal backticks force the concatenation, since a Go raw string cannot
 // contain one. TestBuiltinsMatchPythonModuleStrings pins them to the oracle.
+//
+// They now diverge from Python by one line each — the `description:` field added
+// by story 1.2 of okf-provenance-and-indexes (R-1.5). See the divergence note on
+// TestBuiltinsMatchPythonModuleStrings before adding a second one.
 
 // DiscoveryTemplate is DISCOVERY_TEMPLATE (bin/company-os:378-405) verbatim.
 const DiscoveryTemplate = `---
 type: discovery-brief
 id: {bid}
 title: {title}
+description: "<one sentence; a fact not in the title or filename>"
 status: draft
 team: {team}
 created: {date}
@@ -59,6 +64,7 @@ const PRDTemplate = `---
 type: prd
 id: {pid}
 title: {title}
+description: "<one sentence; a fact not in the title or filename>"
 status: proposed
 team: {team}
 platform: {platform}
