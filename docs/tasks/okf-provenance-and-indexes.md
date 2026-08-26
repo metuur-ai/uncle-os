@@ -67,7 +67,7 @@ person; Unit 6 is last and verifies the whole diff at once.
 
 ## Unit 1 — `description:` as a documented, emitted field
 
-- [ ] 1.1 Document `description:` and its rubric in `FRONTMATTER-CORE.md` (est: ~35m)
+- [x] 1.1 Document `description:` and its rubric in `FRONTMATTER-CORE.md` (est: ~35m)
   - why: The index is the field's only consumer, and the parent deferred
     `description` precisely because shipping it without one creates a field
     nothing reads. Writing the rubric first is what stops the Unit 6 backfill from
@@ -78,7 +78,9 @@ person; Unit 6 is last and verifies the whole diff at once.
     description must not read as true when pasted onto a sibling.
   - verify: the rubric is stated as a rule a reviewer can apply to a specific
     document and get a yes/no, not as advice.
-  - landed:
+  - landed: 0527bb8 — company-os-starter/docs/FRONTMATTER-CORE.md
+    (new "Recommended on every document" section + a `description` row in the
+    "What validates what" table). `make check` green, both goldens unchanged.
 
 - [ ] 1.2 Emit `description:` from the scaffolding templates (deps: 1.1, est: ~50m, mutex: cli, templates)
   - why: If the shipped scaffolding does not emit a field the contract recommends,
