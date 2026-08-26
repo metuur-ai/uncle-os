@@ -388,6 +388,19 @@ commit as the title backfill (3.4) or the harness's double-build check goes red.
     file under `company-os-starter/templates/`. The repo `CLAUDE.md` makes the sync
     a hard constraint — the section names the built-in emits are what `validate`
     greps for. Re-estimate ~75m.
+  - **Re-planned again 2026-08-26 — there are FOUR sync points, not two.** Found
+    while implementing story 1.2 of `okf-provenance-and-indexes`, which added
+    `description:` to these same two constants. `DiscoveryTemplate` and
+    `PRDTemplate` are pinned byte-for-byte to frozen Python oracles under
+    `internal/scaffold/testdata/` by `TestBuiltinsMatchPythonModuleStrings`, so
+    adding `title:`/`resource:` makes that test go red by design. The test's own
+    comment sanctions editing the oracle as "a deliberate act"
+    (`internal/scaffold/template_test.go:41-44`); do that, and **extend** the
+    divergence note rather than replacing it — the note's value is the list of
+    lines changed on purpose, and story 1.2 has already added one. Also:
+    placeholders may contain no `{` or `}`, since `formatTemplate`
+    (`internal/product/pysem.go:136`) reads a bare brace as a substitution field
+    or an error. Re-estimate ~90m.
   - acceptance: R-3.5 — `prd new`, `discover new`, and `reality new` emit `title:`,
     with `reality new` additionally emitting `resource:`; `internal/scaffold/template.go`
     and `templates/*.md` stay in sync per the repo `CLAUDE.md`.

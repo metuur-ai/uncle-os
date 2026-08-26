@@ -82,7 +82,7 @@ person; Unit 6 is last and verifies the whole diff at once.
     (new "Recommended on every document" section + a `description` row in the
     "What validates what" table). `make check` green, both goldens unchanged.
 
-- [ ] 1.2 Emit `description:` from the scaffolding templates (deps: 1.1, est: ~50m, mutex: cli, templates)
+- [x] 1.2 Emit `description:` from the scaffolding templates (deps: 1.1, est: ~50m → actual ~75m, mutex: cli, templates)
   - why: If the shipped scaffolding does not emit a field the contract recommends,
     every agent following it produces a document that needs backfilling later.
   - acceptance: R-1.5 — `prd new`, `discover new`, and `reality new` emit
@@ -95,7 +95,23 @@ person; Unit 6 is last and verifies the whole diff at once.
     confirm the field is present, quoted, and the result passes `validate`;
     `make check` green — that is what catches a built-in string drifting from its
     template peer.
-  - landed:
+  - **Four sync points, not two (found during implementation).** Beyond
+    `internal/scaffold/template.go` and the `templates/` peers,
+    `DiscoveryTemplate` and `PRDTemplate` are pinned byte-for-byte to frozen
+    Python oracles under `internal/scaffold/testdata/` by
+    `TestBuiltinsMatchPythonModuleStrings`. Adding a field makes that test go red
+    by design. Its comment sanctions editing the oracle as "a deliberate act", so
+    that is the path taken — plus a comment recording what diverged, because the
+    `.python.txt` name and its regeneration recipe are otherwise misleading.
+    **This applies unchanged to task 3.2 of the parent change**, which adds
+    `title:`/`resource:` to the same two constants and whose re-plan counts two
+    sync points.
+  - landed: 7d550ce — internal/scaffold/template.go,
+    internal/scaffold/template_test.go (new `TestBuiltinsEmitAQuotedDescription`),
+    internal/scaffold/testdata/{discovery,prd}-template.python.txt,
+    templates/{discovery-brief,prd,reality-component}.md. `make check` green,
+    both goldens unchanged; scratch-workspace scaffold of all three document
+    types emits the field and `validate` exits 0.
 
 - [ ] 1.3 Emit `description:` from the `outcome.md` writer (deps: 1.1, est: ~25m, mutex: cli, templates)
   - why: The fourth document-emitting path and the easiest to miss —

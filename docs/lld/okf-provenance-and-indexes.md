@@ -87,10 +87,22 @@ sequence-of-mappings shapes specifically.
   `[]model.GateResult`; only `internal/render/` and `cmd/` write output.
 - The `frontmatter()` parser contract expects `^---\n...\n---\n` exactly.
 - Every mutating command prints the next command in the workflow (guidance chain).
-- Templates live in two places that must move together: the built-in string in
-  `internal/scaffold/template.go` and its peer file under
-  `company-os-starter/templates/`. A `description:` placeholder added to one must
-  be added to the other.
+- Templates live in **four** places that must move together, not two (measured
+  while implementing story 1.2): the built-in string in
+  `internal/scaffold/template.go`; its peer file under
+  `company-os-starter/templates/`; the frozen Python oracle under
+  `internal/scaffold/testdata/<name>-template.python.txt`; and the divergence note
+  on `TestBuiltinsMatchPythonModuleStrings`. That test pins `DiscoveryTemplate`
+  and `PRDTemplate` byte-for-byte to the oracles, so adding any frontmatter field
+  makes it go red by design. Editing the oracle is the sanctioned path
+  (`internal/scaffold/template_test.go:41-44`, "a deliberate act"), but the file
+  is named `.python.txt` and carries a regeneration recipe that no longer
+  reproduces it — so the note moves with the bytes or the next reader is misled.
+  `reality-component` has no Go constant; it is `//go:embed`-ed from disk and
+  `TestEmbeddedRealityTemplateMatchesDisk` keeps the two in step automatically.
+- Template placeholders must contain no `{` or `}`. `formatTemplate`
+  (`internal/product/pysem.go:136`) implements Python `str.format` semantics and
+  reads a bare brace as a substitution field or an error.
 - `make check` is the gate: gofmt + `go vet` + `go test ./...` +
   `examples/acceptance.sh`.
 - Gate 1–7 numbering and printed strings are frozen (I5).
