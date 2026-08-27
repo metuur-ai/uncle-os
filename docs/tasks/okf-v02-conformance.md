@@ -420,6 +420,14 @@ commit as the title backfill (3.4) or the harness's double-build check goes red.
     field, so this is an additive change to a writer that already holds the value —
     not the plumbing exercise the estimate assumed. `templates/outcome-review.md`
     must move with it (see re-plan note 3).
+  - **Update 2026-08-26.** Story 1.3 of `okf-provenance-and-indexes` has since
+    added `description:` to this same writer (`fa40dd6`) and moved
+    `templates/outcome-review.md` with it. The `title:` line belongs directly
+    beneath that `description:`. That story deliberately did **not** ship R-3.6 —
+    doing so would have left this box unchecked while the behaviour landed — so
+    this task is unaffected in scope, only in the surrounding lines. Note the
+    `// byte for byte` claim on `outcomeDoc` is now qualified by a divergence
+    note; extend it rather than deleting it.
   - acceptance: R-3.6 — the writer emits `title:`, keeps `prd:` as the identity
     field per `CoreFieldErrors` (`internal/product/contract.go:65`), and no
     title-fallback path assumes `id:` exists.

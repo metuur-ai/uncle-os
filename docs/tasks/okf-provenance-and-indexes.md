@@ -113,7 +113,7 @@ person; Unit 6 is last and verifies the whole diff at once.
     both goldens unchanged; scratch-workspace scaffold of all three document
     types emits the field and `validate` exits 0.
 
-- [ ] 1.3 Emit `description:` from the `outcome.md` writer (deps: 1.1, est: ~25m, mutex: cli, templates)
+- [x] 1.3 Emit `description:` from the `outcome.md` writer (deps: 1.1, est: ~25m, mutex: cli, templates)
   - why: The fourth document-emitting path and the easiest to miss —
     `prd complete` writes `outcome.md` inline. Without this, Unit 6 backfills the
     fixture's committed copy and the very next `prd complete` emits one without the
@@ -124,7 +124,20 @@ person; Unit 6 is last and verifies the whole diff at once.
     `templates/outcome-review.md` moves with it.
   - verify: run `prd complete` on a scratch workspace; the emitted `outcome.md`
     validates and carries the field.
-  - landed:
+  - **Two sync points, not four.** `outcomeDoc` is a plain string concatenation
+    with no frozen Python oracle behind it, so story 1.2's testdata problem does
+    not recur. Its `// byte for byte` claim was enforced by nothing, which is why
+    the divergence note had to go on the function itself.
+  - **`title:` deliberately not added.** That is R-3.6 / task 3.3 of the parent
+    change. Shipping it here would leave that box unchecked while the behaviour
+    landed — the same drift `derived-drift-repair` is currently sitting in. The
+    writer gets touched twice; that is the cheaper mistake.
+  - landed: fa40dd6 — internal/product/prd.go (`outcomeDoc`),
+    internal/product/product_test.go (new `TestOutcomeDocCarriesADescription`),
+    templates/outcome-review.md. `make check` green, both goldens unchanged;
+    `prd complete` in a scratch workspace emits
+    `description: "Outcome review for Webhook retries, due 2026-11-24."` and
+    `validate` exits 0.
 
 - [ ] 1.4 Confirm omission stays silent (deps: 1.2, 1.3, est: ~15m)
   - why: R-1.7 is the backward-compatibility guarantee for this unit, and it is
