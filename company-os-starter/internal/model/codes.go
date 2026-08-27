@@ -697,6 +697,51 @@ const (
 	CodeChecklistItem = "checklist.item"
 )
 
+// --------------------------------------------------- find (unified search)
+//
+// `company-os find <query>` (ux-simplification 3.1). Read-only unified local
+// search across five sources plus an optional graphify hook. Each source gets
+// its own section slug; the renderer groups findings by section.
+const (
+	// SlugFindIDs names the canonical-IDs section.
+	SlugFindIDs = "find-ids"
+	// SlugFindTags names the derived-tags section.
+	SlugFindTags = "find-tags"
+	// SlugFindFrontmatter names the frontmatter title/id section.
+	SlugFindFrontmatter = "find-frontmatter"
+	// SlugFindIndex names the per-directory index.md section.
+	SlugFindIndex = "find-index"
+	// SlugFindFeature names the feature-index section.
+	SlugFindFeature = "find-feature"
+	// SlugFindGraphify names the graphify hook section.
+	SlugFindGraphify = "find-graphify"
+
+	// CodeFindExactID is a canonical-id exact match (ranked first).
+	CodeFindExactID = "find.exact-id"
+	// CodeFindSubstringID is a canonical-id substring match.
+	CodeFindSubstringID = "find.substring-id"
+	// CodeFindTag is a derived-tags hit.
+	CodeFindTag = "find.tag"
+	// CodeFindTitle is a frontmatter title: hit.
+	CodeFindTitle = "find.title"
+	// CodeFindFieldID is a frontmatter id: hit.
+	CodeFindFieldID = "find.field-id"
+	// CodeFindIndexEntry is a per-directory index.md content hit.
+	CodeFindIndexEntry = "find.index-entry"
+	// CodeFindFeature is a feature-index component/artifact hit.
+	CodeFindFeature = "find.feature"
+	// CodeFindGraphify is one line of graphify hook output.
+	CodeFindGraphify = "find.graphify"
+	// CodeFindGraphifyHint is the quiet hint when graphify is partially
+	// available (binary or graph.json present but not both).
+	CodeFindGraphifyHint = "find.graphify-hint"
+	// CodeFindGraphifyError is the one-line failure reason when graphify
+	// times out or exits non-zero.
+	CodeFindGraphifyError = "find.graphify-error"
+	// CodeFindNoMatches is the "no matches" sentinel.
+	CodeFindNoMatches = "find.no-matches"
+)
+
 // IsTODO reports whether an approval field still carries its scaffolded
 // placeholder.
 //

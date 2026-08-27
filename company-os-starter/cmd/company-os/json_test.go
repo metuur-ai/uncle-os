@@ -118,6 +118,9 @@ func TestJSONOnEverySubcommand(t *testing.T) {
 		{"--root", root, "ids", "list"},
 		{"--root", root, "today"},
 		{"--root", root, "next"},
+		// ux-simplification 3.1: find is read-only and --no-graphify avoids
+		// shelling out in CI.
+		{"--root", root, "find", "svc", "--no-graphify"},
 		{"--root", root, "skills", "list"},
 		{"--root", root, "graph", "build"},
 		{"--root", root, "derive"},

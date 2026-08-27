@@ -10,6 +10,7 @@ package main
 import (
 	"io"
 
+	"github.com/metuur-ai/uncle-os/company-os-starter/internal/find"
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/graph"
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/ids"
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/model"
@@ -50,4 +51,15 @@ func cmdGraph(ws *workspace.Workspace, _ *Args, _ io.Writer) ([]model.GateResult
 // `--all` lists every pending item grouped by kind. The default is one action.
 func cmdNext(ws *workspace.Workspace, args *Args, _ io.Writer) ([]model.GateResult, error) {
 	return next.Scan(ws, args.All)
+}
+
+// cmdFind is `company-os find <query>` (ux-simplification 3.1). Read-only
+// unified local search across canonical IDs, derived tags, frontmatter
+// title/id, per-directory index entries, and feature-index component maps.
+// Optionally appends a graphify hook section when the binary and graph.json
+// are both present.
+//
+// Missing query is a usage error; empty results print "no matches" and exit 0.
+func cmdFind(ws *workspace.Workspace, args *Args, _ io.Writer) ([]model.GateResult, error) {
+	return find.Search(ws, args.Query, args.NoGraphify)
 }

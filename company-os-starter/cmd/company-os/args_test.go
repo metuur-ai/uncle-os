@@ -22,6 +22,9 @@ var portedCommands = map[string]bool{
 	"discover":  true, "prd": true, "check": true, "validate": true,
 	// ux-simplification 1.1: `next` is a read-only scan, safe to dispatch.
 	"next": true,
+	// ux-simplification 3.1: `find` is read-only search; dispatching it from
+	// the surface test would require a workspace fixture.
+	"find": true,
 	// `tui` is listed for the same reason as the rest — it is implemented — but
 	// it is the one entry whose exclusion is load-bearing rather than tidy:
 	// dispatching it from here would consult the real terminal, and on a
@@ -137,6 +140,18 @@ func TestEverySubcommandParses(t *testing.T) {
 				want(t, "cmd", a.Cmd, "next")
 				if !a.All {
 					t.Error("--all did not set All")
+				}
+			},
+		},
+		{
+			// ux-simplification 3.1: `find` takes a query positional and
+			// --no-graphify.
+			argv: []string{"find", "alpha-svc", "--no-graphify"},
+			check: func(t *testing.T, a *Args) {
+				want(t, "cmd", a.Cmd, "find")
+				want(t, "query", a.Query, "alpha-svc")
+				if !a.NoGraphify {
+					t.Error("--no-graphify did not set NoGraphify")
 				}
 			},
 		},

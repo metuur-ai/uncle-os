@@ -50,6 +50,10 @@ type Args struct {
 	Only          string
 	All           bool // `next --all`: list every pending item grouped by kind
 	Fix           bool // `validate --fix`: regenerate derived state before gating
+
+	// find (ux-simplification 3.1)
+	Query      string // the search query positional
+	NoGraphify bool   // `find --no-graphify`: skip the graphify hook
 }
 
 type posSpec struct {
@@ -283,6 +287,23 @@ var commandSpecs = []cmdSpec{
 			{name: "all",
 				help:    "list every pending item grouped by kind",
 				boolean: func(a *Args) *bool { return &a.All }},
+		},
+	},
+	{
+		// ux-simplification 3.1: `company-os find <query>` — unified local
+		// search with optional graphify hook. Read-only; mutates nothing.
+		// goOnly because the Python oracle has no equivalent subcommand.
+		name: "find", help: "unified local search across IDs, tags, indexes, and features",
+		goOnly: true,
+		pos: []posSpec{
+			{name: "query",
+				help: "search query (case-insensitive substring; exact ID match ranked first)",
+				dest: func(a *Args) *string { return &a.Query }},
+		},
+		flags: []flagSpec{
+			{name: "no-graphify",
+				help:    "skip the graphify graph-search hook",
+				boolean: func(a *Args) *bool { return &a.NoGraphify }},
 		},
 	},
 	{

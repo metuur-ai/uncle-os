@@ -151,7 +151,8 @@ with the task box checked in the same commit.
 
 ## Phase 3 — One front door for local search (Unit 4)
 
-- [ ] 3.1 `company-os find <query>` — unified local search (est: ~3h)
+- [x] 3.1 `company-os find <query>` — unified local search (est: ~3h)
+  **LANDED 2026-08-26** — read-only `find` subcommand with unified search across canonical IDs (exact-match-first), derived tags, frontmatter title/id, per-directory index.md content, and feature-index component maps; graphify hook with 15s timeout and binary/graph.json hint matrix; `--no-graphify` flag; text + `--json` renderers; "no matches" exits 0.
   - why: local search is currently five mechanisms: derived tags (Obsidian),
     `ids list`, per-directory `index.md`, CLAUDE.md context nodes, and
     feature-indexes. A human without Obsidian and an agent without prior graph
