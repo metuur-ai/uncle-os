@@ -38,8 +38,19 @@ var curatedFacets = map[string]bool{
 // skipNames are the markdown files iterGraphDocs never ingests (`:1379`).
 // CLAUDE.md is skipped BY NAME so a generated context node is never re-ingested
 // as a graph document once it carries frontmatter of its own.
+//
+// index.md joins for the same reason and three more (R-2.5 of
+// okf-provenance-and-indexes). A generated index carries frontmatter, so without
+// the skip it would be ingested, would count toward its own directory's
+// two-document threshold, would be listed inside itself, and — sharpest — would
+// fail gate 4, because CoreFieldErrors demands `id` or `prd` and a generated
+// index has neither. The tool would emit a workspace failing its own validate.
+//
+// The skip lands here BEFORE the generator exists, which is stricter than the
+// requirement's "same commit, never after": until something writes an index,
+// this entry is inert.
 var skipNames = map[string]bool{
-	"log.md": true, "README.md": true, "CLAUDE.md": true,
+	"log.md": true, "README.md": true, "CLAUDE.md": true, "index.md": true,
 }
 
 // Doc is one frontmatter markdown document and the tags derived from it — the

@@ -48,7 +48,7 @@ is there. Deep trees make this matter more here than in a flat OKF bundle.
 | R-2.1 | THE SYSTEM SHALL generate an `index.md` in any directory directly holding two or more graph documents, and SHALL NOT generate one below that threshold. |
 | R-2.2 | THE SYSTEM SHALL render each entry as a link carrying the document's title and its `description:`, grouped by `type:`, reusing the title fallback chain at `internal/graph/node.go:319-324` (`title` → `id` → filename). |
 | R-2.3 | THE SYSTEM SHALL write `index.md` with YAML frontmatter carrying `type: index` and a `company-os:generated` marker block delimiting the generated interior. |
-| R-2.4 | THE SYSTEM SHALL register `index` in the type→tag vocabulary at `internal/graph/tags.go:24-28` as an inert type, against which no required-field gate runs. |
+| R-2.4 | **Amended 2026-08-26 — see "Resolved during implementation".** THE SYSTEM SHALL claim `index` as a reserved inert type in `docs/FRONTMATTER-CORE.md`, following the pattern at `:116-122`, against which no required-field gate runs. ~~register `index` in the type→tag vocabulary at `internal/graph/tags.go:24-28`~~ — that entry would be unreachable code. |
 | R-2.5 | THE SYSTEM SHALL add `"index.md"` to `skipNames` (`internal/graph/tags.go:41`) in the same commit as the generator, so a generated index is never re-ingested as a graph document, counted toward its own directory's threshold, or listed inside itself. |
 | R-2.6 | THE SYSTEM SHALL generate indexes from every derived-artifact path — `rebuildGenerated` (`cmd/company-os/scaffold.go:46`) and its records-returning twin (`cmd/company-os/product.go:26`) — so that `company-os init` does not produce a workspace failing its own `validate`. |
 | R-2.7 | WHERE a path lies beneath a manifest-declared slice root, THE SYSTEM SHALL NOT generate an index there and SHALL NOT drift-check one there. |
@@ -132,6 +132,21 @@ against the whole diff rather than assumed per unit.
 | R-6.10 | THE SYSTEM SHALL add an acceptance case running `company-os init` into a scratch directory followed by `company-os validate`, asserting exit 0, because the harness does not cover that path today and it is the exact D-2.2 failure mode R-2.6 exists to prevent. |
 
 ---
+
+## Resolved during implementation
+
+**R-2.4 specified dead code and is amended above.** The first draft said to
+register `index` in `kindTag` (`internal/graph/tags.go:24-28`). Reachability
+trace: `kindTag` has one reader, `DeriveTags` (`tags.go:75`); `DeriveTags` has
+one non-test caller, inside `IterGraphDocs` (`tags.go:257`); and R-2.5 puts
+`index.md` into `skipNames`, which `IterGraphDocs` honours by base name
+(`tags.go:222`). A generated index is therefore never yielded, so
+`kindTag["index"]` can never be read.
+
+The repo already had the correct shape. `FRONTMATTER-CORE.md:116-122` defines
+reserved-inert types — `account-context`, `customer-call`, `data-catalog` — and
+all three have **zero** occurrences in `internal/`. Reserved-inert is a
+documentation act with no code, and `index` follows it.
 
 ## Resolved during pre-mortem
 

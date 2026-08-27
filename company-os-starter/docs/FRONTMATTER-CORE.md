@@ -154,6 +154,15 @@ names. They are inert today — no required-field gate runs against them until
 their consumer ships — but the names are claimed so producers can start emitting
 them without collision.
 
+`index` is reserved on the same terms, with one difference: it will be *written*
+by the tool rather than by a producer. It is the `type:` of the generated
+per-directory `index.md`. No gate will ever run against it, because `index.md` is
+skipped by name during graph traversal — it is never ingested as a graph
+document, so it derives no tags and is never checked for core fields. The `type:`
+exists for consumers outside this repository that filter on it; nothing inside
+reads it. Do not add it to the tag vocabulary expecting a `kind/index` tag: that
+code would be unreachable.
+
 ## Generated — never hand-written
 
 ```yaml
