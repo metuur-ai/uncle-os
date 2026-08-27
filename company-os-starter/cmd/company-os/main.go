@@ -83,9 +83,15 @@ func run(argv []string, stdout, stderr io.Writer) int {
 	// `--json` replaces the text renderer rather than joining it (R-3.2): one
 	// document on stdout and no prose, error path included (R-3.8).
 	if args.JSON {
+		// ux-simplification 2.1: lift the --fix regenerated count into a
+		// top-level JSON field and strip the fix-summary section from the
+		// sections array — the count is a scalar fact about the run, not a
+		// gate, and publishing it twice would invite disagreement.
+		fixN, filtered := extractFixCount(results)
 		payload := render.Result{
 			Command: args.Cmd, Action: args.Action, Root: ws.Root,
-			Sections: results, Err: err, ExitCode: exitCode(results, err),
+			Sections: filtered, Err: err, ExitCode: exitCode(results, err),
+			FixRegenerated: fixN,
 		}
 		if jerr := render.JSON(stdout, payload); jerr != nil {
 			fmt.Fprintf(stderr, "error: %v\n", jerr)
@@ -133,6 +139,29 @@ func exitCode(results []model.GateResult, err error) model.ExitCode {
 		return model.ExitValidation
 	}
 	return model.ExitOK
+}
+
+// extractFixCount lifts the --fix regenerated count out of the result set for
+// the JSON envelope (ux-simplification 2.1). It returns the count (nil when
+// --fix was not requested) and the sections with the fix-summary entry
+// removed — the count is published as a top-level field, so keeping the
+// section would duplicate the fact and invite disagreement.
+func extractFixCount(results []model.GateResult) (*int, []model.GateResult) {
+	var fixN *int
+	var filtered []model.GateResult
+	for _, s := range results {
+		if s.Slug == model.SlugFixSummary {
+			for _, f := range s.Findings {
+				if f.Code == model.CodeFixRegenerated {
+					n := f.Fields.Int("regenerated")
+					fixN = &n
+				}
+			}
+			continue
+		}
+		filtered = append(filtered, s)
+	}
+	return fixN, filtered
 }
 
 // fail reports an error raised BEFORE any command ran — not a workspace root, no

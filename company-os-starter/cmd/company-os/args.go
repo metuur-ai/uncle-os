@@ -49,6 +49,7 @@ type Args struct {
 	Frozen        bool
 	Only          string
 	All           bool // `next --all`: list every pending item grouped by kind
+	Fix           bool // `validate --fix`: regenerate derived state before gating
 }
 
 type posSpec struct {
@@ -209,6 +210,15 @@ var commandSpecs = []cmdSpec{
 	},
 	{
 		name: "validate", help: "workspace validation gates",
+		flags: []flagSpec{
+			// ux-simplification 2.1: --fix regenerates derived state
+			// (effective-governance, tags, indexes, CLAUDE.md nodes) before
+			// running gates, so the user need not remember the two re-derive
+			// commands. Without it, validate is byte-identical to today.
+			{name: "fix",
+				help:    "regenerate derived state before gating",
+				boolean: func(a *Args) *bool { return &a.Fix }},
+		},
 	},
 	{
 		name: "deviation", help: "declare a comply-or-explain deviation",

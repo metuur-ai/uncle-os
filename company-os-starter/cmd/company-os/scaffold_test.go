@@ -58,7 +58,9 @@ func TestScaffoldGuidanceChain(t *testing.T) {
 	out = runOK(t, "--root", root, "add", "platform", "second")
 	wantLines(t, out, []string{
 		"  wrote index platforms/second/generated/feature-index.yaml",
-		"  index teams/core-team/standards/index.md",
+		// ux-simplification 2.1: the creation path no longer adds a trailing
+		// newline, so the index created by init is already in sync — no
+		// rewrite on the second build.
 		"  node company-os/CLAUDE.md",
 		"  node platforms/my-platform/CLAUDE.md",
 		"  node platforms/second/CLAUDE.md",
@@ -84,8 +86,9 @@ func TestScaffoldGuidanceChain(t *testing.T) {
 	out = runOK(t, "--root", root, "add", "component", "billing-api", "--platform", "second")
 	wantLines(t, out, []string{
 		"  wrote index platforms/second/generated/feature-index.yaml",
-		"  index teams/second/standards/index.md",
-		"  node teams/second/CLAUDE.md",
+		// ux-simplification 2.1: the creation path no longer adds a trailing
+		// newline, so the index and node created by add team are already in
+		// sync — no rewrite on the next build.
 		"added component 'billing-api' to platform 'second'",
 		"next: company-os reality new --platform second billing-api",
 	})

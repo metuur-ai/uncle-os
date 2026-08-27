@@ -120,7 +120,8 @@ with the task box checked in the same commit.
 
 ## Phase 2 — Kill the "remember to re-derive" tax (Unit 3)
 
-- [ ] 2.1 `company-os validate --fix` — regenerate derived state before gating (est: ~3h)
+- [x] 2.1 `company-os validate --fix` — regenerate derived state before gating (est: ~3h)
+  **LANDED 2026-08-26** — `--fix` regenerates effective-governance, tags, indexes, and CLAUDE.md nodes through the same `governance.Resolve` + `graph.Rebuild` code paths before gating; summary line `validate --fix: N file(s) regenerated`; `--json` carries `fixRegenerated`; creation-path trailing-newline fix makes the derivation 1-cycle idempotent.
   - why: after a deviation declaration or a frontmatter edit the user must
     remember `governance resolve` and `graph build`, or gates 1/4–6 fail at
     CI time. The CLI itself prints "re-run: …" — it knows what is missing but

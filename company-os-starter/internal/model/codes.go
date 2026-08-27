@@ -37,6 +37,16 @@ const (
 	// CodeValidateRoot is that banner line.
 	CodeValidateRoot = "validate.root"
 
+	// SlugFixSummary names the trailing section `validate --fix` appends
+	// (ux-simplification 2.1). It is not a gate — it carries the count of
+	// derived files whose bytes actually changed during the pre-gate
+	// regeneration, and the renderer prints it as one summary line after the
+	// PASS/FAIL trailer. A count of zero means the tree was already fully
+	// derived.
+	SlugFixSummary = "fix-summary"
+	// CodeFixRegenerated carries that count in Fields["regenerated"].
+	CodeFixRegenerated = "validate.fix-regenerated"
+
 	// Gate 1 — ownership reconciliation (:941, :946, :951).
 	CodeOwnershipDescriptorMissing   = "ownership.descriptor-missing"
 	CodeOwnershipAccountableMismatch = "ownership.accountable-mismatch"
