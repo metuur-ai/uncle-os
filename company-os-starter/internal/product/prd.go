@@ -598,6 +598,14 @@ func shutilMove(src, dst string) error {
 // way TestBuiltinsMatchPythonModuleStrings pins the two scaffold constants, so
 // the divergence is recorded here or nowhere.
 //
+// It also emits `generated:` (R-4.7). This document is the ONE place in the
+// system where the producer of the CONTENT is genuinely known: prd complete
+// writes every byte of it. The three scaffolded templates deliberately do NOT
+// emit the field, because there the CLI produces an empty stub and a human or an
+// agent writes what matters — claiming `generated: {by: company-os/…}` there
+// would attribute authorship the tool does not have, and would bake the build
+// version into every scaffolded artifact.
+//
 // The value is rendered, not a `<...>` placeholder like the three hand-authored
 // templates: this document is machine-written, and a placeholder would mean every
 // archived outcome ships unfilled boilerplate. The due date is deliberate — it is
@@ -608,6 +616,8 @@ func shutilMove(src, dst string) error {
 func outcomeDoc(id, due, title string) string {
 	return "---\ntype: outcome-review\nprd: " + id +
 		"\ndescription: \"Outcome review for " + title + ", due " + due + ".\"" +
+		"\ngenerated:\n  by: company-os/" + model.BuildInfo().Version +
+		"\n  at: " + today().Format("2006-01-02") +
 		"\ndue: " + due + "\nstatus: pending\n" +
 		"tags: [kind/outcome, prd/" + id + ", status/pending]\n---\n\n" +
 		"# Outcome review: " + title + "\n\n" +

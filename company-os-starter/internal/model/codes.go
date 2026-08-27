@@ -1,5 +1,7 @@
 package model
 
+import "strings"
+
 // Every finding code and every section slug the CLI can emit, in one file.
 //
 // R-2.4 makes these a CONTRACT — they survive message rewordings, and R-3.4
@@ -46,6 +48,15 @@ const (
 	CodeExceptionNoExpiry = "expiry.exception-no-expiry"
 	CodeExceptionExpired  = "expiry.exception-expired"
 	CodeExceptionValid    = "expiry.exception-valid"
+	// CodeExceptionApproverTODO is R-5.4 of okf-provenance-and-indexes: an
+	// exception whose `approvedBy` still carries its scaffolded placeholder.
+	//
+	// WARN, never fail. `internal/governance/declare.go` scaffolds
+	// `approvedBy: 'TODO: rule owner'` and it has always passed, while
+	// `decisionOwner: TODO` on a PRD hard-fails. Making this block would fail
+	// examples/workspace and every workspace scaffolded from it, violating
+	// invariant I1. The asymmetry stays; it just stops being invisible.
+	CodeExceptionApproverTODO = "expiry.exception-approver-todo"
 
 	// Gate 3 — active PRD contracts (:990, :993).
 	CodePRDFrontmatterMissing = "prd.frontmatter-missing"
@@ -640,3 +651,22 @@ const (
 	// the two Python lines.
 	CodeChecklistItem = "checklist.item"
 )
+
+// IsTODO reports whether an approval field still carries its scaffolded
+// placeholder.
+//
+// It lives in model, which imports nothing, because two packages need it and
+// neither may depend on the other: internal/graph derives trust tiers from
+// approval fields (R-5.3) and internal/governance warns about a placeholder
+// approver (R-5.4).
+//
+// Two scaffolders emit one and they disagree: `decisionOwner: TODO`
+// (internal/scaffold/template.go) hard-fails `prd validate`, while
+// `approvedBy: 'TODO: rule owner'` (internal/governance/declare.go) has always
+// passed. That asymmetry is not closed here -- closing it would add a blocking
+// check and violate invariant I1.
+//
+// @spec req://uncle-os/okf-provenance-and-indexes@0.1#R-5.3
+func IsTODO(v string) bool {
+	return strings.HasPrefix(strings.TrimSpace(v), "TODO")
+}

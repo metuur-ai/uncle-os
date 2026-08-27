@@ -219,6 +219,17 @@ func ExpiryGate(ws *workspace.Workspace, ordinal int) (model.GateResult, error) 
 					model.CodeExceptionExpired, teamID, fields))
 				continue
 			}
+			// R-5.4: surface a still-placeholder approver at WARN. This runs
+			// after the expiry checks so an expired exception is not also
+			// nagged about its approver — one problem per line, the most
+			// actionable one.
+			if by := e.Get("approvedBy"); !yamlio.PyFalsy(by) &&
+				model.IsTODO(yamlio.PyString(by)) {
+				wf := model.Fields{"team": teamID, "rule": rule,
+					"approvedBy": yamlio.PyString(by)}
+				g.Findings = append(g.Findings, finding(model.SevWarn,
+					model.CodeExceptionApproverTODO, teamID, wf))
+			}
 			g.Findings = append(g.Findings, finding(model.SevOK,
 				model.CodeExceptionValid, teamID, fields))
 		}
@@ -282,6 +293,9 @@ func gateMessage(code string, f model.Fields) (string, bool) {
 		return fmt.Sprintf("exception for %s has NO expiry — invalid", f.Str("rule")), true
 	case model.CodeExceptionExpired:
 		return fmt.Sprintf("exception for %s expired %s", f.Str("rule"), f.Str("expires")), true
+	case model.CodeExceptionApproverTODO:
+		return fmt.Sprintf("exception for %s is approved by a placeholder (%s) — "+
+			"replace it with the rule owner", f.Str("rule"), f.Str("approvedBy")), true
 	case model.CodeExceptionValid:
 		return fmt.Sprintf("exception %s valid until %s", f.Str("rule"), f.Str("expires")), true
 	}

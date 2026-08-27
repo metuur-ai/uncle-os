@@ -10,6 +10,7 @@ validating workspace <WORKSPACE>
   [ok] ghost: deviation company-standard://retro-cadence current (review 2035-01-14)
   [FAIL] ghost: exception for company-standard://security-service-baseline has NO expiry — invalid
   [FAIL] ghost: exception for company-standard://customer-data-privacy expired 2020-01-01
+  [warn] ghost: exception for company-standard://tier-1-observability is approved by a placeholder (TODO: rule owner) — replace it with the rule owner
   [ok] ghost: exception company-standard://tier-1-observability valid until 2035-12-31
 
 [3/8] active PRD contracts

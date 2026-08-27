@@ -147,6 +147,54 @@ Guides live at `company-os/onboarding/<role>.md` (company scope) and
 prints a pointer to the matching guide, preferring team scope over company
 scope.
 
+## Provenance — `generated:` and `verified:` (optional, advisory)
+
+Who produced this document, and has a person confirmed it? Both fields are
+optional and **neither blocks anything, ever**.
+
+```yaml
+generated:
+  by: claude-opus-5/1        # producer that wrote the content
+  at: 2026-08-26
+verified:
+  - by: human:ada            # who confirmed it, and when
+    at: 2026-08-26
+  - by: process:nightly-audit
+    at: 2026-08-25
+```
+
+They are kept separate because **a document's author need not be its confirmer**
+— that distinction is the entire value of the pair.
+
+**Actor convention.** Three shapes, distinguishable by prefix:
+
+| Form | Means |
+| --- | --- |
+| `<producer>/<version>` | an agent, e.g. `claude-opus-5/1` |
+| `human:<id>` | a person |
+| `process:<id>` | an automated process |
+
+**Trust tier** is *derived at read time* from `verified:`, never stored:
+
+| `verified:` contains | Tier |
+| --- | --- |
+| nothing, or is absent | `unverified` |
+| only agents and processes | `machine-confirmed` |
+| at least one `human:` actor | `human-reviewed` |
+
+`unverified` is the default and is not an accusation — most documents are simply
+unreviewed.
+
+**No gate consumes the tier, and none may.** A trust signal that can block turns
+into an approval field, and this system already has three of those which disagree
+with each other. This one is allowed to be wrong without stopping anyone's work.
+
+**Existing approval fields feed it, one way.** Where a document carries
+`decisionOwner:` or `approvedBy:`, a `human:` actor is derived *in memory* so the
+tier means something today rather than reading `unverified` everywhere. Those
+fields are never rewritten and keep every gate that consumes them. A value still
+carrying its scaffolded `TODO` derives nothing.
+
 ## Reserved doc types (inert)
 
 `account-context`, `customer-call`, and `data-catalog` are **reserved** type
@@ -188,6 +236,7 @@ Unknown fields are preserved, never rejected.
 | --- | --- | --- |
 | Identity + lifecycle | `validate` gate 4, `discover validate`, `prd validate` | Yes, everywhere |
 | `description` (recommended) | Nothing — consumed by the generated `index.md` | No, ever |
+| `generated` / `verified` (optional) | Nothing — feed an advisory trust tier | No, ever |
 | References → tag derivation | `validate` gate 4 (drift vs `derive`) | Yes, everywhere |
 | Process accountability | `prd validate` / `prd complete` gates | Yes, at that gate |
 | Section structure (templates/) | `discover validate`, `prd validate` | No — warnings, unless the team opts in |
