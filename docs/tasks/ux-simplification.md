@@ -206,7 +206,8 @@ with the task box checked in the same commit.
 
 ## Phase 5 — Docs face reality (Unit 6)
 
-- [ ] 5.1 Cut or clearly mark everything the CLI does not implement (est: ~1h)
+- [x] 5.1 Cut or clearly mark everything the CLI does not implement (est: ~1h)
+  **LANDED 2026-08-27** — both TUTORIAL.md copies: §0.5 collapsed to the three implemented path layers (flag/env var/cwd) with a pointer to `company-os-starter/docs/00-original-proposal.md` for the unimplemented rest; the truncated handwritten note replaced with a real §11 documenting `company-os find` (with captured output, including the graphify hook and `--no-graphify`); added `next` as the early "what do I do now" entry point and flag-free `discover validate`/`prd validate` coverage inline, and `validate --fix` next to the CI gate with an explicit "local convenience only, CI keeps the strict diff check" callout. `company-os-starter/docs/ONTOLOGY-GUIDE.md`: every `validate --ontology` and `spec trace` mention now sits under an explicit "Roadmap, not shipped" marker, mirroring the doc's existing §2.3 wikilinks pattern; nothing implemented (ids, tags, `derive`, EARS/@spec conventions) was touched. Root `README.md` documents an unrelated graph-explorer web tool with no CLI command list, so it was left alone per the unit's own instruction. Found beyond the three known gaps: `validate`'s gate count/output in TUTORIAL.md §8 (`[1/7]`…`[7/7]`) no longer matches the CLI's current `[1/8]`…`[8/8]` output (an 8th "promotion integrity" gate was added and gate 5 grew a directory-index check) — out of scope for this docs-only unit, left unedited, flagged for a follow-up.
   - why: readers currently carry the spec-vs-reality gap in their heads —
     TUTORIAL §0.5 teaches six path-resolution layers of which the CLI
     implements three, and ONTOLOGY-GUIDE describes `validate --ontology` and

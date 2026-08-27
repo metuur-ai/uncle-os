@@ -43,11 +43,27 @@ examples/workspace/
     └── scratchpad/                                 # local-only, git-ignored
 ```
 
+Not sure what to do first — in this workspace, or any workspace? Ask the tool
+instead of reading the layout above:
+
+```bash
+$ company-os next
+next: outcome review for 2026-per-channel-quiet-hours due 2026-10-16
+  platform: communications
+```
+
+`next` is read-only: it scans for the single highest-priority pending action
+(an expiring deviation/exception, a PRD failing its contract, an unchecked
+governance item, a stale reality doc, a due outcome review) and prints the
+exact command to run. `--all` lists every pending item instead of just the
+top one. Run it any time you land in an unfamiliar workspace — before reading
+docs, before running anything else.
+
 ## 0.5 Configuring paths on your machine
 
 Your absolute paths are yours; the committed YAML must stay portable. The rule
 is simple: **no `/Users/yourname/...` string is ever committed.** Absolute paths
-live only in environment variables or git-ignored local files. That way you,
+live only in environment variables — never in a tracked file. That way you,
 your teammates, and CI can clone the same repos to completely different
 locations and everything still resolves.
 
@@ -56,13 +72,8 @@ locations and everything still resolves.
 ```text
 1. CLI flag              company-os --root /abs/path ...
 2. Environment variable  $COMPANY_OS_WORKSPACE_ROOT
-3. Repo-local override   .company-os.local.yaml        (git-ignored)
-4. User-level config     ~/.company-os/config.yaml     (outside every repo)
-5. Committed shared      config/repositories.yaml      (relative dirs only)
-6. Built-in default      current working directory
+3. Built-in default      current working directory
 ```
-
-### The normal case: one env var per machine
 
 Set the workspace root once. The CLI's `--root` already defaults to
 `$COMPANY_OS_WORKSPACE_ROOT`, so after this you can run commands from anywhere:
@@ -84,78 +95,12 @@ Or pass it inline without exporting anything:
 company-os --root /Users/javier/work/company-knowledge validate
 ```
 
-Effective path = `root` + the repo's **relative** `directory`. The committed
-`config/repositories.yaml` holds only those relative directories and the *name*
-of the env var — never a value:
-
-```yaml
-# config/repositories.yaml   (committed, identical for everyone)
-workspace:
-  rootVariable: COMPANY_OS_WORKSPACE_ROOT   # the NAME of the env var, not a path
-repositories:
-  - id: platform-os-communications
-    directory: platforms/communications                       # relative
-  - id: customer-notification-service
-    directory: components/customer-notification-service       # relative
-```
-
-### The odd case: one repo lives somewhere off the tree
-
-If you cloned a repo into an unusual spot, override just that repo in a
-**git-ignored** local file — absolute paths are allowed here because this file
-is never committed:
-
-```yaml
-# .company-os.local.yaml   (NOT committed)
-workspace:
-  root: /Users/javier/work/company-os
-repositories:
-  customer-notification-service:
-    localPath: /Users/javier/work/notification-experiments    # absolute override
-```
-
-Commit a `.company-os.local.example.yaml` so teammates know the shape, and make
-sure the real file is ignored. `company-os scratchpad init` writes these ignore
-rules for you:
-
-```gitignore
-.company-os.local.yaml
-.env
-.env.local
-scratchpad/
-```
-
-### Multiple workspaces: user-level config
-
-Juggling a primary and an experimental checkout? Keep them in a user-level file
-outside every repo and switch by name:
-
-```yaml
-# ~/.company-os/config.yaml
-activeWorkspace: primary
-workspaces:
-  primary:
-    root: /Users/javier/work/company-knowledge
-  experimental:
-    root: /Users/javier/work/company-experimental
-```
-
-### What goes where
-
-| Committed YAML (portable) | Env vars / git-ignored local files (machine-specific) |
-|---|---|
-| Relative `directory` per repo | Absolute `root` path |
-| Git remote URLs, stable IDs | Per-repo `localPath` overrides |
-| The *name* of the env var | Obsidian vault location, workspace selection |
-
-### Kit status
-
-The CLI implements layers **1, 2, and 6**
-today: `--root`, `$COMPANY_OS_WORKSPACE_ROOT`, and cwd fallback — enough to
-point it at any path on your machine. Layers 3–5 (`.company-os.local.yaml`
-merging, `~/.company-os/config.yaml`, and a `workspace sync` that clones repos
-into the relative directories) are specified here and in the proposal but not
-yet wired into the CLI.
+A per-repo `.company-os.local.yaml` override, a `~/.company-os/config.yaml`
+multi-workspace switcher, and a repo-cloning step driven by a committed
+`config/repositories.yaml` are proposed but not implemented — see
+`company-os-starter/docs/00-original-proposal.md` for that design.
+(`company-os workspace sync` does exist today, but for the unrelated federated
+multi-repo manifest — see §8 below — not for this proposal.)
 
 ## 1. Resolve the team's effective governance
 
@@ -210,6 +155,22 @@ $ company-os discover validate 2026-per-channel-quiet-hours --team customer-enga
   [ok] brief '2026-per-channel-quiet-hours' validated (status: validated)
 ```
 
+`--team` is optional when the brief id is unique across the workspace — the
+CLI searches `teams/*/product/discovery/` for it. On a second brief in this
+same workspace:
+
+```bash
+$ company-os discover validate 2026-test-flag-free
+  [warn] section 'Problem signal' is empty — format guidance only; the team may use its own structure (opt in via standards/doc-formats.yaml)
+  [warn] section 'Hypothesis' is empty — format guidance only; the team may use its own structure (opt in via standards/doc-formats.yaml)
+  [warn] section 'Success criteria' is empty — format guidance only; the team may use its own structure (opt in via standards/doc-formats.yaml)
+  [ok] brief '2026-test-flag-free' validated (status: validated)
+```
+
+Several teams with a brief of the same id → the command lists every candidate
+and asks you to disambiguate with `--team`; an explicit `--team` always wins
+over inference.
+
 ## 3. Create the PRD from the validated discovery
 
 ```bash
@@ -251,6 +212,19 @@ $ company-os prd validate 2026-per-channel-quiet-hours --platform communications
 
 $ company-os prd validate 2026-per-channel-quiet-hours --platform communications
   [ok] PRD '2026-per-channel-quiet-hours' passes the artifact contract
+```
+
+Same inference as `discover validate`: `--platform` is optional when the PRD
+id is unique across `platforms/*/change-records/active/` and
+`platforms/*/archive/prds/`. `prd complete` infers it the same way. Dropping
+the flag on a fresh PRD:
+
+```bash
+$ company-os prd validate 2026-test-flag-free
+  [warn] section 'Problem statement' is empty — format guidance only; the team may use its own structure (opt in via standards/doc-formats.yaml)
+  [warn] section 'Success metrics' is empty — format guidance only; the team may use its own structure (opt in via standards/doc-formats.yaml)
+  [warn] section 'Proposed change' is empty — format guidance only; the team may use its own structure (opt in via standards/doc-formats.yaml)
+  [FAIL] process contract field 'decisionOwner' missing or TODO
 ```
 
 ## 4. Composable Definition of Ready during refinement
@@ -388,6 +362,22 @@ generated `CLAUDE.md` context node is stale, or a platform's derived
 The second check ensures `effective-governance.yaml` is truly derived — if
 someone hand-edited it, the regenerated file differs and CI fails.
 
+Locally, `--fix` regenerates that same derived state (effective-governance,
+tags, indexes, CLAUDE.md context nodes) before running the gates, so you don't
+have to remember `governance resolve` and `graph build` yourself:
+
+```bash
+$ company-os validate --fix
+...
+PASS
+validate --fix: 0 file(s) regenerated
+```
+
+`--fix` is a **local convenience only**. CI keeps the strict two-step check
+above (`validate` + `git diff --exit-code` against the freshly regenerated
+files) — a workspace with drift still fails CI even if `--fix` would have
+silently repaired it locally.
+
 ## 9. Where personal flexibility lives
 
 ```bash
@@ -454,9 +444,52 @@ signal ──> discover new ──> discover validate ──> prd new (snapshot+
                                                         learnings ──> next signal
 ```
 
+## 11. Finding things: `company-os find`
 
+Local search is otherwise fragmented across derived tags, the ids registry,
+per-directory `index.md` files, CLAUDE.md context nodes, and feature-indexes.
+`find` is one front door over all of them — case-insensitive substring match,
+exact-id hits ranked first, grouped output by match kind:
 
+```bash
+$ company-os find customer-notification-service
+== canonical IDs ==
+  platforms/communications/components/customer-notification-service.yaml  [component://customer-notification-service]  id substring match
 
+== derived tags ==
+  platforms/communications/archive/prds/2026-per-channel-quiet-hours/prd.md  [Per-channel quiet hours]  tag: component/customer-notification-service
+  platforms/communications/reality/components/customer-notification-service.md  tag: component/customer-notification-service
 
---- 
-I want to integrate  the  graphify  for optimize the searchs and an
+== frontmatter ==
+  platforms/communications/reality/components/customer-notification-service.md  id field match
+
+== feature-index ==
+  platforms/communications/generated/feature-index.yaml  [customer-notification-service]  feature-index component match
+
+graphify installed but no graphify-out/graph.json here — run graphify to build the graph
+```
+
+A query that doesn't hit anything is not a failure — search is not a gate:
+
+```bash
+$ company-os find zzznotarealthing
+no matches
+
+graphify installed but no graphify-out/graph.json here — run graphify to build the graph
+```
+
+**The graphify hook:** if a `graphify` binary is on `PATH` and
+`graphify-out/graph.json` exists under the workspace root, `find` appends a
+`graphify query "<query>"` section using the built graph's EXTRACTED/INFERRED
+edges. Either missing → the quiet hint line above, exit 0 regardless. Skip the
+hook explicitly with `--no-graphify`:
+
+```bash
+$ company-os find customer-notification-service --no-graphify
+== canonical IDs ==
+  platforms/communications/components/customer-notification-service.yaml  [component://customer-notification-service]  id substring match
+...
+```
+
+`--json` emits the same records structured, for scripting or an agent to
+consume directly.
