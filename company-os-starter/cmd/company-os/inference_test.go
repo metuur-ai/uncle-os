@@ -82,9 +82,13 @@ func TestPRDValidateInfersPlatformFromActivePRD(t *testing.T) {
 // --------------------------------------------- unique inference (archived)
 
 // TestPRDValidateInfersPlatformFromArchivedPRD pins the archive path: the
-// PRD is archived, inference finds it, but validate then reports the
-// existing "no active PRD at ..." error (exit 3) because it only looks in
-// active/. The error message names the real platform path.
+// PRD is archived, inference finds it, and validate refuses at exit 3 because
+// it only validates active records.
+//
+// The refusal says WHY. It used to report "no active PRD at <active-path>",
+// which reads as "nothing found" for an id the tool just located, and names a
+// path under active/ the user never typed — an artifact of inference resolving
+// the platform from the archive. It now names the archive and the platform.
 func TestPRDValidateInfersPlatformFromArchivedPRD(t *testing.T) {
 	root := inferWorkspace(t, []string{"comms"}, nil)
 	mkAll(t, filepath.Join(root, "platforms", "comms",
@@ -97,8 +101,33 @@ func TestPRDValidateInfersPlatformFromArchivedPRD(t *testing.T) {
 		t.Fatalf("run() = %d, want %d (not-found in active)\nstdout: %s\nstderr: %s",
 			code, model.ExitWorkspace, stdout.String(), stderr.String())
 	}
+	errText := stderr.String()
+	for _, want := range []string{"2026-archived", "archived", "comms"} {
+		if !strings.Contains(errText, want) {
+			t.Errorf("stderr = %q, missing %q", errText, want)
+		}
+	}
+	// The misleading sentence must be gone from THIS path, not merely joined.
+	if strings.Contains(errText, "no active PRD at") {
+		t.Errorf("stderr = %q, still uses the not-found voice for an archived id", errText)
+	}
+}
+
+// TestPRDValidateAbsentKeepsNotFoundVoice is the other half of the contract:
+// when the id is nowhere — not active, not archived — the original sentence is
+// unchanged, because there "not here" is the whole truth.
+func TestPRDValidateAbsentKeepsNotFoundVoice(t *testing.T) {
+	root := inferWorkspace(t, []string{"comms"}, nil)
+
+	var stdout, stderr bytes.Buffer
+	code := run([]string{"--root", root, "prd", "validate", "2026-ghost",
+		"--platform", "comms"}, &stdout, &stderr)
+	if code != int(model.ExitWorkspace) {
+		t.Fatalf("run() = %d, want %d\nstdout: %s\nstderr: %s",
+			code, model.ExitWorkspace, stdout.String(), stderr.String())
+	}
 	if !strings.Contains(stderr.String(), "no active PRD at") {
-		t.Errorf("stderr = %q, want it to name the active path", stderr.String())
+		t.Errorf("stderr = %q, want the unchanged not-found sentence", stderr.String())
 	}
 }
 
