@@ -2,10 +2,34 @@
 type: tasks
 id: tasks-okf-provenance-and-indexes
 title: OKF Provenance and Indexes — Tasks
-status: draft
+status: completed
 ---
 
 # OKF Provenance and Indexes — Tasks
+
+**All 22 stories landed 2026-08-26** on branch `okf-provenance-and-indexes`.
+`make check` green; both goldens moved deliberately and were reviewed line by
+line; `acceptance.sh --update` never used to clear a red build.
+
+**Four requirements were amended during the work, each with the trace recorded
+in the EARS rather than silently implemented:**
+
+| ID | What was wrong |
+| --- | --- |
+| R-2.10 | Would have failed gate 5 on a hand-written `index.md`, contradicting the settled `CLAUDE.md` hand-owned precedent and adding a blocking check (I1). |
+| R-2.4 | Specified dead code — `kindTag["index"]` is unreachable once `index.md` is in `skipNames`. |
+| R-6.2 | Impossible as written: only one of the federated fixture's four roots is a slice, and R-2.6 requires indexes in two of the others. |
+| R-4.7 | Narrowed to `outcome.md`. The scaffolded templates produce an empty stub, so claiming `generated: {by: company-os/…}` would attribute authorship the tool does not have. |
+
+**Two estimates ran over**, both because a sync point was invisible from the
+plan: 1.2 (~50m → ~75m, four template sync points not two) and 1.4 (~15m → ~25m,
+rewritten as a symmetry assertion). Story 2.3 ran *under* — one wiring site, not
+seven.
+
+**Still open, inherited from the parent change:** several fixture documents have
+no `title:`, so their index entries render as raw `id:` URIs
+(`team-standard://customer-engagement/definition-of-done`). That is task 3.4 of
+`okf-v02-conformance`. The indexes will read considerably better once it lands.
 
 Source of truth: `docs/ears/okf-provenance-and-indexes.md` (Units 1–6).
 Architecture constraints: `docs/lld/okf-provenance-and-indexes.md`.
@@ -278,7 +302,7 @@ person; Unit 6 is last and verifies the whole diff at once.
     one. No code was needed; the exclusion is a property of the input.
   - landed: 026a173 — same commit as 2.3, see the note there for why.
 
-- [ ] 2.5 Honour a hand-written `index.md` (deps: 2.3, est: ~20m, mutex: cli)
+- [x] 2.5 Honour a hand-written `index.md` (deps: 2.3, est: ~20m, mutex: cli)
   - why: **Corrected during pre-mortem.** The first spec draft would have failed
     gate 5 on a marker-less `index.md`. That contradicts the decision this repo
     already settled for `CLAUDE.md` and would have added a blocking check,
@@ -290,13 +314,12 @@ person; Unit 6 is last and verifies the whole diff at once.
     `internal/graph/gates.go:291`.
   - verify: place a hand-written `index.md` in a qualifying directory; `derive`
     leaves it byte-identical and `validate` exits 0 with a hand-owned line.
-  - landed:
-
+  - landed: 5037619 — internal/graph/index_test.go — behaviour landed by construction in 026a173; this is the test. Asserted from both sides: the write path must not clobber a hand-written index, and the stale sweep must not delete it.
 ---
 
 ## Unit 3 — Index drift detection
 
-- [ ] 3.1 Report index drift inside gate 5 (deps: 2.3, est: ~55m, mutex: cli, goldens)
+- [x] 3.1 Report index drift inside gate 5 (deps: 2.3, est: ~55m, mutex: cli, goldens)
   - why: An index is a generated artifact and I4 makes derived-vs-authored a hard
     boundary. A silently stale index is worse than none, because a reader trusts
     it. Gate 5 is the right home: adding a gate would renumber, violating I5.
@@ -310,9 +333,8 @@ person; Unit 6 is last and verifies the whole diff at once.
     duplicated; the header string is asserted byte-identical by test, not by eye —
     it is a frozen string under I5 and the header will now under-describe its
     contents by design.
-  - landed:
-
-- [ ] 3.2 Confirm absence tolerance survives (deps: 3.1, est: ~20m)
+  - landed: 5037619 — internal/graph/gates.go (indexFindings), internal/model/codes.go, examples goldens. Header byte-identical; first cut emitted ONE global line and was corrected to per-federation-root per R-3.5.
+- [x] 3.2 Confirm absence tolerance survives (deps: 3.1, est: ~20m)
   - why: Invariant I2 is the standalone-team on-ramp promise. A drift check that
     assumes four federation roots breaks the fixture that proves three can be
     missing.
@@ -320,13 +342,12 @@ person; Unit 6 is last and verifies the whole diff at once.
     three of four federation roots absent, and generates zero indexes.
   - verify: `company-os --root examples/standalone-team validate` exits 0;
     `find examples/standalone-team -name index.md` returns nothing.
-  - landed:
-
+  - landed: 5037619 — verified on examples/standalone-team — 0 indexes, gate 5 emits nothing for a root with no qualifying directory, validate exits 0.
 ---
 
 ## Unit 4 — `generated:` and `verified:` provenance
 
-- [ ] 4.1 Define the field shapes and actor convention (est: ~40m)
+- [x] 4.1 Define the field shapes and actor convention (est: ~40m)
   - why: The largest conceptual gap in the system. The whole `skills/` layer exists
     to direct agents producing PRDs and briefs, and nothing records that a document
     was agent-drafted rather than written by a person.
@@ -337,9 +358,8 @@ person; Unit 6 is last and verifies the whole diff at once.
   - verify: `FRONTMATTER-CORE.md` promotes both from the reserved-inert list the
     parent's task 1.6 created, and the two documents do not disagree about the
     shapes.
-  - landed:
-
-- [ ] 4.2 Prove nested-collection round-trip (deps: 4.1, est: ~50m, mutex: cli)
+  - landed: d41cbb9 — company-os-starter/docs/FRONTMATTER-CORE.md (new Provenance section: shapes, actor convention, tier table).
+- [x] 4.2 Prove nested-collection round-trip (deps: 4.1, est: ~50m, mutex: cli)
   - why: This is the one place the change can corrupt user data silently.
     `TestRewriteFrontmatterTagsPreservesUnknownKeys` uses a plain string scalar and
     does **not** cover a mapping or a sequence-of-mappings. Those re-layout through
@@ -351,9 +371,8 @@ person; Unit 6 is last and verifies the whole diff at once.
   - verify: the test asserts byte equality of the frontmatter block before and
     after `derive`, not just key presence. Run it twice — idempotency here is what
     the double-build check would otherwise catch far too late.
-  - landed:
-
-- [ ] 4.3 Derive the trust tier (deps: 4.1, est: ~35m, mutex: cli)
+  - landed: d41cbb9 — internal/graph/provenance_test.go (TestProvenanceFieldsSurviveDerive) — asserts byte equality of the whole frontmatter block across two derive runs, against the mapping and sequence-of-mappings shapes R-4.6 names.
+- [x] 4.3 Derive the trust tier (deps: 4.1, est: ~35m, mutex: cli)
   - why: The signal the fields exist to produce. Keeping it computed-at-read and
     unstored is what stops it becoming a fourth approval field that can disagree
     with the other three.
@@ -363,9 +382,8 @@ person; Unit 6 is last and verifies the whole diff at once.
     decision depends on it.
   - verify: grep confirms no gate consumes the tier; a table test covers the three
     tiers plus the empty-list edge case.
-  - landed:
-
-- [ ] 4.4 Emit `generated:` where the producer is known (deps: 4.1, 4.2, est: ~40m, mutex: cli, templates)
+  - landed: d41cbb9 — internal/graph/provenance.go (TrustTier) + TestTrustTierNeverGates, which greps the four gate-producing packages so a future gate must edit that list first.
+- [x] 4.4 Emit `generated:` where the producer is known (deps: 4.1, 4.2, est: ~40m, mutex: cli, templates)
   - why: Without an emitter the field only ever appears if a human types it, which
     is precisely the population it is least useful for.
   - acceptance: R-4.7 — a producing command writing a document emits
@@ -373,13 +391,12 @@ person; Unit 6 is last and verifies the whole diff at once.
     unchanged and resolves to *unverified*.
   - verify: scaffold a document and confirm the field is present and well-formed;
     strip both fields from another and confirm `validate` output is unchanged.
-  - landed:
-
+  - landed: d41cbb9 — internal/product/prd.go (outcomeDoc). NARROWED: only outcome.md emits generated:, because it is the one document whose CONTENT producer is known. Templates deliberately excluded — see the note below.
 ---
 
 ## Unit 5 — One-way derivation from existing approval fields
 
-- [ ] 5.1 Derive `verified:` from `decisionOwner` / `approvedBy` (deps: 4.3, est: ~45m, mutex: cli)
+- [x] 5.1 Derive `verified:` from `decisionOwner` / `approvedBy` (deps: 4.3, est: ~45m, mutex: cli)
   - why: Without it the trust tier reads *unverified* for every document in every
     fixture on the day it ships — a signal with no signal. Derivation makes it
     meaningful without touching approval semantics, which is what made full
@@ -391,9 +408,8 @@ person; Unit 6 is last and verifies the whole diff at once.
   - verify: `git diff` over the fixtures after a full `derive` shows no change to
     any approval field; a test asserts the `TODO` case derives an empty list, not
     an entry with a `TODO` actor.
-  - landed:
-
-- [ ] 5.2 Warn on a literal `TODO` in `approvedBy` (deps: 5.1, est: ~30m, mutex: cli, goldens)
+  - landed: d41cbb9 — internal/graph/provenance.go (VerifiedActors). Bug found: PyString renders an absent key as Python's "None", so the first cut derived human:None for every document lacking approvedBy.
+- [x] 5.2 Warn on a literal `TODO` in `approvedBy` (deps: 5.1, est: ~30m, mutex: cli, goldens)
   - why: `internal/scaffold/template.go:67` scaffolds `decisionOwner: TODO` and it
     hard-fails `prd validate`; `internal/governance/declare.go:121` scaffolds
     `approvedBy: 'TODO: rule owner'` and it passes. The asymmetry is real and
@@ -407,13 +423,12 @@ person; Unit 6 is last and verifies the whole diff at once.
   - note: this is a deliberate departure from the parent's R-5.3 ("no new warn
     line"), which constrained a documentation-only change and does not bind this
     one. Recorded in the LLD as Key Decision 3.
-  - landed:
-
+  - landed: d41cbb9 — internal/governance/gates.go + internal/model/codes.go (CodeExceptionApproverTODO, IsTODO relocated to model). Three warn lines in the goldens, zero ok->fail.
 ---
 
 ## Unit 6 — Fixtures, compatibility, and verification
 
-- [ ] 6.1 Backfill `description:` across the two monorepo fixtures (deps: 1.4, 2.2, est: ~80m, mutex: fixtures)
+- [x] 6.1 Backfill `description:` across the two monorepo fixtures (deps: 1.4, 2.2, est: ~80m, mutex: fixtures)
   - why: This is where the rubric earns its keep or the whole unit degrades into
     filename restatement. Do it with the index rendered, side by side — the test
     for a bad description is whether it still reads true pasted onto a sibling, and
@@ -426,9 +441,8 @@ person; Unit 6 is last and verifies the whole diff at once.
     2 `EXAMPLE_README.md`, and `platforms/communications/log.md` — the same
     allowlist the parent's task 3.4 established); then read every new description
     against its siblings and cut the ones that pass the grep but fail R-1.3.
-  - landed:
-
-- [ ] 6.2 Regenerate indexes and `CLAUDE.md` blocks in the same commit (deps: 6.1, est: ~25m, mutex: fixtures, goldens)
+  - landed: 45e188c — 15 descriptions across both monorepo fixtures, written with the indexes rendered side by side.
+- [x] 6.2 Regenerate indexes and `CLAUDE.md` blocks in the same commit (deps: 6.1, est: ~25m, mutex: fixtures, goldens)
   - why: Adding descriptions changes what both the index renderer and
     `buildClaudeNode` emit, so committed generated state goes stale the moment 6.1
     lands. The harness's double-build check requires the committed workspace to be
@@ -439,9 +453,8 @@ person; Unit 6 is last and verifies the whole diff at once.
   - verify: `examples/acceptance.sh` §4 reports "committed state fully derived +
     idempotent" for both monorepo fixtures; `find examples -name index.md | wc -l`
     is 3.
-  - landed:
-
-- [ ] 6.3 Add the `init` → `validate` acceptance case (deps: 2.3, est: ~40m)
+  - landed: 45e188c — 3 indexes in examples/workspace, 0 in standalone-team; committed with the backfill so the double-build check stays green.
+- [x] 6.3 Add the `init` → `validate` acceptance case (deps: 2.3, est: ~40m)
   - why: **Found in pre-mortem — this is a real coverage hole, not a nicety.**
     `examples/acceptance.sh` never runs `company-os init` followed by `validate`;
     its only `init` is `git init` for the federated source fixture (`:171`). The
@@ -451,9 +464,8 @@ person; Unit 6 is last and verifies the whole diff at once.
     directory then `company-os validate`, asserting exit 0.
   - verify: temporarily revert task 2.3's wiring and confirm the new case goes red.
     A test that cannot fail is not a test.
-  - landed:
-
-- [ ] 6.4 Re-baseline the goldens deliberately (deps: 3.1, 5.2, 6.2, est: ~35m, mutex: goldens)
+  - landed: 45e188c — examples/acceptance.sh section 4b. Mutation-checked: stubbing WriteIndexes makes it fail at the VALIDATE step.
+- [x] 6.4 Re-baseline the goldens deliberately (deps: 3.1, 5.2, 6.2, est: ~35m, mutex: goldens)
   - why: This change legitimizes moving files the parent froze, which is exactly
     how a regression gets buried. The defence is that every moved line is
     predicted before it is accepted.
@@ -463,9 +475,8 @@ person; Unit 6 is last and verifies the whole diff at once.
   - verify: before re-baselining, write down the expected diff — new gate-5 index
     lines, one warn line from 5.2, and nothing else. Any line outside that
     prediction is a regression to diagnose, not a baseline to refresh.
-  - landed:
-
-- [ ] 6.5 Backward-compatibility pass (deps: 6.3, 6.4, est: ~45m)
+  - landed: 45e188c — goldens moved only where a change caused it; acceptance.sh --update appears zero times in this branch's history.
+- [x] 6.5 Backward-compatibility pass (deps: 6.3, 6.4, est: ~45m)
   - why: Every requirement here is a veto over the rest of the change. Verified
     once at the end against the whole diff rather than assumed per unit.
   - acceptance: R-6.2 — `git diff --stat examples/federated` empty;
@@ -477,4 +488,4 @@ person; Unit 6 is last and verifies the whole diff at once.
   - verify: `make check` exits 0; `git log -p` for the change contains no
     `acceptance.sh --update`; `git diff` against the merge base shows nothing under
     `examples/federated/` or `examples/banking/`.
-  - landed:
+  - landed: 45e188c — slice paths untouched, federated gate 9 green (4 files / 1 repo / no hand-edits), banking untouched, make check exits 0.
