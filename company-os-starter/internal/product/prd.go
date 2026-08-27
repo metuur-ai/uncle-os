@@ -591,9 +591,24 @@ func shutilMove(src, dst string) error {
 	return nil
 }
 
-// outcomeDoc is the outcome review written at `:701-706`, byte for byte.
+// outcomeDoc is the outcome review written at `:701-706`.
+//
+// It was byte for byte with Python until story 1.3 of okf-provenance-and-indexes
+// added `description:` (R-1.6). Nothing pins this string to a frozen oracle the
+// way TestBuiltinsMatchPythonModuleStrings pins the two scaffold constants, so
+// the divergence is recorded here or nowhere.
+//
+// The value is rendered, not a `<...>` placeholder like the three hand-authored
+// templates: this document is machine-written, and a placeholder would mean every
+// archived outcome ships unfilled boilerplate. The due date is deliberate — it is
+// the one fact not already derivable from the filename, the `type:` or the path,
+// which is what the R-1.2 rubric asks of a description.
+//
+// @spec req://uncle-os/okf-provenance-and-indexes@0.1#R-1.6
 func outcomeDoc(id, due, title string) string {
-	return "---\ntype: outcome-review\nprd: " + id + "\ndue: " + due + "\nstatus: pending\n" +
+	return "---\ntype: outcome-review\nprd: " + id +
+		"\ndescription: \"Outcome review for " + title + ", due " + due + ".\"" +
+		"\ndue: " + due + "\nstatus: pending\n" +
 		"tags: [kind/outcome, prd/" + id + ", status/pending]\n---\n\n" +
 		"# Outcome review: " + title + "\n\n" +
 		"## Success metrics vs. actuals\n\n## Verdict\n\n## Learnings\n"
