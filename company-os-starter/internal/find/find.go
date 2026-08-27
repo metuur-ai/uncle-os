@@ -543,10 +543,12 @@ func runGraphifyHook(ws *workspace.Workspace, query string) *model.GateResult {
 	}
 	if binErr == nil && !graphExists {
 		_ = binaryPath // used only to confirm presence
+		// The binary is installed, so "install it" would be a lie: what is
+		// missing is the graph itself. Name the fix the user can run.
 		s.Findings = append(s.Findings, model.Finding{
 			Severity: model.SevOK,
 			Code:     model.CodeFindGraphifyHint,
-			Message:  "graphify not detected — install it for graph search",
+			Message:  "graphify installed but no graphify-out/graph.json here — run graphify to build the graph",
 		})
 		return &s
 	}
