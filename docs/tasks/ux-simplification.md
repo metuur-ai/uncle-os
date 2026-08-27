@@ -138,10 +138,19 @@ with the task box checked in the same commit.
     `validate` (no flag) is byte-identical to today.
     Known limitation (pre-existing, NOT introduced here): the tags writer
     re-emits the whole frontmatter document, so fixing a drifted tag in one
-    doc can reflow the scalar style of its non-derived fields (e.g. a quoted
-    `description:` becomes block-wrapped). `graph build` behaves identically;
-    the output stays YAML-equivalent and every gate green. A style-preserving
-    emitter is a separate yamlio project, deliberately not in scope.
+    doc can reflow the scalar style of its non-derived fields. `graph build`
+    behaves identically; the output stays YAML-equivalent and every gate green.
+    A fully style-preserving emitter is a separate yamlio project, deliberately
+    not in scope.
+    **Partially fixed 2026-08-27** (`yamlio.PyDumpFrontmatter`): top-level
+    `title:` and `description:` are now pinned — when the value is a string
+    carrying any character outside `[A-Za-z0-9 ]` it is emitted double-quoted
+    on one unfolded line, so the case that motivated this note (a quoted
+    `description: "…3.0%…"` coming back block-folded across two lines) no
+    longer churns. Still open: every OTHER scalar in the block is still
+    re-styled by PyYAML's own rules, a `title`/`description` of only letters,
+    digits and spaces is left exactly as before, and nested `title:` keys
+    deeper in the tree are untouched.
   - acceptance: hand-drift a tag and an index in a scratch copy of
     `examples/workspace`, run `validate --fix` → exit 0, drift gone, second run
     reports 0 regenerated. Without `--fix` the same drift still fails the same

@@ -211,6 +211,157 @@ func TestAutoFlowIsAFixedPoint(t *testing.T) {
 	}
 }
 
+// frontmatterQuoteCases pin PyDumpFrontmatter's one divergence from safe_dump:
+// a TOP-LEVEL `title:`/`description:` string carrying any rune outside
+// [A-Za-z0-9 ] is emitted double-quoted on one unfolded line. Everything else —
+// another key, a nested title, a non-string value, a value of only letters,
+// digits and spaces — must come out exactly as PyDumpAutoFlow emits it, which
+// the companion assertion in TestFrontmatterQuotesTitleAndDescription checks
+// case by case rather than by eye.
+var frontmatterQuoteCases = []struct {
+	name     string
+	yaml     string
+	want     string
+	diverges bool
+}{
+	{
+		name:     "description-with-percent-stays-one-line",
+		yaml:     "type: prd\ndescription: \"Targets push opt-out below 3.0% within 60 days, with urgent messages deliberately exempt from the window.\"\ntags: [kind/prd]\n",
+		want:     "type: prd\ndescription: \"Targets push opt-out below 3.0% within 60 days, with urgent messages deliberately exempt from the window.\"\ntags: [kind/prd]\n",
+		diverges: true,
+	},
+	{
+		name:     "title-with-hyphen",
+		yaml:     "title: Per-channel quiet hours\ntags: [kind/prd]\n",
+		want:     "title: \"Per-channel quiet hours\"\ntags: [kind/prd]\n",
+		diverges: true,
+	},
+	{
+		name:     "description-with-double-quote-is-escaped",
+		yaml:     "description: 'He said \"no\" twice'\ntags: [kind/prd]\n",
+		want:     "description: \"He said \\\"no\\\" twice\"\ntags: [kind/prd]\n",
+		diverges: true,
+	},
+	{
+		name:     "title-alphanumeric-and-spaces-unchanged",
+		yaml:     "title: Quiet hours v2\ntags: [kind/prd]\n",
+		want:     "title: Quiet hours v2\ntags: [kind/prd]\n",
+		diverges: false,
+	},
+	{
+		name:     "other-key-with-the-same-value-unchanged",
+		yaml:     "summary: Per-channel quiet hours\ntags: [kind/prd]\n",
+		want:     "summary: Per-channel quiet hours\ntags: [kind/prd]\n",
+		diverges: false,
+	},
+	{
+		name:     "nested-title-unchanged",
+		yaml:     "pointers:\n  - {title: Per-channel quiet hours, url: 'https://example.invalid/x'}\ntags: [kind/prd]\n",
+		want:     "pointers:\n- {title: Per-channel quiet hours, url: 'https://example.invalid/x'}\ntags: [kind/prd]\n",
+		diverges: false,
+	},
+	{
+		name:     "non-string-title-unchanged",
+		yaml:     "title: 2026-07-18\ntags: [kind/prd]\n",
+		want:     "title: 2026-07-18\ntags: [kind/prd]\n",
+		diverges: false,
+	},
+	{
+		name:     "empty-description-unchanged",
+		yaml:     "description: ''\ntags: [kind/prd]\n",
+		want:     "description: ''\ntags: [kind/prd]\n",
+		diverges: false,
+	},
+	{
+		name:     "unicode-title-escapes-like-safe-dump",
+		yaml:     "title: Café hours\ntags: [kind/prd]\n",
+		want:     "title: \"Caf\\xE9 hours\"\ntags: [kind/prd]\n",
+		diverges: false, // safe_dump already double-quotes it; only the fold could differ.
+	},
+}
+
+// TestFrontmatterQuotesTitleAndDescription is the rule itself, plus the scope
+// claim: every non-diverging case must be byte-identical to PyDumpAutoFlow, so a
+// future widening of the rule cannot pass unnoticed.
+func TestFrontmatterQuotesTitleAndDescription(t *testing.T) {
+	for _, c := range frontmatterQuoteCases {
+		t.Run(c.name, func(t *testing.T) {
+			loaded := loadString(t, c.yaml)
+			got, err := PyDumpFrontmatter(loaded)
+			if err != nil {
+				t.Fatalf("PyDumpFrontmatter: %v", err)
+			}
+			if got != c.want {
+				t.Fatalf("PyDumpFrontmatter\n--- want\n%s--- got\n%s", c.want, got)
+			}
+			auto, err := PyDumpAutoFlow(loaded)
+			if err != nil {
+				t.Fatalf("PyDumpAutoFlow: %v", err)
+			}
+			if c.diverges && got == auto {
+				t.Fatalf("expected a divergence from safe_dump, got the same bytes:\n%s", got)
+			}
+			if !c.diverges && got != auto {
+				t.Fatalf("out-of-scope case diverged from safe_dump\n--- auto\n%s--- got\n%s",
+					auto, got)
+			}
+		})
+	}
+}
+
+// TestFrontmatterQuotingRoundTrips is the correctness constraint: a style change
+// may not become a value change. Re-loading the emitted document must give back
+// the identical object.
+func TestFrontmatterQuotingRoundTrips(t *testing.T) {
+	for _, c := range frontmatterQuoteCases {
+		t.Run(c.name, func(t *testing.T) {
+			loaded := loadString(t, c.yaml)
+			got, err := PyDumpFrontmatter(loaded)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if back := loadString(t, got); !PyEqual(loaded, back) {
+				t.Fatalf("value changed across the emit\n--- in\n%s--- out\n%s", c.yaml, got)
+			}
+		})
+	}
+}
+
+// TestFrontmatterQuotingIsAFixedPoint is TestAutoFlowIsAFixedPoint for the new
+// entry point: a document this emitter wrote must re-emit unchanged, or
+// `graph build; graph build` would stop being a no-op diff (R-0.6).
+func TestFrontmatterQuotingIsAFixedPoint(t *testing.T) {
+	cases := append([]struct {
+		name     string
+		yaml     string
+		want     string
+		diverges bool
+	}{}, frontmatterQuoteCases...)
+	for _, c := range flowCorpus {
+		cases = append(cases, struct {
+			name     string
+			yaml     string
+			want     string
+			diverges bool
+		}{name: c.name, yaml: strings.TrimLeft(c.yaml, "\n")})
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			once, err := PyDumpFrontmatter(loadString(t, c.yaml))
+			if err != nil {
+				t.Fatal(err)
+			}
+			twice, err := PyDumpFrontmatter(loadString(t, once))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if once != twice {
+				t.Fatalf("not a fixed point\n--- once\n%s--- twice\n%s", once, twice)
+			}
+		})
+	}
+}
+
 func TestPyEqual(t *testing.T) {
 	cases := []struct {
 		name string

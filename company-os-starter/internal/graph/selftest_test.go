@@ -106,6 +106,61 @@ func TestRewriteFrontmatterTagsPreservesUnknownKeys(t *testing.T) {
 	}
 }
 
+// TestTagRewriteKeepsDescriptionOnOneLine is the wiring half of yamlio's
+// TestFrontmatterQuotesTitleAndDescription: fixing a drifted tag re-emits the
+// whole frontmatter mapping, and before PyDumpFrontmatter that re-emission
+// turned an authored one-line `description: "…3.0%…"` into a two-line plain
+// scalar. The percent sign and the hyphen in the title are what put both fields
+// on the special-character side of the rule.
+func TestTagRewriteKeepsDescriptionOnOneLine(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "prd.md")
+	const desc = `"Targets push opt-out below 3.0% within 60 days, with urgent messages exempt."`
+	src := "---\ntype: prd\nid: x\ntitle: Per-channel quiet hours\ndescription: " +
+		desc + "\ntags: [drifted]\n---\n\nbody\n"
+	if err := os.WriteFile(path, []byte(src), 0o666); err != nil {
+		t.Fatal(err)
+	}
+	meta, _, err := ReadFrontmatter(path)
+	if err != nil {
+		t.Fatalf("ReadFrontmatter: %v", err)
+	}
+	tags, err := DeriveTags(meta, nil)
+	if err != nil {
+		t.Fatalf("DeriveTags: %v", err)
+	}
+	changed, err := RewriteFrontmatterTags(path, tags)
+	if err != nil {
+		t.Fatalf("RewriteFrontmatterTags: %v", err)
+	}
+	if !changed {
+		t.Fatal("the tag rewrite reported no change; nothing was exercised")
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(raw)
+	if !strings.Contains(got, "\ndescription: "+desc+"\n") {
+		t.Errorf("description was reflowed or restyled; file is:\n%s", got)
+	}
+	if !strings.Contains(got, "\ntitle: \"Per-channel quiet hours\"\n") {
+		t.Errorf("title was not double-quoted; file is:\n%s", got)
+	}
+	// The value, not just the shape: a style change may not become a value
+	// change.
+	after, _, err := ReadFrontmatter(path)
+	if err != nil {
+		t.Fatalf("ReadFrontmatter after rewrite: %v", err)
+	}
+	if !yamlio.PyEqual(after.Get("description"), meta.Get("description")) {
+		t.Errorf("description value changed: %v -> %v",
+			meta.Get("description"), after.Get("description"))
+	}
+	if !yamlio.PyEqual(after.Get("title"), meta.Get("title")) {
+		t.Errorf("title value changed: %v -> %v", meta.Get("title"), after.Get("title"))
+	}
+}
+
 // ---------------------------------------------- generated-block states
 
 // rewriteBlock is selftest.py's rewrite() helper (`:24-31`): write initial (or

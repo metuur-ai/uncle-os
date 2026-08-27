@@ -287,10 +287,13 @@ func graphRoots(ws *workspace.Workspace) []string {
 // read-modify-write that re-serializes the frontmatter but never re-implements
 // the fence parse. It reports whether the file changed.
 //
-// The emitter is PyDumpAutoFlow, not PyDump: safe_dump runs here with
+// The emitter is PyDumpFrontmatter, not PyDump: safe_dump runs here with
 // default_flow_style=None, which is what makes committed frontmatter read
 // `tags: [a, b]` inline. Dumping in block style would rewrite every document on
-// the first build.
+// the first build. PyDumpFrontmatter adds the one divergence this write path
+// motivates — a top-level `title:`/`description:` carrying a special character
+// is pinned to a single double-quoted line, so re-emitting the whole mapping to
+// fix one tag stops reflowing the authored prose around it.
 //
 // The write error carries its cause; the serialize error above it does not,
 // because a YAML emitter failure is not a filesystem condition anyone classifies.
@@ -315,7 +318,7 @@ func RewriteFrontmatterTags(path string, tags []string) (bool, error) {
 	// appended. That is why a re-tagged document does not also get its keys
 	// reordered.
 	meta = meta.Set("tags", want)
-	fm, err := yamlio.PyDumpAutoFlow(meta)
+	fm, err := yamlio.PyDumpFrontmatter(meta)
 	if err != nil {
 		return false, model.Errorf(model.ExitArtifact, "cannot serialize %s: %v", path, err)
 	}

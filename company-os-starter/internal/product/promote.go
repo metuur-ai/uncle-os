@@ -563,12 +563,13 @@ func promotedRecordMeta(draft yamlio.PyMap) yamlio.PyMap {
 // writeArtifact is the read-modify-write half of RewriteFrontmatterTags, without
 // the tag question: re-emit a mapping over an unchanged body.
 //
-// The emitter is PyDumpAutoFlow for the same reason the tag rewriter uses it —
-// safe_dump's default_flow_style=None is what every committed frontmatter block
-// in this workspace was written with, so anything else would rewrite files it
-// did not mean to touch.
+// The emitter is PyDumpFrontmatter for the same reason the tag rewriter uses it
+// — safe_dump's default_flow_style=None is what every committed frontmatter
+// block in this workspace was written with, so anything else would rewrite files
+// it did not mean to touch, and its `title:`/`description:` rule keeps a
+// promoted record's authored prose on the line the author put it on.
 func writeArtifact(path string, meta yamlio.PyMap, body []byte) error {
-	fm, err := yamlio.PyDumpAutoFlow(meta)
+	fm, err := yamlio.PyDumpFrontmatter(meta)
 	if err != nil {
 		return model.Errorf(model.ExitArtifact, "cannot serialize %s: %v", path, err)
 	}
