@@ -311,41 +311,63 @@ note: mandatory rules require approval by the rule owner before this is valid.
 
 ```bash
 $ company-os validate
-[1/7] ownership reconciliation
+validating workspace /path/to/examples/workspace
+
+[1/8] ownership reconciliation
   [ok] customer-notification-service: registry and descriptor agree (communications)
-[2/7] deviation and exception expiry
-  [ok] customer-engagement: deviation platform-standard://communications/prd-structure current (review 2027-01-15)
-  [ok] customer-engagement: deviation company-standard://estimation/story-points current (review 2027-01-14)
-  [ok] customer-engagement: exception platform-standard://communications/message-schema valid until 2026-12-31
-[3/7] active PRD contracts
-[4/7] frontmatter core and tag derivation (interop contract)
-  [ok] platforms/communications/reality/components/customer-notification-service.md: frontmatter core and tags in sync
-[5/7] CLAUDE.md context node drift (fail-safe, absence-tolerant)
+
+[2/8] deviation and exception expiry
+  [ok] customer-engagement: deviation platform-standard://communications/prd-structure current (review 2035-01-15)
+  [ok] customer-engagement: deviation company-standard://estimation/story-points current (review 2035-01-14)
+  [warn] customer-engagement: exception for platform-standard://communications/message-schema is approved by a placeholder (TODO: rule owner) — replace it with the rule owner
+  [ok] customer-engagement: exception platform-standard://communications/message-schema valid until 2035-12-31
+
+[3/8] active PRD contracts
+
+[4/8] frontmatter core and tag derivation (interop contract)
+  [ok] company-os/onboarding/developer.md: core fields + tags in sync
+  ...                                       # one line per frontmatter document
+  [ok] company-ontology/contexts/communications.md: core fields + tags in sync
+
+[5/8] CLAUDE.md context node drift (fail-safe, absence-tolerant)
   [ok] company-os/CLAUDE.md: context node in sync
   [ok] platforms/communications/CLAUDE.md: context node in sync
   [ok] teams/customer-engagement/CLAUDE.md: context node in sync
   [ok] company-ontology/CLAUDE.md: context node in sync
-[6/7] feature-index drift (derived component->artifact map)
+  [ok] platforms/communications: directory indexes in sync (1 index(es))
+  [ok] teams/customer-engagement: directory indexes in sync (1 index(es))
+  [ok] company-ontology: directory indexes in sync (1 index(es))
+
+[6/8] feature-index drift (derived component->artifact map)
   [ok] communications: feature-index in sync (1 component(s))
-[7/7] custom skills layering (shadowing + extends resolution)
-  [ok] skills layered cleanly (1 canonical, 0 team, 1 personal; no shadowing or dangling extends)
+
+[7/8] custom skills layering (shadowing + extends resolution)
+  [ok] skills layered cleanly (2 canonical, 0 team; no shadowing or dangling extends)
+
+[8/8] promotion integrity (promoted drafts match their change records)
+
 PASS
 ```
 
-The gate count is dynamic: the seven gates above run in monorepo mode. In a
-**federated** workspace (a `workspace.yaml` manifest is present) validate adds an
-eighth gate — `[8/8] federated slice integrity` — which fails if a materialized
+Note the `[warn]` in gate 2: warnings name something worth fixing (here, an
+exception still carrying the placeholder approver `company-os exception request`
+wrote) but they do not fail the gate. Only `[FAIL]` lines count as problems.
+
+The gate count is dynamic: the eight gates above run in monorepo mode. In a
+**federated** workspace (a `workspace.yaml` manifest is present) validate adds a
+ninth gate — `[9/9] federated slice integrity` — which fails if a materialized
 governance slice was hand-edited (its content hash no longer matches
-`workspace.lock.yaml`). With no manifest the eighth gate does not exist and the
-output is byte-for-byte the seven-gate form above.
+`workspace.lock.yaml`). With no manifest the ninth gate does not exist and the
+output is byte-for-byte the eight-gate form above.
 
 It fails (exit 1, blocking merge) when: a team claims ownership the component
 descriptor doesn't confirm (single-source rule), a deviation passes its
 `reviewDate`, an exception is missing or past its `expires`, an active PRD
 is missing contract fields, a doc's frontmatter core or derived tags drift, a
-generated `CLAUDE.md` context node is stale, or a platform's derived
-`feature-index.yaml` is out of date. The last three gates are absence-tolerant
-— they pass when the artifact is absent. Wire it as CI:
+generated `CLAUDE.md` context node or per-directory `index.md` is stale, a
+platform's derived `feature-index.yaml` is out of date, or a promoted draft no
+longer matches its change record. The absence-tolerant gates pass when the
+artifact is absent. Wire it as CI:
 
 ```yaml
 # .github/workflows/os-validate.yml (any OS repo)
