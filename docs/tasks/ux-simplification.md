@@ -179,7 +179,8 @@ with the task box checked in the same commit.
 
 ## Phase 4 — A real one-team on-ramp (Unit 5)
 
-- [ ] 4.1 `examples/standalone-team` becomes a working minimal workspace (est: ~2h)
+- [x] 4.1 `examples/standalone-team` becomes a working minimal workspace (est: ~2h)
+  **LANDED 2026-08-27** — rebuilt as a real one-of-everything workspace (company baseline, platform `core` + component `solo-service`, team `solo`) built with `init`/`add component`/`reality new`/`governance resolve`/`graph build`, fully derived and idempotent; `validate` exits 0, `next`/`today`/`find` work flag-free. Amendment: the pre-existing `TestIsRootStandaloneTeamFixture` (ST-013) asserted the fixture stayed teams/-only forever — that assumption is exactly what this unit changes, so the test was updated to assert IsRoot() on the fixture's new (multi-root) shape instead; the single-root case it used to prove is still covered by `TestIsRoot`'s synthetic "canonical dir" case, per that file's own header comment.
   - why: the small-team on-ramp is nominal — `standalone-team` today holds an
     onboarding README, not a workspace, while `init` always scaffolds the full
     four-root federation. Every adopter pays federation cognitive cost on day

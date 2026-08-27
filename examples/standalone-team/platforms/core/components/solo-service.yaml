@@ -1,0 +1,17 @@
+schemaVersion: '1.0'
+kind: Component
+metadata:
+  id: solo-service
+  name: Solo Service
+  type: service
+  status: active
+ownership:
+  accountableTeam: team://solo
+  repository: repo://solo-service
+platformRelationships:
+- platform: platform://core
+  relationship: belongs-to
+tags:
+- component/solo-service
+- kind/component
+- platform/core

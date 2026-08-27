@@ -1,0 +1,11 @@
+schemaVersion: '1.0'
+kind: IdRegistry
+ids:
+- id: platform://core
+  definedIn: platforms/core/platform.yaml
+- id: team://solo
+  definedIn: teams/solo/team.yaml
+- id: component://solo-service
+  definedIn: platforms/core/components/solo-service.yaml
+tags:
+- ontology/registry

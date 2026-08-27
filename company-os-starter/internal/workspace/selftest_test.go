@@ -38,24 +38,18 @@ func TestIsRootFullWorkspaceFixture(t *testing.T) {
 	}
 }
 
-// TestIsRootStandaloneTeamFixture is selftest.py:91-92 (ST-013): any ONE
-// canonical root suffices. examples/standalone-team has teams/ and nothing else,
-// which is the shape a team gets before it has a platform to belong to — if this
-// regressed, `company-os today` would refuse to run for exactly the users least
-// able to diagnose it.
+// TestIsRootStandaloneTeamFixture was selftest.py:91-92 (ST-013): any ONE
+// canonical root suffices, demonstrated by a teams/-only fixture. Task 4.1
+// (docs/tasks/ux-simplification.md) rebuilt examples/standalone-team into a
+// real, fully-validating minimal workspace — one company, one platform, one
+// team — so it is no longer teams/-only; the single-root shape ST-013 wanted
+// is still covered directly by TestIsRoot's synthetic "canonical dir" case.
+// What remains worth guarding here is the same thing TestIsRootFullWorkspaceFixture
+// guards for examples/workspace: this committed fixture, whatever its current
+// shape, must keep resolving as a workspace root, or `company-os today`/`next`
+// would refuse to run against the project's own one-team onboarding example.
 func TestIsRootStandaloneTeamFixture(t *testing.T) {
 	dir := fixtureDir(t, "standalone-team")
-	// Guard the guard: the assertion below is only meaningful while the fixture
-	// really is teams/-only.
-	for _, other := range []string{"company-os", "platforms", "company-ontology", KnowledgeRoot} {
-		if _, err := os.Stat(filepath.Join(dir, other)); err == nil {
-			t.Fatalf("%s grew a %s/ root; it no longer proves that one root suffices",
-				dir, other)
-		}
-	}
-	if _, err := os.Stat(filepath.Join(dir, "teams")); err != nil {
-		t.Fatalf("%s has no teams/ dir: %v", dir, err)
-	}
 	if !New(dir).IsRoot() {
 		t.Fatalf("%s is not recognised as a workspace root", dir)
 	}

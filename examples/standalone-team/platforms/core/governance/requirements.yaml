@@ -1,0 +1,8 @@
+schemaVersion: '1.0'
+kind: PlatformRequirements
+platform:
+  id: core
+requirements: []
+tags:
+- kind/requirements
+- platform/core
