@@ -97,7 +97,8 @@ with the task box checked in the same commit.
     and the empty case; `company-os next --root examples/workspace` exits 0;
     `make check` green with all goldens byte-identical.
 
-- [ ] 1.2 Context inference — validate/complete without `--platform`/`--team` (est: ~2h)
+- [x] 1.2 Context inference — validate/complete without `--platform`/`--team` (est: ~2h)
+  **LANDED 2026-08-26** — `prd validate`/`prd complete` infer `--platform` from `platforms/*/change-records/active/` and `platforms/*/archive/prds/`; `discover validate` infers `--team` from `teams/*/product/discovery/`; unique match proceeds, ambiguity lists every candidate, absence reports not-found; explicit flags always win.
   - why: `discover validate` requires `--team` and `prd validate`/`prd complete`
     require `--platform`: the user must already know where the artifact lives —
     i.e. its lifecycle stage — before the tool will check it. The descriptor

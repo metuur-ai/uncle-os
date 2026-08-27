@@ -152,7 +152,13 @@ var commandSpecs = []cmdSpec{
 				dest: func(a *Args) *string { return &a.TitleArg }},
 		},
 		flags: []flagSpec{
-			reqStrFlag("team", func(a *Args) *string { return &a.Team }),
+			// ux-simplification 1.2: --team stays required for `new` (which
+			// creates under it) but is suspended for `validate`, where the
+			// brief id can be searched across every team's product/discovery/.
+			// Help text covers both cases.
+			{name: "team", required: true,
+				help: "required unless the id is unique across the workspace",
+				str:  func(a *Args) *string { return &a.Team }},
 		},
 	},
 	{
@@ -164,7 +170,12 @@ var commandSpecs = []cmdSpec{
 		},
 		flags: []flagSpec{
 			strFlag("team", func(a *Args) *string { return &a.Team }),
-			reqStrFlag("platform", func(a *Args) *string { return &a.Platform }),
+			// ux-simplification 1.2: --platform stays required for `new` but
+			// is suspended for `validate` and `complete`, where the PRD id can
+			// be searched across every platform's active and archived records.
+			{name: "platform", required: true,
+				help: "required unless the id is unique across the workspace",
+				str:  func(a *Args) *string { return &a.Platform }},
 			{name: "components", def: "",
 				str: func(a *Args) *string { return &a.Components }},
 			strFlag("title", func(a *Args) *string { return &a.Title }),
@@ -625,8 +636,22 @@ func parseSubcommand(a *Args, spec cmdSpec, argv []string) ([]string, error) {
 		// going to no platform at all, so requiring one would make the command
 		// unreachable for the draft that most needs it — the one whose
 		// `promoteTo.platform` is still TODO.
+		//
+		// ux-simplification 1.2: `prd validate` and `prd complete` suspend it
+		// for a fourth reason — the PRD id can be searched across every
+		// platform's change-records/active/ and archive/prds/ by the dispatch
+		// layer (resolvePlatform), so the user need not know where the record
+		// lives before asking the tool to check it.
 		if spec.name == "prd" && f.name == "platform" &&
-			(seen["draft"] || a.Action == "promote" || a.Action == "abandon") {
+			(seen["draft"] || a.Action == "promote" || a.Action == "abandon" ||
+				a.Action == "validate" || a.Action == "complete") {
+			continue
+		}
+		// ux-simplification 1.2: `discover validate` suspends --team so the
+		// brief id can be searched across every team's product/discovery/
+		// (resolveTeam). `discover new` still requires it because the team is
+		// where the new brief is created — inference cannot help a create.
+		if spec.name == "discover" && f.name == "team" && a.Action == "validate" {
 			continue
 		}
 		missing = append(missing, "--"+f.name)

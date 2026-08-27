@@ -246,3 +246,51 @@ func (w *Workspace) FindComponent(cid string) (platform, descriptor string, foun
 	}
 	return "", "", false
 }
+
+// FindPRD searches every platform's change-records/active/ and archive/prds/
+// for a directory named id (ux-simplification 1.2). It returns the owning
+// platform when exactly one platform holds the id, every candidate platform
+// when several do, and neither when the id is absent from every platform.
+//
+// This is the inference behind `prd validate` and `prd complete` without
+// --platform: the user should not have to know where an artifact lives — or
+// whether it is active or archived — before the tool will check it. The paths
+// scanned are the same ones PRDNew, PRDValidate, and PRDComplete build
+// inline; no new constants are introduced for them.
+//
+// A hit here means "a directory exists", not "the PRD is valid". An archived
+// PRD found by this scan may still fail the downstream active-only check,
+// which is the existing error path the task pins as unchanged.
+func (w *Workspace) FindPRD(id string) (platform string, candidates []string) {
+	for _, pdir := range w.AllPlatforms() {
+		for _, sub := range []string{
+			filepath.Join(pdir, "change-records", "active", id),
+			filepath.Join(pdir, "archive", "prds", id),
+		} {
+			if _, err := os.Stat(sub); err == nil {
+				candidates = append(candidates, filepath.Base(pdir))
+				break // one hit per platform is enough
+			}
+		}
+	}
+	if len(candidates) == 1 {
+		return candidates[0], nil
+	}
+	return "", candidates
+}
+
+// FindDiscovery searches every team's product/discovery/ for a directory
+// named id (ux-simplification 1.2). Same shape as FindPRD: one match returns
+// the team, several return every candidate, none returns neither.
+func (w *Workspace) FindDiscovery(id string) (team string, candidates []string) {
+	for _, tdir := range w.AllTeams() {
+		sub := filepath.Join(tdir, "product", "discovery", id)
+		if _, err := os.Stat(sub); err == nil {
+			candidates = append(candidates, filepath.Base(tdir))
+		}
+	}
+	if len(candidates) == 1 {
+		return candidates[0], nil
+	}
+	return "", candidates
+}

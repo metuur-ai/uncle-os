@@ -15,6 +15,7 @@ package main
 
 import (
 	"io"
+	"strings"
 
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/graph"
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/model"
@@ -33,7 +34,14 @@ func cmdDiscover(ws *workspace.Workspace, args *Args, _ io.Writer) ([]model.Gate
 	if args.Action == "new" {
 		return product.DiscoverNew(ws, args.Team, args.TitleArg)
 	}
-	return product.DiscoverValidate(ws, args.Team, args.ID)
+	// ux-simplification 1.2: --team is optional for validate when the brief
+	// id is unique across the workspace. `discover new` genuinely needs its
+	// team (it creates under it) and is therefore not inferred.
+	team, err := resolveTeam(ws, args.Team, args.ID, "discover")
+	if err != nil {
+		return nil, err
+	}
+	return product.DiscoverValidate(ws, team, args.ID)
 }
 
 // cmdPRD is cmd_prd (bin/company-os:573-711).
@@ -54,7 +62,13 @@ func cmdPRD(ws *workspace.Workspace, args *Args, _ io.Writer) ([]model.GateResul
 		return product.PRDNew(ws, args.Team, args.Platform, args.Components,
 			args.Title, args.FromDiscovery)
 	case "validate":
-		return product.PRDValidate(ws, args.Platform, args.ID)
+		// ux-simplification 1.2: --platform is optional for validate and
+		// complete when the PRD id is unique across the workspace.
+		platform, err := resolvePlatform(ws, args.Platform, args.ID, "prd")
+		if err != nil {
+			return nil, err
+		}
+		return product.PRDValidate(ws, platform, args.ID)
 	case "promote":
 		// `prd promote --team <t> <draft-id>` (R-5.1). The target platform is
 		// the draft's, never the flag's, so nothing here reads args.Platform.
@@ -64,7 +78,70 @@ func cmdPRD(ws *workspace.Workspace, args *Args, _ io.Writer) ([]model.GateResul
 		// platform: a draft that is never going anywhere has no target.
 		return product.PRDAbandon(ws, args.Team, args.ID, rebuildSections)
 	}
-	return product.PRDComplete(ws, args.Platform, args.ID, args.Force, rebuildSections)
+	// complete (default action)
+	platform, err := resolvePlatform(ws, args.Platform, args.ID, "prd")
+	if err != nil {
+		return nil, err
+	}
+	return product.PRDComplete(ws, platform, args.ID, args.Force, rebuildSections)
+}
+
+// resolvePlatform returns the platform a prd subcommand should operate on.
+//
+// ux-simplification 1.2: when --platform was supplied, it wins unchanged —
+// byte-identical behavior for every existing flag-carrying invocation. When
+// omitted and an id is available, the workspace is scanned for exactly one
+// match (workspace.FindPRD). Ambiguity is a usage error naming every candidate
+// so the user can pick without another command; absence is a workspace error
+// in the style of the existing "no active PRD at …" path.
+//
+// When both the flag and the id are empty, the empty string passes through so
+// the downstream requirePRDID / PlatformDir("") reports the missing argument in
+// the existing voice.
+func resolvePlatform(ws *workspace.Workspace, flag, id, scope string) (string, error) {
+	if flag != "" {
+		return flag, nil
+	}
+	if id == "" {
+		return "", nil
+	}
+	platform, candidates := ws.FindPRD(id)
+	switch {
+	case platform != "":
+		return platform, nil
+	case len(candidates) > 1:
+		return "", model.Usagef(scope,
+			"PRD '%s' found under multiple platforms: %s — pass --platform to pick one",
+			id, strings.Join(candidates, ", "))
+	default:
+		return "", model.Errorf(model.ExitWorkspace,
+			"no PRD '%s' found under any platform", id)
+	}
+}
+
+// resolveTeam is the team-side twin of resolvePlatform (ux-simplification 1.2).
+// It backs `discover validate` without --team. The scan covers
+// teams/*/product/discovery/ — the single location DiscoverNew writes to and
+// DiscoverValidate reads from.
+func resolveTeam(ws *workspace.Workspace, flag, id, scope string) (string, error) {
+	if flag != "" {
+		return flag, nil
+	}
+	if id == "" {
+		return "", nil
+	}
+	team, candidates := ws.FindDiscovery(id)
+	switch {
+	case team != "":
+		return team, nil
+	case len(candidates) > 1:
+		return "", model.Usagef(scope,
+			"discovery brief '%s' found under multiple teams: %s — pass --team to pick one",
+			id, strings.Join(candidates, ", "))
+	default:
+		return "", model.Errorf(model.ExitWorkspace,
+			"no discovery brief '%s' found under any team", id)
+	}
 }
 
 // cmdCheck is cmd_check (bin/company-os:731-733).
