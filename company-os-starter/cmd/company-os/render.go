@@ -26,6 +26,7 @@ var renderers = map[string]Renderer{
 	"graph":      render.Graph,
 	"ids":        render.IDs,
 	"today":      render.Today,
+	"next":       render.Next,
 	"skills":     render.Skills,
 	"governance": render.Governance,
 	"validate":   render.Validate,

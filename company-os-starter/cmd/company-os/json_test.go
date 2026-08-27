@@ -117,6 +117,7 @@ func TestJSONOnEverySubcommand(t *testing.T) {
 		{"--root", root, "validate"},
 		{"--root", root, "ids", "list"},
 		{"--root", root, "today"},
+		{"--root", root, "next"},
 		{"--root", root, "skills", "list"},
 		{"--root", root, "graph", "build"},
 		{"--root", root, "derive"},

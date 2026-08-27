@@ -48,6 +48,7 @@ type Args struct {
 	Prefix        string
 	Frozen        bool
 	Only          string
+	All           bool // `next --all`: list every pending item grouped by kind
 }
 
 type posSpec struct {
@@ -247,6 +248,20 @@ var commandSpecs = []cmdSpec{
 			// a flag rather than a walk over every team. Omitted, `today` runs
 			// exactly as it did before — see roles.Today.
 			strFlag("team", func(a *Args) *string { return &a.Team }),
+		},
+	},
+	{
+		// ux-simplification 1.1: `company-os next` — names the single
+		// highest-priority pending action and the exact command to perform it.
+		// Read-only; mutates nothing. goOnly because the Python oracle has no
+		// equivalent subcommand and the differential harness compares the
+		// choice set byte-for-byte.
+		name: "next", help: "show the single next action to take",
+		goOnly: true,
+		flags: []flagSpec{
+			{name: "all",
+				help:    "list every pending item grouped by kind",
+				boolean: func(a *Args) *bool { return &a.All }},
 		},
 	},
 	{

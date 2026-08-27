@@ -66,7 +66,8 @@ with the task box checked in the same commit.
 
 ## Phase 1 — Collapse the command chain (Units 1–2)
 
-- [ ] 1.1 `company-os next` — one command that names the single next action (est: ~3h)
+- [x] 1.1 `company-os next` — one command that names the single next action (est: ~3h)
+  **LANDED 2026-08-26** — read-only `next` subcommand with priority-ranked scan (expiry → contract → done-check → outcome → empty), `--all` grouping, text + `--json` renderers; soon-due window is 14 days.
   - why: the loop is 9 memorized commands; the guidance chain already prints
     the next step *after* each command, but from a cold start — a fresh clone,
     a new teammate, an agent handed the repo — nothing answers "what do I do

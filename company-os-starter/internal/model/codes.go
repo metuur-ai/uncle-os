@@ -178,6 +178,41 @@ const (
 	CodeDraft = "today.draft"
 )
 
+// ----------------------------------------------------------- next action
+//
+// `company-os next` (ux-simplification 1.1). A read-only scan that names the
+// single highest-priority pending action and the exact command to perform it.
+//
+// Priority order:
+//  1. expired or soon-due deviation reviewDate / exception expires
+//  2. active PRD failing its artifact contract
+//  3. active PRD with unchecked checklist items and/or stale reality
+//  4. completed PRD with an outcome review due
+//  5. nothing pending → suggest `company-os discover new`
+//
+// SlugNext is the section slug. `--all` emits one section per priority kind
+// that has pending items, all sharing this slug; the renderer groups by Code.
+const (
+	SlugNext = "next"
+
+	// CodeNextExpiry is priority 1: a deviation or exception that is expired
+	// or due within the soon-due window.
+	CodeNextExpiry = "next.expiry"
+	// CodeNextContract is priority 2: an active PRD failing its artifact
+	// contract (missing sections or core fields).
+	CodeNextContract = "next.contract"
+	// CodeNextDoneCheck is priority 3: an active PRD with unchecked
+	// governance-checklist items and/or stale component reality.
+	CodeNextDoneCheck = "next.done-check"
+	// CodeNextOutcome is priority 4: a completed PRD with an outcome review
+	// pending.
+	CodeNextOutcome = "next.outcome"
+	// CodeNextEmpty is priority 5: nothing pending.
+	CodeNextEmpty = "next.empty"
+	// CodeNextGroup is the per-kind header `--all` emits before each group.
+	CodeNextGroup = "next.group"
+)
+
 // -------------------------------------------------------------- ids list
 //
 // cmd_ids (`bin/company-os:1275-1302`). The --role legend that may precede the

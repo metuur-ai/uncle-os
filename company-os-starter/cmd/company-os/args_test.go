@@ -20,6 +20,8 @@ var portedCommands = map[string]bool{
 	"graph": true, "derive": true, "governance": true, "exception": true,
 	"deviation": true,
 	"discover":  true, "prd": true, "check": true, "validate": true,
+	// ux-simplification 1.1: `next` is a read-only scan, safe to dispatch.
+	"next": true,
 	// `tui` is listed for the same reason as the rest — it is implemented — but
 	// it is the one entry whose exclusion is load-bearing rather than tidy:
 	// dispatching it from here would consult the real terminal, and on a
@@ -127,6 +129,16 @@ func TestEverySubcommandParses(t *testing.T) {
 		{
 			argv:  []string{"today", "--role", "architect"},
 			check: func(t *testing.T, a *Args) { want(t, "role", a.Role, "architect") },
+		},
+		{
+			// ux-simplification 1.1: `next` takes --all and nothing else.
+			argv: []string{"next", "--all"},
+			check: func(t *testing.T, a *Args) {
+				want(t, "cmd", a.Cmd, "next")
+				if !a.All {
+					t.Error("--all did not set All")
+				}
+			},
 		},
 		{
 			argv:  []string{"graph", "build"},
