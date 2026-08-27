@@ -136,6 +136,12 @@ with the task box checked in the same commit.
     Output: the usual gate lines, plus one summary line
     `validate --fix: N file(s) regenerated` (0 when already clean). Default
     `validate` (no flag) is byte-identical to today.
+    Known limitation (pre-existing, NOT introduced here): the tags writer
+    re-emits the whole frontmatter document, so fixing a drifted tag in one
+    doc can reflow the scalar style of its non-derived fields (e.g. a quoted
+    `description:` becomes block-wrapped). `graph build` behaves identically;
+    the output stays YAML-equivalent and every gate green. A style-preserving
+    emitter is a separate yamlio project, deliberately not in scope.
   - acceptance: hand-drift a tag and an index in a scratch copy of
     `examples/workspace`, run `validate --fix` → exit 0, drift gone, second run
     reports 0 regenerated. Without `--fix` the same drift still fails the same
