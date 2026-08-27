@@ -220,7 +220,7 @@ person; Unit 6 is last and verifies the whole diff at once.
     both sides, direct-children-only, render shape, 20-run determinism).
     `make check` green, both goldens unchanged.
 
-- [ ] 2.3 Wire generation into `rebuild()` (deps: 2.2, est: ~30m, mutex: cli)
+- [x] 2.3 Wire generation into `rebuild()` (deps: 2.2, est: ~30m, mutex: cli)
   - why: R-2.6 exists so `company-os init` does not emit a workspace that fails its
     own `validate` — the D-2.2 failure. **Re-measured: this is one site, not
     seven.** `graph.Rebuild` (`internal/graph/graph.go:59`) and `graph.Build`
@@ -233,9 +233,34 @@ person; Unit 6 is last and verifies the whole diff at once.
     stays green on both monorepo fixtures — that is the idempotency oracle.
     Separately assert the deletion path, which the double-build check does not
     cover.
-  - landed:
+  - **Landed together with 2.4 — the plan's ordering was unsafe.** R-2.7 is a
+    precondition of R-2.6, not a follow-up: the slice at
+    `examples/federated/platforms/communications` sits inside a graph root, so a
+    writer without the exclusion can reach a 0444 tree hashed into
+    `workspace.lock.yaml`. Measured: no slice directory holds two graph documents
+    today, so the threshold shields it *by coincidence*. Landing 2.3 alone would
+    have left invariant I9 depending on that coincidence.
+  - **One wiring site, as predicted.** `graph.Rebuild` and `graph.Build` share
+    `rebuild()`, and both `cmd` seams funnel through it.
+  - **`rewriteGeneratedBlock` refactored** to take its new-file header as a
+    parameter — behaviour-neutral for `CLAUDE.md` (33 graph tests green before
+    and after). Indexes reuse the marker balance, interior-only replacement,
+    hand-owned refusal and CRLF normalization rather than duplicating them, which
+    delivers **R-2.10 (story 2.5) by construction** — 2.5 is now a test-only
+    story.
+  - **Known wart, matched deliberately:** an index is reported written twice
+    across consecutive commands. The creation branch writes a trailing newline
+    that the marker regex's `\s*$` eats on the first rewrite, so it settles after
+    one regeneration. `CLAUDE.md` has done this since the port; diverging would
+    have meant rewriting every committed node in every fixture.
+  - landed: 026a173 — internal/graph/{index.go,graph.go,node.go},
+    internal/model/codes.go (3 new codes, deliberately not reusing
+    `CodeGraphIndexWritten` which is the platform feature-index),
+    internal/render/graph.go, cmd/company-os/scaffold_test.go, plus 3 generated
+    index.md under examples/workspace. `make check` green, both goldens
+    unchanged, `git diff --stat examples/federated` empty.
 
-- [ ] 2.4 Exclude slice roots and `knowledge/` (deps: 2.3, est: ~40m, mutex: cli)
+- [x] 2.4 Exclude slice roots and `knowledge/` (deps: 2.3, est: ~40m, mutex: cli)
   - why: Invariant I9. `examples/federated/` materializes graph documents inside a
     `0444` slice whose bytes are hashed into `workspace.lock.yaml`; a write there
     fails gate `[8/8]`. The drift check must skip the same paths or a slice
@@ -247,7 +272,11 @@ person; Unit 6 is last and verifies the whole diff at once.
   - verify: `company-os --root examples/federated derive` then
     `git diff --stat examples/federated` is empty; `validate` on that fixture
     exits 0 at `[8/8]`.
-  - landed:
+  - **R-2.8 was free.** `knowledge/` is already excluded by construction —
+    `IterGraphDocs` omits it as a graph-docs root (`internal/graph/tags.go:191`),
+    so `BuildIndexes` never sees a document there and cannot key a directory off
+    one. No code was needed; the exclusion is a property of the input.
+  - landed: 026a173 — same commit as 2.3, see the note there for why.
 
 - [ ] 2.5 Honour a hand-written `index.md` (deps: 2.3, est: ~20m, mutex: cli)
   - why: **Corrected during pre-mortem.** The first spec draft would have failed
