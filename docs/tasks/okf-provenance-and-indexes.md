@@ -163,7 +163,7 @@ person; Unit 6 is last and verifies the whole diff at once.
 
 ## Unit 2 — Per-directory `index.md` generation
 
-- [ ] 2.1 Register the inert `index` type and extend `skipNames` (est: ~30m, mutex: cli)
+- [x] 2.1 Register the inert `index` type and extend `skipNames` (est: ~30m, mutex: cli)
   - why: These two must land in the same commit as each other and before the
     generator. A typed `index.md` that `IterGraphDocs` still yields would be
     counted toward its own directory's threshold and listed inside itself — the
@@ -177,7 +177,20 @@ person; Unit 6 is last and verifies the whole diff at once.
   - note: the LLD records that this type earns nothing internally — skipped means
     no derived tags and no gate 4 coverage. It is for external consumers. Do not
     later "fix" the skip.
-  - landed:
+  - **R-2.4 amended — it specified dead code.** `kindTag` has one reader
+    (`DeriveTags`, `tags.go:75`), which has one non-test caller (inside
+    `IterGraphDocs`, `tags.go:257`), and R-2.5 makes that skip `index.md` by
+    name. The entry could never be read. `index` is documented as reserved-inert
+    in `FRONTMATTER-CORE.md` instead, matching the three existing reserved types
+    which have zero occurrences in `internal/`. Trace recorded in the EARS under
+    "Resolved during implementation".
+  - **Skip landed before the generator**, which is stricter than R-2.5's "same
+    commit as the generator, never after" — the entry is inert until 2.2 writes
+    an index.
+  - landed: 20df6be — internal/graph/tags.go (`skipNames`),
+    internal/graph/index_skip_test.go (`TestIterGraphDocsSkipsIndexFiles`),
+    company-os-starter/docs/FRONTMATTER-CORE.md (reserved-types section).
+    `make check` green, both goldens unchanged.
 
 - [ ] 2.2 Write the index renderer (deps: 1.1, 2.1, est: ~75m, mutex: cli)
   - why: The progressive-disclosure payoff. An agent opening
