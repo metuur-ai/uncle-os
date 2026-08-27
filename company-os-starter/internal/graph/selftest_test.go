@@ -107,15 +107,19 @@ func TestRewriteFrontmatterTagsPreservesUnknownKeys(t *testing.T) {
 }
 
 // TestTagRewriteKeepsDescriptionOnOneLine is the wiring half of yamlio's
-// TestFrontmatterQuotesTitleAndDescription: fixing a drifted tag re-emits the
+// TestFrontmatterQuotesTopLevelStrings: fixing a drifted tag re-emits the
 // whole frontmatter mapping, and before PyDumpFrontmatter that re-emission
 // turned an authored one-line `description: "…3.0%…"` into a two-line plain
 // scalar. The percent sign and the hyphen in the title are what put both fields
 // on the special-character side of the rule.
+//
+// The `id:` assertion was added when the rule widened from {title, description}
+// to every top-level string: it is the one field here that the narrow rule left
+// alone, so it is what tells the two versions apart through this write path.
 func TestTagRewriteKeepsDescriptionOnOneLine(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "prd.md")
 	const desc = `"Targets push opt-out below 3.0% within 60 days, with urgent messages exempt."`
-	src := "---\ntype: prd\nid: x\ntitle: Per-channel quiet hours\ndescription: " +
+	src := "---\ntype: prd\nid: quiet-hours-2026\ntitle: Per-channel quiet hours\ndescription: " +
 		desc + "\ntags: [drifted]\n---\n\nbody\n"
 	if err := os.WriteFile(path, []byte(src), 0o666); err != nil {
 		t.Fatal(err)
@@ -145,6 +149,10 @@ func TestTagRewriteKeepsDescriptionOnOneLine(t *testing.T) {
 	}
 	if !strings.Contains(got, "\ntitle: \"Per-channel quiet hours\"\n") {
 		t.Errorf("title was not double-quoted; file is:\n%s", got)
+	}
+	if !strings.Contains(got, "\nid: \"quiet-hours-2026\"\n") {
+		t.Errorf("a non-title/description top-level string was not double-quoted; "+
+			"file is:\n%s", got)
 	}
 	// The value, not just the shape: a style change may not become a value
 	// change.

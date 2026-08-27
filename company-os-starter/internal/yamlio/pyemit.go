@@ -224,10 +224,9 @@ func PyDumpAutoFlow(v PyValue) (string, error) {
 	return pyDump(v, pyOptions{flowAuto: true})
 }
 
-// PyDumpFrontmatter is PyDumpAutoFlow plus one deliberate, narrow divergence
-// from PyYAML: a top-level `title:` or `description:` whose value is a string
-// carrying at least one SPECIAL CHARACTER is emitted double-quoted, on a single
-// unfolded line.
+// PyDumpFrontmatter is PyDumpAutoFlow plus one deliberate divergence from
+// PyYAML: EVERY top-level mapping value that is a string carrying at least one
+// SPECIAL CHARACTER is emitted double-quoted, on a single unfolded line.
 //
 // Why diverge at all. Every frontmatter write path is a read-modify-write that
 // re-emits the WHOLE mapping (RewriteFrontmatterTags, writeArtifact), so fixing
@@ -238,25 +237,35 @@ func PyDumpAutoFlow(v PyValue) (string, error) {
 // two-line plain scalar. Nothing is lost — it is still the same string — but it
 // churns the git diff of every doc `graph build` touches, and it churns it
 // differently depending on how long the surrounding key is. Committing to
-// double quotes for these two fields makes them a fixed point of the emitter no
-// matter what else in the document changes.
+// double quotes makes those fields a fixed point of the emitter no matter what
+// else in the document changes.
+//
+// The rule started at `title:` and `description:` only, because those are where
+// long authored prose lives and where the fold was observed. It is now every
+// top-level string, because the same argument holds for the short ones: `id:`,
+// `status:`, `platform:`, `fromDiscovery:` and their kin all carry `-`, `:`,
+// `.` or `/`, and pinning their style is what makes the WHOLE frontmatter block
+// — rather than two of its keys — invariant across a re-emission. A rule stated
+// as "top-level strings" is also checkable by eye in review, which a key
+// allow-list stops being the moment a new key is added.
 //
 // SPECIAL CHARACTER, exactly: any rune outside `[A-Za-z0-9 ]` — ASCII letters,
 // ASCII digits and the ASCII space. Everything else counts, including ordinary
 // prose punctuation (`.` `,` `-` `%` `:` `'` `"` `(` `)` `/` `#`), non-ASCII
 // runes, and control characters. The rule is deliberately coarser than "would
-// PyYAML have quoted this anyway": it is meant to be checkable by eye in review,
-// and a title of purely alphanumerics and spaces is precisely the case where
-// PyYAML's own choice is already stable, so that case is left exactly as it is
-// emitted today.
+// PyYAML have quoted this anyway": a value of purely alphanumerics and spaces is
+// precisely the case where PyYAML's own choice is already stable, so that case
+// is left exactly as it is emitted today.
 //
-// Scope, deliberately tight:
-//   - Only the two keys `title` and `description`, and only at the TOP level of
-//     the emitted mapping — the frontmatter block itself. A nested `title:`
-//     deeper in the tree (inside `pointers:`, a feature-index component map, …)
-//     is emitted exactly as PyYAML would. Frontmatter is the only place these
-//     two keys carry authored prose, and keeping the rule to depth 1 keeps it
-//     from reaching derived collection payloads.
+// Scope, still deliberately tight — three gates, none of them widened:
+//   - PyStr ONLY. This is a safety property, not a stylistic one. Frontmatter
+//     `created: 2026-07-18` loads as PyTime, not PyStr; quoting it would make it
+//     re-read as a str, which is a MEANING change. The same holds for bools,
+//     ints, floats and nulls. The type assertion is what keeps them out.
+//   - The TOP level of the emitted mapping only (mapDepth 1) — the frontmatter
+//     block itself. A string nested deeper (inside `pointers:`, a feature-index
+//     component map, a sequence of mappings) is emitted exactly as PyYAML would,
+//     so derived collection payloads keep their safe_dump signature.
 //   - Only this entry point. PyDump, PyDumpAutoFlow and PyDumpCanonical stay
 //     byte-compatible with safe_dump, because the differential harness and the
 //     derived-artifact comparison form both depend on that.
@@ -266,7 +275,7 @@ func PyDumpAutoFlow(v PyValue) (string, error) {
 // quoted scalar has no length limit that makes the fold necessary for
 // correctness.
 func PyDumpFrontmatter(v PyValue) (string, error) {
-	return pyDump(v, pyOptions{flowAuto: true, quoteHeaderProse: true})
+	return pyDump(v, pyOptions{flowAuto: true, quoteTopLevelStrings: true})
 }
 
 // PyDumpCanonical is canonical_yaml (bin/company-os:96-99):
@@ -349,11 +358,11 @@ type pyOptions struct {
 	// allowUnicode keeps non-ASCII characters as themselves instead of
 	// escaping them into a double-quoted scalar.
 	allowUnicode bool
-	// quoteHeaderProse is PyDumpFrontmatter's divergence: double-quote a
-	// top-level `title:`/`description:` string that carries a special
-	// character. Not a safe_dump option — see PyDumpFrontmatter for why it
-	// exists and why it is confined to that one entry point.
-	quoteHeaderProse bool
+	// quoteTopLevelStrings is PyDumpFrontmatter's divergence: double-quote any
+	// top-level string value that carries a special character. Not a safe_dump
+	// option — see PyDumpFrontmatter for why it exists and why it is confined
+	// to that one entry point.
+	quoteTopLevelStrings bool
 }
 
 type pyEmitter struct {
@@ -368,7 +377,7 @@ type pyEmitter struct {
 	flowLevel int
 	// mapDepth is 1 while emitting the entries of the outermost mapping and
 	// grows with nesting. It has no PyYAML counterpart; it exists only so
-	// quoteHeaderProse can be confined to the frontmatter block itself.
+	// quoteTopLevelProse can be confined to the frontmatter block itself.
 	mapDepth int
 	// forceDouble makes the NEXT scalar emit double-quoted and unfolded. It is
 	// set immediately before a mapping value is emitted and cleared immediately
@@ -480,7 +489,7 @@ func (e *pyEmitter) node(v PyValue, mappingCtx, simpleKey bool) error {
 				e.writeIndent()
 				e.writeIndicator(":", true, false, true)
 			}
-			e.forceDouble = e.quoteHeaderProse(pair.K, pair.V)
+			e.forceDouble = e.quoteTopLevelProse(pair.V)
 			err := e.node(pair.V, true, false)
 			e.forceDouble = false
 			if err != nil {
@@ -585,7 +594,7 @@ func (e *pyEmitter) flowMap(t PyMap) error {
 			}
 			e.writeIndicator(":", true, false, false)
 		}
-		e.forceDouble = e.quoteHeaderProse(pair.K, pair.V)
+		e.forceDouble = e.quoteTopLevelProse(pair.V)
 		err := e.node(pair.V, true, false)
 		e.forceDouble = false
 		if err != nil {
@@ -620,19 +629,19 @@ func checkSimpleKey(key string) bool {
 	return !a.empty && !a.multiline
 }
 
-// quoteHeaderProse decides PyDumpFrontmatter's rule for one mapping entry: the
-// key is `title` or `description`, the entry is at the top level of the emitted
-// mapping (mapDepth 1 — flowMap and the block-map loop both run one level
-// inside the PyMap case that incremented it), the value is a string, and that
-// string carries a special character.
+// quoteTopLevelProse decides PyDumpFrontmatter's rule for one mapping entry: the
+// entry is at the top level of the emitted mapping (mapDepth 1 — flowMap and the
+// block-map loop both run one level inside the PyMap case that incremented it),
+// the value is a string, and that string carries a special character. The KEY is
+// not consulted; the rule is about depth and type, not about names.
 //
-// Anything else — another key, a nested `title:`, a non-string value, a value of
-// only letters, digits and spaces — falls through to PyYAML's own choice.
-func (e *pyEmitter) quoteHeaderProse(key string, v PyValue) bool {
-	if !e.opt.quoteHeaderProse || e.mapDepth != 1 {
-		return false
-	}
-	if key != "title" && key != "description" {
+// The PyStr assertion is the safety gate, not a convenience: a frontmatter
+// `created: 2026-07-18` is a PyTime and quoting it would change its type on the
+// next read. Bools, ints, floats, nulls, sequences and mappings are excluded by
+// the same assertion. A value of only letters, digits and spaces, and anything
+// nested below depth 1, fall through to PyYAML's own choice.
+func (e *pyEmitter) quoteTopLevelProse(v PyValue) bool {
+	if !e.opt.quoteTopLevelStrings || e.mapDepth != 1 {
 		return false
 	}
 	s, ok := v.(PyStr)

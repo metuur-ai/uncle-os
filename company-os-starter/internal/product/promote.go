@@ -566,8 +566,8 @@ func promotedRecordMeta(draft yamlio.PyMap) yamlio.PyMap {
 // The emitter is PyDumpFrontmatter for the same reason the tag rewriter uses it
 // — safe_dump's default_flow_style=None is what every committed frontmatter
 // block in this workspace was written with, so anything else would rewrite files
-// it did not mean to touch, and its `title:`/`description:` rule keeps a
-// promoted record's authored prose on the line the author put it on.
+// it did not mean to touch, and its top-level-string rule keeps a promoted
+// record's authored header values on the lines the author put them on.
 func writeArtifact(path string, meta yamlio.PyMap, body []byte) error {
 	fm, err := yamlio.PyDumpFrontmatter(meta)
 	if err != nil {

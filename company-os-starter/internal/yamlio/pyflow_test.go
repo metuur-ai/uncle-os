@@ -212,12 +212,17 @@ func TestAutoFlowIsAFixedPoint(t *testing.T) {
 }
 
 // frontmatterQuoteCases pin PyDumpFrontmatter's one divergence from safe_dump:
-// a TOP-LEVEL `title:`/`description:` string carrying any rune outside
-// [A-Za-z0-9 ] is emitted double-quoted on one unfolded line. Everything else —
-// another key, a nested title, a non-string value, a value of only letters,
-// digits and spaces — must come out exactly as PyDumpAutoFlow emits it, which
-// the companion assertion in TestFrontmatterQuotesTitleAndDescription checks
-// case by case rather than by eye.
+// ANY TOP-LEVEL string value carrying a rune outside [A-Za-z0-9 ] is emitted
+// double-quoted on one unfolded line. Everything else — a nested string, a
+// non-string value (date, bool, int, null), a value of only letters, digits and
+// spaces — must come out exactly as PyDumpAutoFlow emits it, which the companion
+// assertion in TestFrontmatterQuotesTopLevelStrings checks case by case rather
+// than by eye.
+//
+// Widened 2026-08-27 from the original {title, description} allow-list. Cases
+// below that used to assert a non-title/description key was byte-identical to
+// safe_dump now assert the opposite, and are marked; they are kept rather than
+// deleted because they are the ones that pin the boundary of the new rule.
 var frontmatterQuoteCases = []struct {
 	name     string
 	yaml     string
@@ -249,10 +254,29 @@ var frontmatterQuoteCases = []struct {
 		diverges: false,
 	},
 	{
-		name:     "other-key-with-the-same-value-unchanged",
+		// Was "other-key-with-the-same-value-unchanged" and asserted
+		// diverges:false under the {title, description} allow-list. The
+		// widening to all top-level strings inverted it: the key is no longer
+		// consulted, only the depth and the type.
+		name:     "other-key-with-the-same-value-now-quoted",
 		yaml:     "summary: Per-channel quiet hours\ntags: [kind/prd]\n",
-		want:     "summary: Per-channel quiet hours\ntags: [kind/prd]\n",
-		diverges: false,
+		want:     "summary: \"Per-channel quiet hours\"\ntags: [kind/prd]\n",
+		diverges: true,
+	},
+	{
+		// The keys a PRD/discovery header actually carries: every one of them
+		// holds a `-`, `:`, `.` or `/`, which is why the narrow rule left the
+		// bulk of the block still moving.
+		name: "identity-keys-are-all-quoted",
+		yaml: "id: prd-2026-quiet-hours\nstatus: in-progress\nplatform: communications\n" +
+			"team: platform-notifications\nfromDiscovery: disc-2026-04\n" +
+			"governanceSnapshot: teams/platform-notifications/generated/effective-governance.yaml\n" +
+			"tags: [kind/prd]\n",
+		want: "id: \"prd-2026-quiet-hours\"\nstatus: \"in-progress\"\nplatform: communications\n" +
+			"team: \"platform-notifications\"\nfromDiscovery: \"disc-2026-04\"\n" +
+			"governanceSnapshot: \"teams/platform-notifications/generated/effective-governance.yaml\"\n" +
+			"tags: [kind/prd]\n",
+		diverges: true,
 	},
 	{
 		name:     "nested-title-unchanged",
@@ -261,9 +285,33 @@ var frontmatterQuoteCases = []struct {
 		diverges: false,
 	},
 	{
+		// mapDepth is not widened: a string with special characters one level
+		// down keeps safe_dump's own choice, here plain and single-quoted.
+		name:     "nested-string-with-special-characters-unchanged",
+		yaml:     "component:\n  id: svc-notifications\n  owner: platform-notifications\ntags: [kind/prd]\n",
+		want:     "component: {id: svc-notifications, owner: platform-notifications}\ntags: [kind/prd]\n",
+		diverges: false,
+	},
+	{
+		// The safety property: `created:`/`updated:` load as PyTime, not PyStr,
+		// and the PyStr assertion is what keeps them unquoted. Quoting a date
+		// would change its type on the next read — a meaning change, not a
+		// style one. TestFrontmatterLeavesDatesAsTimestamps re-parses it.
 		name:     "non-string-title-unchanged",
 		yaml:     "title: 2026-07-18\ntags: [kind/prd]\n",
 		want:     "title: 2026-07-18\ntags: [kind/prd]\n",
+		diverges: false,
+	},
+	{
+		name:     "dates-unchanged",
+		yaml:     "created: 2026-07-18\nupdated: 2026-01-10\ntags: [kind/prd]\n",
+		want:     "created: 2026-07-18\nupdated: 2026-01-10\ntags: [kind/prd]\n",
+		diverges: false,
+	},
+	{
+		name:     "bool-int-float-null-unchanged",
+		yaml:     "draft: true\ncount: 3\nratio: 1.5\nowner: null\ntags: [kind/prd]\n",
+		want:     "draft: true\ncount: 3\nratio: 1.5\nowner: null\ntags: [kind/prd]\n",
 		diverges: false,
 	},
 	{
@@ -280,10 +328,10 @@ var frontmatterQuoteCases = []struct {
 	},
 }
 
-// TestFrontmatterQuotesTitleAndDescription is the rule itself, plus the scope
+// TestFrontmatterQuotesTopLevelStrings is the rule itself, plus the scope
 // claim: every non-diverging case must be byte-identical to PyDumpAutoFlow, so a
 // future widening of the rule cannot pass unnoticed.
-func TestFrontmatterQuotesTitleAndDescription(t *testing.T) {
+func TestFrontmatterQuotesTopLevelStrings(t *testing.T) {
 	for _, c := range frontmatterQuoteCases {
 		t.Run(c.name, func(t *testing.T) {
 			loaded := loadString(t, c.yaml)
@@ -306,6 +354,38 @@ func TestFrontmatterQuotesTitleAndDescription(t *testing.T) {
 					auto, got)
 			}
 		})
+	}
+}
+
+// TestFrontmatterLeavesDatesAsTimestamps is the regression guard for the one
+// way this rule could do real damage: frontmatter `created:`/`updated:` load as
+// PyTime, and a PyTime emitted double-quoted would come back a PyStr. The rule's
+// PyStr type assertion is what prevents it, so the test asserts both halves —
+// the bytes are unquoted AND the re-read value is still a timestamp.
+func TestFrontmatterLeavesDatesAsTimestamps(t *testing.T) {
+	src := "id: prd-2026-quiet-hours\ncreated: 2026-07-18\nupdated: 2026-01-10\ntags: [kind/prd]\n"
+	got, err := PyDumpFrontmatter(loadString(t, src))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(got, "created: 2026-07-18\n") ||
+		!strings.Contains(got, "updated: 2026-01-10\n") {
+		t.Fatalf("a date was restyled:\n%s", got)
+	}
+	back, ok := loadString(t, got).(PyMap)
+	if !ok {
+		t.Fatalf("re-read is not a mapping:\n%s", got)
+	}
+	for _, key := range []string{"created", "updated"} {
+		if _, isTime := back.Get(key).(PyTime); !isTime {
+			t.Fatalf("%s re-read as %T, want PyTime — the emit changed its meaning",
+				key, back.Get(key))
+		}
+	}
+	// The sibling string on the same document proves the rule did fire here, so
+	// a version that quoted nothing at all could not pass this test.
+	if !strings.Contains(got, "id: \"prd-2026-quiet-hours\"\n") {
+		t.Fatalf("the top-level string rule did not fire:\n%s", got)
 	}
 }
 

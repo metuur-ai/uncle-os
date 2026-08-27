@@ -291,9 +291,9 @@ func graphRoots(ws *workspace.Workspace) []string {
 // default_flow_style=None, which is what makes committed frontmatter read
 // `tags: [a, b]` inline. Dumping in block style would rewrite every document on
 // the first build. PyDumpFrontmatter adds the one divergence this write path
-// motivates — a top-level `title:`/`description:` carrying a special character
-// is pinned to a single double-quoted line, so re-emitting the whole mapping to
-// fix one tag stops reflowing the authored prose around it.
+// motivates — every top-level string carrying a special character is pinned to a
+// single double-quoted line, so re-emitting the whole mapping to fix one tag
+// stops restyling the rest of the header around it.
 //
 // The write error carries its cause; the serialize error above it does not,
 // because a YAML emitter failure is not a filesystem condition anyone classifies.

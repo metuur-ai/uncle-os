@@ -142,15 +142,26 @@ with the task box checked in the same commit.
     behaves identically; the output stays YAML-equivalent and every gate green.
     A fully style-preserving emitter is a separate yamlio project, deliberately
     not in scope.
-    **Partially fixed 2026-08-27** (`yamlio.PyDumpFrontmatter`): top-level
-    `title:` and `description:` are now pinned — when the value is a string
-    carrying any character outside `[A-Za-z0-9 ]` it is emitted double-quoted
-    on one unfolded line, so the case that motivated this note (a quoted
-    `description: "…3.0%…"` coming back block-folded across two lines) no
-    longer churns. Still open: every OTHER scalar in the block is still
-    re-styled by PyYAML's own rules, a `title`/`description` of only letters,
-    digits and spaces is left exactly as before, and nested `title:` keys
-    deeper in the tree are untouched.
+    **Partially fixed 2026-08-27** (`yamlio.PyDumpFrontmatter`), widened the
+    same day: EVERY top-level frontmatter value that is a string carrying a
+    character outside `[A-Za-z0-9 ]` is emitted double-quoted on one unfolded
+    line — `id:`, `type:`, `status:`, `team:`, `decisionOwner:`,
+    `fromDiscovery:` and their kin, not just `title:`/`description:`. The
+    top-level string layer of the block is therefore a fixed point of the
+    emitter: whatever else changes in the document, those lines do not move.
+    Three things are deliberately NOT covered and still re-style on a rewrite:
+    non-string top-level values (dates, bools, ints, nulls keep PyYAML's
+    choice — quoting a date would change its TYPE on the next read, so the
+    `PyStr` gate is a correctness requirement, not a scope choice); top-level
+    strings of only letters, digits and spaces; and everything nested below
+    depth 1 — `pointers:` re-indents indentless, a sequence-of-maps collapses
+    to flow style, and a non-ASCII rune still escapes to `\uXXXX`.
+    Consequence worth knowing: the committed `examples/` frontmatter predates
+    this rule and is NOT in the pinned form, so the first rewrite of a given
+    doc still produces a one-time diff (the pinned lines, plus the nested
+    re-styles above). Nothing re-derives it, because the tag writer only
+    rewrites a doc whose `tags:` actually drifted. A fully style-preserving
+    emitter remains a separate yamlio project, still not in scope.
   - acceptance: hand-drift a tag and an index in a scratch copy of
     `examples/workspace`, run `validate --fix` → exit 0, drift gone, second run
     reports 0 regenerated. Without `--fix` the same drift still fails the same
