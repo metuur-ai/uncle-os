@@ -192,7 +192,7 @@ person; Unit 6 is last and verifies the whole diff at once.
     company-os-starter/docs/FRONTMATTER-CORE.md (reserved-types section).
     `make check` green, both goldens unchanged.
 
-- [ ] 2.2 Write the index renderer (deps: 1.1, 2.1, est: ~75m, mutex: cli)
+- [x] 2.2 Write the index renderer (deps: 1.1, 2.1, est: ~75m, mutex: cli)
   - why: The progressive-disclosure payoff. An agent opening
     `platforms/communications/reality/` today must `ls` and open files to learn
     what is there.
@@ -204,7 +204,21 @@ person; Unit 6 is last and verifies the whole diff at once.
   - verify: unit test over a synthetic tree covering the 1-doc, 2-doc, and 3-doc
     cases; assert the threshold boundary explicitly, since off-by-one here is
     silent.
-  - landed:
+  - **R-2.12 and D-2.4 pre-confirmed against the real fixtures.** A throwaway
+    probe over `examples/workspace` produced exactly **3** indexes
+    (`company-ontology/concepts`,
+    `platforms/communications/archive/prds/2026-per-channel-quiet-hours`,
+    `teams/customer-engagement/standards`) and **0** on
+    `examples/standalone-team`. The archive directory qualifying at exactly two
+    documents is D-2.4's specific claim, now measured rather than predicted.
+    Story 2.3 asserts this against the written tree.
+  - **Descriptions render empty today** — the fixtures are backfilled in 6.1, and
+    several entries fall back to `id` because `title:` is absent (parent task
+    3.4's gap). Both are expected; the index will read thinly until those land.
+  - landed: d533656 — internal/graph/index.go (`BuildIndexes`,
+    `buildIndexBlock`), internal/graph/index_test.go (4 tests: threshold from
+    both sides, direct-children-only, render shape, 20-run determinism).
+    `make check` green, both goldens unchanged.
 
 - [ ] 2.3 Wire generation into `rebuild()` (deps: 2.2, est: ~30m, mutex: cli)
   - why: R-2.6 exists so `company-os init` does not emit a workspace that fails its
