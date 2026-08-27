@@ -63,6 +63,14 @@ const (
 	CodeNodeHandOwned = "node.hand-owned"
 	CodeNodeDrift     = "node.drift"
 	CodeNodeInSync    = "node.in-sync"
+	// The two below are gate 5's per-directory index report (R-3.1..R-3.5 of
+	// okf-provenance-and-indexes). They live in gate 5 because adding a gate
+	// would renumber and violate invariant I5; the gate's printed HEADER stays
+	// byte-identical for the same reason, which means it under-describes its
+	// contents by design.
+	CodeNodeIndexesInSync = "node.indexes-in-sync"
+	CodeNodeIndexDrift    = "node.index-drift"
+	CodeNodeIndexMissing  = "node.index-missing"
 
 	// Gate 6 — feature-index drift (:1050, :1055, :1062, :1066).
 	CodeFeatureIndexAbsent     = "feature-index.absent"

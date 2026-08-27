@@ -31,6 +31,9 @@ validating workspace <WORKSPACE>
   [ok] platforms/communications/CLAUDE.md: context node in sync
   [ok] teams/customer-engagement/CLAUDE.md: context node in sync
   [ok] company-ontology/CLAUDE.md: context node in sync
+  [ok] platforms/communications: directory indexes in sync (1 index(es))
+  [ok] teams/customer-engagement: directory indexes in sync (1 index(es))
+  [ok] company-ontology: directory indexes in sync (1 index(es))
 
 [6/8] feature-index drift (derived component->artifact map)
   [ok] communications: feature-index in sync (1 component(s))

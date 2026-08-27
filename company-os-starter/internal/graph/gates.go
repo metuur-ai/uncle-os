@@ -173,7 +173,92 @@ func NodeGate(ws *workspace.Workspace, ordinal int) (model.GateResult, error) {
 		f.Path = fields.Str("path")
 		g.Findings = append(g.Findings, f)
 	}
+	idx, err := indexFindings(ws, docs)
+	if err != nil {
+		return g, err
+	}
+	g.Findings = append(g.Findings, idx...)
 	return g, nil
+}
+
+// indexFindings is R-3.1..R-3.5: the per-directory index drift report, carried
+// inside gate 5 rather than a gate of its own (I5 freezes gate 1-7 numbering).
+//
+// Reporting is asymmetric on purpose. A clean run emits ONE aggregate line per
+// federation root (R-3.5), because a per-directory [ok] for every index would
+// bury the CLAUDE.md lines that share this gate. A problem names the specific
+// file or directory (R-3.3, R-3.4), because "something drifted somewhere" is not
+// actionable.
+//
+// Slice roots are skipped for the same reason the writer skips them: a slice
+// directory that qualifies but cannot be written would otherwise report drift on
+// every run, forever, with no command that could fix it.
+//
+// @spec req://uncle-os/okf-provenance-and-indexes@0.1#R-3.1
+// @spec req://uncle-os/okf-provenance-and-indexes@0.1#R-3.3
+// @spec req://uncle-os/okf-provenance-and-indexes@0.1#R-3.4
+// @spec req://uncle-os/okf-provenance-and-indexes@0.1#R-3.5
+func indexFindings(ws *workspace.Workspace, docs []Doc) ([]model.Finding, error) {
+	skip, err := sliceRoots(ws)
+	if err != nil {
+		return nil, err
+	}
+	want := BuildIndexes(docs)
+
+	var out []model.Finding
+	for _, root := range NodeRoots(ws) {
+		var dirs []string
+		for dir := range want {
+			if excluded(dir, skip) {
+				continue
+			}
+			if rel, ok := under(root, dir); ok && rel != "" {
+				dirs = append(dirs, dir)
+			} else if dir == root {
+				dirs = append(dirs, dir)
+			}
+		}
+		if len(dirs) == 0 {
+			// A root with no qualifying directory says nothing. Emitting
+			// "0 indexes in sync" for every root would be four lines of noise in
+			// a monorepo and would break the silence examples/standalone-team
+			// relies on (I2, R-3.6).
+			continue
+		}
+		sort.Strings(dirs)
+
+		relRoot := relTo(ws.Root, root)
+		var problems int
+		for _, dir := range dirs {
+			path := filepath.Join(dir, "index.md")
+			rel := relTo(ws.Root, path)
+			fields := model.Fields{"root": relRoot, "path": rel}
+			raw, readErr := os.ReadFile(path)
+			if os.IsNotExist(readErr) {
+				problems++
+				out = append(out, gateFinding(model.SevFail, model.CodeNodeIndexMissing, rel, fields))
+				continue
+			}
+			if readErr != nil {
+				return nil, model.Errorf(model.ExitArtifact, "cannot read %s: %v", path, readErr)
+			}
+			committed, marked := ExtractGeneratedBlock(readText(raw))
+			if !marked {
+				// Hand-owned: a passing terminal state, exactly as for CLAUDE.md.
+				out = append(out, gateFinding(model.SevOK, model.CodeNodeHandOwned, rel, fields))
+				continue
+			}
+			if !BlocksEqual(committed, buildIndexBlock(dir, groupOf(want, dir, docs))) {
+				problems++
+				out = append(out, gateFinding(model.SevFail, model.CodeNodeIndexDrift, rel, fields))
+			}
+		}
+		if problems == 0 {
+			out = append(out, gateFinding(model.SevOK, model.CodeNodeIndexesInSync,
+				relRoot, model.Fields{"root": relRoot, "count": len(dirs)}))
+		}
+	}
+	return out, nil
 }
 
 // FeatureIndexGate is validate's gate 6 (`:1044-1066`).
@@ -293,6 +378,12 @@ func Message(code string, f model.Fields) string {
 		return "generated block drifted — run: company-os derive"
 	case model.CodeNodeInSync:
 		return "context node in sync"
+	case model.CodeNodeIndexesInSync:
+		return fmt.Sprintf("directory indexes in sync (%d index(es))", f.Int("count"))
+	case model.CodeNodeIndexDrift:
+		return "generated index drifted — run: company-os derive"
+	case model.CodeNodeIndexMissing:
+		return "directory qualifies for an index but has none — run: company-os derive"
 
 	// ------------------------------------------------------------- gate 6
 	case model.CodeFeatureIndexAbsent:

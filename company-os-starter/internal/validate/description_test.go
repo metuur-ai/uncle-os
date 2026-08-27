@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/metuur-ai/uncle-os/company-os-starter/internal/graph"
 )
 
 // TestDescriptionIsInvisibleToValidate is R-1.7 of okf-provenance-and-indexes:
@@ -43,6 +45,19 @@ func TestDescriptionIsInvisibleToValidate(t *testing.T) {
 			"did nothing and the comparison below would be vacuous")
 	}
 	t.Logf("inserted description: into %d documents", n)
+
+	// Re-derive before comparing. `description:` is not inert any more: story
+	// 2.2 made it a rendered column of the generated index.md, so adding one and
+	// NOT re-deriving leaves a derived artifact stale, and gate 5 says so.
+	//
+	// That is invariant I4 working (generated files are derived, never
+	// hand-edited), not an R-1.7 violation — the same failure appears if you
+	// change a `title:` and skip `derive`. R-1.7 is about the field drawing no
+	// error of its own, so the comparison has to be made against current derived
+	// state or it measures staleness instead.
+	if _, err := graph.Rebuild(ws); err != nil {
+		t.Fatalf("re-deriving after the insert: %v", err)
+	}
 
 	after, codeAfter, _ := runValidate(t, ws.Root)
 

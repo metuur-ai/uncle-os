@@ -121,7 +121,7 @@ against the whole diff rather than assumed per unit.
 | ID | EARS statement |
 | --- | --- |
 | R-6.1 | THE SYSTEM SHALL backfill `description:` onto every document in `examples/workspace/` and `examples/standalone-team/` carrying frontmatter `type:`, satisfying the R-1.2 and R-1.3 rubric. |
-| R-6.2 | THE SYSTEM SHALL leave `examples/federated/` untouched, verified by an empty `git diff --stat examples/federated`. |
+| R-6.2 | **Amended 2026-08-26 — see "Resolved during implementation".** THE SYSTEM SHALL leave the manifest-declared **slice** untouched, verified by an empty `git diff --stat examples/federated/platforms/communications` for every path the lock hashes. ~~leave `examples/federated/` untouched~~ — the fixture's `teams/` and `company-ontology/` roots are not slices and R-2.6 requires indexes in them. |
 | R-6.3 | THE SYSTEM SHALL keep `company-os --root examples/federated validate` exiting 0 at `[8/8]` with `workspace.lock.yaml` hashes valid (I9). |
 | R-6.4 | THE SYSTEM SHALL leave the `examples/banking/` fixture untouched, as the acceptance harness does not exercise it. |
 | R-6.5 | THE SYSTEM SHALL keep any workspace that passed `validate` before this change passing after it, beyond one documented `derive` re-run (I1). |
@@ -134,6 +134,26 @@ against the whole diff rather than assumed per unit.
 ---
 
 ## Resolved during implementation
+
+**R-6.2 was impossible as written and is amended above.** It said to leave
+`examples/federated/` untouched. But a federated workspace has four roots and
+only one of them is a slice: `platforms/communications`. The other three —
+`company-os/`, `teams/customer-engagement/`, `company-ontology/` — are ordinary
+authored roots, and R-2.6 requires indexes in any of their directories that
+qualify. Two do.
+
+Measured: with no indexes there, `company-os --root examples/federated validate`
+went from PASS to **FAIL — 2 problem(s)**, which R-6.3 forbids. Generating them
+fixes it, leaves gate 9 green (`4 file(s) across 1 repo(s); no hand-edits`), and
+touches nothing the lock hashes. Invariant I9 is about slices; R-6.2 had
+overreached to the whole directory.
+
+Incidental, recorded so it is not mistaken for this change's doing: deriving that
+fixture also rewrote its `platforms/communications/CLAUDE.md` marker from
+`company-os graph build` to `company-os derive`. That is pre-existing staleness
+from the command rename — `examples/banking/` and `examples/failing-workspace/`
+still carry the old text and are deliberately left alone (R-6.4).
+
 
 **R-2.4 specified dead code and is amended above.** The first draft said to
 register `index` in `kindTag` (`internal/graph/tags.go:24-28`). Reachability

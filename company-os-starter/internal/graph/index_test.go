@@ -1,11 +1,14 @@
 package graph_test
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/graph"
+	"github.com/metuur-ai/uncle-os/company-os-starter/internal/model"
+	"github.com/metuur-ai/uncle-os/company-os-starter/internal/workspace"
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/yamlio"
 )
 
@@ -156,4 +159,130 @@ func TestBuildIndexesIsDeterministic(t *testing.T) {
 				first, i+2, again)
 		}
 	}
+}
+
+// TestWriteIndexesLeavesAHandWrittenIndexAlone is R-2.10.
+//
+// The first spec draft had this FAIL gate 5. That contradicted the decision the
+// repo already settled for CLAUDE.md — a marker-less file is hand-owned, left
+// alone, reported, and PASSES (internal/graph/node.go, internal/graph/gates.go)
+// — and it would have added a blocking check, violating R-5.5 and invariant I1.
+//
+// Deleting authored content because a threshold moved is the worst failure this
+// feature could have, so it is asserted from both sides: the write path must not
+// clobber it, and the stale sweep must not delete it.
+//
+// @spec req://uncle-os/okf-provenance-and-indexes@0.1#R-2.10
+func TestWriteIndexesLeavesAHandWrittenIndexAlone(t *testing.T) {
+	ws := workspace.New(t.TempDir())
+	dir := filepath.Join(ws.Company, "standards")
+	if err := os.MkdirAll(dir, 0o777); err != nil {
+		t.Fatal(err)
+	}
+	const authored = "# My own index\n\nI wrote this by hand and it is not generated.\n"
+	idx := filepath.Join(dir, "index.md")
+	write(t, idx, authored)
+
+	// Two documents, so the directory qualifies and the writer WANTS this path.
+	write(t, filepath.Join(dir, "a.md"), "---\ntype: adr\nid: a\nstatus: draft\n---\n\n# A\n")
+	write(t, filepath.Join(dir, "b.md"), "---\ntype: adr\nid: b\nstatus: draft\n---\n\n# B\n")
+
+	docs, err := IterGraphDocsFor(ws)
+	if err != nil {
+		t.Fatal(err)
+	}
+	findings, err := graph.WriteIndexes(ws, docs)
+	if err != nil {
+		t.Fatalf("WriteIndexes: %v", err)
+	}
+	if got := readFile(t, idx); got != authored {
+		t.Errorf("a hand-written index.md was rewritten.\nwant: %q\ngot:  %q", authored, got)
+	}
+	if !hasCode(findings, model.CodeGraphDirIndexHandOwned) {
+		t.Errorf("hand-owned index was not reported; silence is what makes a user "+
+			"think --fix is broken. findings: %v", findings)
+	}
+
+	// Now drop below the threshold and re-run: the stale sweep must still not
+	// touch it, because it carries no generated markers.
+	if err := os.Remove(filepath.Join(dir, "b.md")); err != nil {
+		t.Fatal(err)
+	}
+	docs, err = IterGraphDocsFor(ws)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := graph.WriteIndexes(ws, docs); err != nil {
+		t.Fatalf("WriteIndexes after drop: %v", err)
+	}
+	if got := readFile(t, idx); got != authored {
+		t.Errorf("the stale sweep deleted or rewrote a hand-written index.md; got %q", got)
+	}
+}
+
+// TestWriteIndexesRemovesAStaleGeneratedIndex is R-2.9, the counterpart: a
+// GENERATED index whose directory dropped below the threshold is deleted.
+//
+// @spec req://uncle-os/okf-provenance-and-indexes@0.1#R-2.9
+func TestWriteIndexesRemovesAStaleGeneratedIndex(t *testing.T) {
+	ws := workspace.New(t.TempDir())
+	dir := filepath.Join(ws.Company, "standards")
+	if err := os.MkdirAll(dir, 0o777); err != nil {
+		t.Fatal(err)
+	}
+	write(t, filepath.Join(dir, "a.md"), "---\ntype: adr\nid: a\nstatus: draft\n---\n\n# A\n")
+	write(t, filepath.Join(dir, "b.md"), "---\ntype: adr\nid: b\nstatus: draft\n---\n\n# B\n")
+
+	docs, err := IterGraphDocsFor(ws)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := graph.WriteIndexes(ws, docs); err != nil {
+		t.Fatal(err)
+	}
+	idx := filepath.Join(dir, "index.md")
+	if _, err := os.Stat(idx); err != nil {
+		t.Fatalf("index was not generated in the first place: %v", err)
+	}
+
+	if err := os.Remove(filepath.Join(dir, "b.md")); err != nil {
+		t.Fatal(err)
+	}
+	docs, err = IterGraphDocsFor(ws)
+	if err != nil {
+		t.Fatal(err)
+	}
+	findings, err := graph.WriteIndexes(ws, docs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(idx); !os.IsNotExist(err) {
+		t.Errorf("a generated index survived its directory dropping to one document")
+	}
+	if !hasCode(findings, model.CodeGraphDirIndexRemoved) {
+		t.Errorf("removal was not reported: %v", findings)
+	}
+}
+
+// IterGraphDocsFor is a thin alias so the tests above read as the pipeline does.
+func IterGraphDocsFor(ws *workspace.Workspace) ([]graph.Doc, error) {
+	return graph.IterGraphDocs(ws)
+}
+
+func readFile(t *testing.T, path string) string {
+	t.Helper()
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(raw)
+}
+
+func hasCode(findings []model.Finding, code string) bool {
+	for _, f := range findings {
+		if f.Code == code {
+			return true
+		}
+	}
+	return false
 }
