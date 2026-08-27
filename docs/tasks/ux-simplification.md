@@ -24,8 +24,9 @@ requiring the user to already know what they are asking about.
 
 ## Red lines — what must NOT change
 
-1. **The OKF gate contract.** `validate` gates `[1/7]`–`[7/7]` (and `[8/8]`
-   federated) keep their exact semantics and output on the default path. Exit
+1. **The OKF gate contract.** `validate` gates `[1/8]`–`[8/8]` (and `[1/9]`–
+   `[9/9]` federated) keep their exact semantics and output on the default
+   path. Exit
    codes unchanged. New behavior is opt-in (`--fix`) or lives in new commands.
 2. **Flexibility.** Strict on artifacts, flexible on process. No unit may add a
    check on *how* an artifact was produced. Units 1–4 add capability; they never

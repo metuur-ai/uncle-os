@@ -104,6 +104,9 @@ func TestPassingGoldenIsReproducibleFromRecords(t *testing.T) {
 				ok("customer-engagement", model.CodeDeviationCurrent,
 					"deviation company-standard://estimation/story-points current (review 2035-01-14)",
 					model.Fields{"team": "customer-engagement", "rule": "company-standard://estimation/story-points", "reviewDate": "2035-01-14"}),
+				warn("customer-engagement", model.CodeExceptionApproverTODO,
+					"exception for platform-standard://communications/message-schema is approved by a placeholder (TODO: rule owner) — replace it with the rule owner",
+					model.Fields{"team": "customer-engagement", "rule": "platform-standard://communications/message-schema", "approvedBy": "TODO: rule owner"}),
 				ok("customer-engagement", model.CodeExceptionValid,
 					"exception platform-standard://communications/message-schema valid until 2035-12-31",
 					model.Fields{"team": "customer-engagement", "rule": "platform-standard://communications/message-schema", "expires": "2035-12-31"}),
@@ -131,6 +134,15 @@ func TestPassingGoldenIsReproducibleFromRecords(t *testing.T) {
 				ok("platforms/communications/CLAUDE.md", model.CodeNodeInSync, "context node in sync", nil),
 				ok("teams/customer-engagement/CLAUDE.md", model.CodeNodeInSync, "context node in sync", nil),
 				ok("company-ontology/CLAUDE.md", model.CodeNodeInSync, "context node in sync", nil),
+				ok("platforms/communications", model.CodeNodeIndexesInSync,
+					"directory indexes in sync (1 index(es))",
+					model.Fields{"root": "platforms/communications", "count": 1}),
+				ok("teams/customer-engagement", model.CodeNodeIndexesInSync,
+					"directory indexes in sync (1 index(es))",
+					model.Fields{"root": "teams/customer-engagement", "count": 1}),
+				ok("company-ontology", model.CodeNodeIndexesInSync,
+					"directory indexes in sync (1 index(es))",
+					model.Fields{"root": "company-ontology", "count": 1}),
 			}},
 			{Ordinal: 6, Slug: "feature-index-drift", Title: "feature-index drift (derived component->artifact map)", Findings: []model.Finding{
 				ok("communications", model.CodeFeatureIndexInSync,
@@ -194,6 +206,9 @@ func TestFailingGoldenIsReproducibleFromRecords(t *testing.T) {
 				fail("ghost", model.CodeExceptionExpired,
 					"exception for company-standard://customer-data-privacy expired 2020-01-01",
 					model.Fields{"team": "ghost", "rule": "company-standard://customer-data-privacy", "expires": "2020-01-01"}),
+				warn("ghost", model.CodeExceptionApproverTODO,
+					"exception for company-standard://tier-1-observability is approved by a placeholder (TODO: rule owner) — replace it with the rule owner",
+					model.Fields{"team": "ghost", "rule": "company-standard://tier-1-observability", "approvedBy": "TODO: rule owner"}),
 				ok("ghost", model.CodeExceptionValid,
 					"exception company-standard://tier-1-observability valid until 2035-12-31",
 					model.Fields{"team": "ghost", "rule": "company-standard://tier-1-observability", "expires": "2035-12-31"}),
@@ -235,8 +250,9 @@ func TestFailingGoldenIsReproducibleFromRecords(t *testing.T) {
 				coreOK("teams/ghost/skills/creating-prd.SKILL.md"),
 				coreOK("teams/ghost/skills/reviewing-prd.SKILL.md"),
 			}},
-			// Gate 5's three Subject shapes: <root>/CLAUDE.md, <root>/team.yaml,
-			// and the bare <root>. One renderer rule, three producer values.
+			// Gate 5's four Subject shapes: <root>/CLAUDE.md, <root>/team.yaml,
+			// the bare <root>, and <dir>/index.md. One renderer rule, four
+			// producer values.
 			{Ordinal: 5, Slug: "claude-node-drift", Title: "CLAUDE.md context node drift (fail-safe, absence-tolerant)", Findings: []model.Finding{
 				ok("company-os/CLAUDE.md", model.CodeNodeHandOwned, "hand-owned, no generated markers (-> pass)", nil),
 				fail("platforms/alpha/CLAUDE.md", model.CodeNodeDrift,
@@ -246,6 +262,12 @@ func TestFailingGoldenIsReproducibleFromRecords(t *testing.T) {
 					model.Fields{"index": 1}),
 				ok("teams/ghost", model.CodeNodeAbsent, "no CLAUDE.md node (absent -> pass)", nil),
 				ok("company-ontology/CLAUDE.md", model.CodeNodeInSync, "context node in sync", nil),
+				fail("platforms/beta/archive/prds/2035-old-dirname/index.md", model.CodeNodeIndexMissing,
+					"directory qualifies for an index but has none — run: company-os derive",
+					model.Fields{"root": "platforms/beta", "path": "platforms/beta/archive/prds/2035-old-dirname/index.md"}),
+				fail("teams/ghost/skills/index.md", model.CodeNodeIndexMissing,
+					"directory qualifies for an index but has none — run: company-os derive",
+					model.Fields{"root": "teams/ghost", "path": "teams/ghost/skills/index.md"}),
 			}},
 			{Ordinal: 6, Slug: "feature-index-drift", Title: "feature-index drift (derived component->artifact map)", Findings: []model.Finding{
 				fail("alpha", model.CodeFeatureIndexDrift,
@@ -281,9 +303,9 @@ func TestFailingGoldenIsReproducibleFromRecords(t *testing.T) {
 		t.Errorf("record set does not reproduce the failing golden\n--- got ---\n%s\n--- want ---\n%s", got, want)
 	}
 	// The trailer count is derived from the records, not tracked alongside them:
-	// 15 [FAIL] lines, and the 4 [warn] lines deliberately do not count.
-	if n := r.Problems(); n != 15 {
-		t.Errorf("Problems() = %d, want 15 (warns must not count)", n)
+	// 17 [FAIL] lines, and the 5 [warn] lines deliberately do not count.
+	if n := r.Problems(); n != 17 {
+		t.Errorf("Problems() = %d, want 17 (warns must not count)", n)
 	}
 }
 
