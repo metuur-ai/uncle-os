@@ -20,6 +20,21 @@ import (
 //
 // The differential harness proves this against Python, but only where Python is
 // installed. This is the CI-side guard.
+//
+// The `index …/standards/index.md` lines arrived with R-2.6 of
+// okf-provenance-and-indexes: a scaffolded team gets definition-of-ready AND
+// definition-of-done, so `teams/<t>/standards/` clears the two-document
+// threshold and `init` now emits an index there. That is the requirement
+// working, not drift — and this test is where a regression that stopped emitting
+// it would surface.
+//
+// An index appears twice for the same directory across consecutive commands
+// (create, then normalize). The creation branch writes a trailing newline that
+// the marker regex's `\s*$` eats on the first rewrite, so the file settles after
+// one regeneration. CLAUDE.md has behaved this way since the port — see the
+// comment on startRE/endRE in internal/graph/node.go — and matching it was
+// deliberate: diverging would have meant changing the shared creation branch and
+// rewriting every committed CLAUDE.md in every fixture.
 func TestScaffoldGuidanceChain(t *testing.T) {
 	root := filepath.Join(t.TempDir(), "ws")
 	// The printed root is the RESOLVED one — Path.resolve() follows the /var ->
@@ -30,6 +45,7 @@ func TestScaffoldGuidanceChain(t *testing.T) {
 		"--team", "Core Team!", "--platform", "My Platform!!")
 	wantLines(t, out, []string{
 		"  wrote index platforms/my-platform/generated/feature-index.yaml",
+		"  index teams/core-team/standards/index.md",
 		"  node company-os/CLAUDE.md",
 		"  node platforms/my-platform/CLAUDE.md",
 		"  node teams/core-team/CLAUDE.md",
@@ -42,6 +58,7 @@ func TestScaffoldGuidanceChain(t *testing.T) {
 	out = runOK(t, "--root", root, "add", "platform", "second")
 	wantLines(t, out, []string{
 		"  wrote index platforms/second/generated/feature-index.yaml",
+		"  index teams/core-team/standards/index.md",
 		"  node company-os/CLAUDE.md",
 		"  node platforms/my-platform/CLAUDE.md",
 		"  node platforms/second/CLAUDE.md",
@@ -53,6 +70,7 @@ func TestScaffoldGuidanceChain(t *testing.T) {
 
 	out = runOK(t, "--root", root, "add", "team", "second")
 	wantLines(t, out, []string{
+		"  index teams/second/standards/index.md",
 		"  node company-os/CLAUDE.md",
 		"  node platforms/my-platform/CLAUDE.md",
 		"  node platforms/second/CLAUDE.md",
@@ -66,6 +84,7 @@ func TestScaffoldGuidanceChain(t *testing.T) {
 	out = runOK(t, "--root", root, "add", "component", "billing-api", "--platform", "second")
 	wantLines(t, out, []string{
 		"  wrote index platforms/second/generated/feature-index.yaml",
+		"  index teams/second/standards/index.md",
 		"  node teams/second/CLAUDE.md",
 		"added component 'billing-api' to platform 'second'",
 		"next: company-os reality new --platform second billing-api",

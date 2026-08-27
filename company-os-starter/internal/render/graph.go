@@ -27,6 +27,13 @@ func Graph(w io.Writer, sections []model.GateResult) error {
 				_, err = fmt.Fprintf(w, "  wrote index %s\n", f.Fields.Str("path"))
 			case model.CodeGraphNodeWritten:
 				_, err = fmt.Fprintf(w, "  node %s\n", f.Fields.Str("path"))
+			case model.CodeGraphDirIndexWritten:
+				_, err = fmt.Fprintf(w, "  index %s\n", f.Fields.Str("path"))
+			case model.CodeGraphDirIndexHandOwned:
+				_, err = fmt.Fprintf(w, "  index %s: hand-owned, left alone\n",
+					f.Fields.Str("path"))
+			case model.CodeGraphDirIndexRemoved:
+				_, err = fmt.Fprintf(w, "  removed index %s\n", f.Fields.Str("path"))
 			case model.CodeGraphNodeMarkersUnbalanced:
 				// warn() writes to stdout with a two-space indent
 				// (bin/company-os:50-51). The path here is ABSOLUTE while the

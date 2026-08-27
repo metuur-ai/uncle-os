@@ -125,6 +125,16 @@ func rebuild(ws *workspace.Workspace, docs []Doc, ordinal int) ([]model.GateResu
 		})
 	}
 
+	// R-2.6: the per-directory indexes ride the SAME section as the feature
+	// indexes rather than adding one. graph build prints no gate headers, but
+	// --json and the TUI key off Slug, and a new section there is a surface
+	// change this story does not own.
+	dirIndexFindings, err := WriteIndexes(ws, docs)
+	if err != nil {
+		return nil, err
+	}
+	indexes.Findings = append(indexes.Findings, dirIndexFindings...)
+
 	nodeFindings, err := writeClaudeNodes(ws, docs)
 	if err != nil {
 		return nil, err

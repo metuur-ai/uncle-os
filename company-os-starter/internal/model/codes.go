@@ -251,6 +251,24 @@ const (
 	CodeGraphNodeMarkersUnbalanced = "graph.node-markers-unbalanced"
 	// CodeGraphSummary is the trailing tally at `:1797`.
 	CodeGraphSummary = "graph.summary"
+
+	// The three below belong to the generated per-directory index.md
+	// (okf-provenance-and-indexes, R-2.6/R-2.9/R-2.10). They are deliberately
+	// NOT CodeGraphIndexWritten: that code is the platform feature-index
+	// (`generated/feature-index.yaml`), a different artifact that happens to
+	// share the word "index". Reusing it would merge two unrelated things in
+	// --json and in every downstream filter.
+
+	// CodeGraphDirIndexWritten is one directory's regenerated index.md.
+	CodeGraphDirIndexWritten = "graph.dir-index-written"
+	// CodeGraphDirIndexHandOwned is an index.md carrying no generated markers.
+	// Left alone permanently and reported on every run, exactly as a
+	// marker-less CLAUDE.md is — a passing terminal state, not a stage on the
+	// way to adoption.
+	CodeGraphDirIndexHandOwned = "graph.dir-index-hand-owned"
+	// CodeGraphDirIndexRemoved is a generated index.md deleted because its
+	// directory dropped below the two-document threshold.
+	CodeGraphDirIndexRemoved = "graph.dir-index-removed"
 )
 
 // ---------------------------------------------------------- governance
