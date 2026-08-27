@@ -139,14 +139,25 @@ person; Unit 6 is last and verifies the whole diff at once.
     `description: "Outcome review for Webhook retries, due 2026-11-24."` and
     `validate` exits 0.
 
-- [ ] 1.4 Confirm omission stays silent (deps: 1.2, 1.3, est: ~15m)
+- [x] 1.4 Confirm omission stays silent (deps: 1.2, 1.3, est: ~15m → actual ~25m)
   - why: R-1.7 is the backward-compatibility guarantee for this unit, and it is
     cheap to assert now and expensive to discover violated in Unit 6.
   - acceptance: R-1.7 — a document omitting `description:` validates unchanged,
     producing neither an error nor a warning.
   - verify: strip `description:` from a scratch-workspace document; `validate`
     output is byte-identical to before the strip.
-  - landed:
+  - **Written as a symmetry assertion, not the strip the plan described.** Every
+    fixture omits the field today and the goldens are green, so asserting the
+    current state passes would have been tautological — proof that nothing was
+    added, not that omission is tolerated. The shipped test compares validate's
+    output and exit code with the field present against absent, across all 15
+    typed documents, which additionally covers R-1.1's "blocks nothing" (untested
+    otherwise) and proves `description` is not a tag source at gate 4.
+  - landed: 6092f3e — internal/validate/description_test.go
+    (`TestDescriptionIsInvisibleToValidate`). `make check` green, both goldens
+    unchanged. Mutation-checked: swapping the inserted line for
+    `status: bogus-mutant` turns it red on exit code (0 → 1) and gate-4 tag
+    drift, so it detects change rather than passing trivially.
 
 ---
 
