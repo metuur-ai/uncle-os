@@ -1,6 +1,7 @@
 ---
 type: onboarding-guide
 id: onboarding-company-developer
+description: "Company-wide orientation: the three governance tiers, the change lifecycle, and where the validate gates refuse."
 role: developer
 tags: [kind/onboarding, role/developer]
 ---

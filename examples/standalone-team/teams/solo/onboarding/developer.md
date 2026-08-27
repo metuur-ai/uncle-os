@@ -1,6 +1,7 @@
 ---
 type: onboarding-guide
 id: onboarding-solo-developer
+description: "Single-team adoption with no platform or company layer, where governance is whatever the team writes down."
 role: developer
 team: solo
 tags: [kind/onboarding, role/developer, team/solo]

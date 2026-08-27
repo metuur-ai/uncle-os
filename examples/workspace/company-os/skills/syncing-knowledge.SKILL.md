@@ -1,5 +1,6 @@
 ---
 id: skill://governance/syncing-knowledge
+description: "The catalog is pull-only: change the source, bump the pin, re-sync — a branch pin is rejected as non-reproducible."
 type: skill
 version: '1.0'
 authority: canonical

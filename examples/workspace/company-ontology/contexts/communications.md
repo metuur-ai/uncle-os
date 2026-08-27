@@ -1,6 +1,7 @@
 ---
 type: bounded-context
 id: context://communications
+description: "Declares the ubiquitous language binding on any document that names this context in its frontmatter."
 tags: [ontology/context]
 aliases: [Communications Context]
 ownerPlatform: platform://communications

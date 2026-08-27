@@ -1,6 +1,7 @@
 ---
 type: concept
 id: capability://communications/message-delivery
+description: "Delivery counts as this capability only when status is observable and failures are recoverable."
 tags: [context/communications, ontology/capability, ontology/concept]
 aliases: [Message Delivery, message-delivery]
 boundedContext: context://communications
