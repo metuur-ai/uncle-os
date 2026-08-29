@@ -19,6 +19,7 @@ package main
 // tomorrow is covered tomorrow without anyone remembering to come here.
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -271,6 +272,10 @@ func TestMutatingScreensAreTheR55Names(t *testing.T) {
 		// is asserted separately below.
 		"validate discovery brief (writes)",
 		"new PRD (writes)",
+		// Amendment 6 (2026-08-28): `prd validate` under the same standard —
+		// an observed request, one form at a time. It sits after the screen that
+		// creates what it checks.
+		"validate PRD (writes)",
 		"add team (writes)",
 		"add platform (writes)",
 		"add component (writes)",
@@ -405,6 +410,69 @@ func TestFormPickersOfferOnlyValuesThatExist(t *testing.T) {
 			}
 		}
 	}
+}
+
+// TestValidatePRDPickerOffersActiveRecordsOnly is unit 2's acceptance, and the
+// half of it the generic catalog tests cannot see: they run against a fixture
+// with no change records, where every picker is legitimately empty, so nothing
+// so far proves this one ever fills.
+//
+// The archived record is placed by hand rather than by running `prd complete`,
+// because what is under test is the directory the picker reads, not the
+// lifecycle that puts things there — and `prd complete` refuses until reality is
+// updated, which would make this a test of the done-gate instead.
+func TestValidatePRDPickerOffersActiveRecordsOnly(t *testing.T) {
+	root := tuiWorkspace(t)
+	var out, errOut bytes.Buffer
+	if code := run([]string{"--root", root, "prd", "new",
+		"--platform", "plat", "--title", "Quiet hours", "--components", "svc"},
+		&out, &errOut); code != 0 {
+		t.Fatalf("prd new failed (%d): %s", code, errOut.String())
+	}
+	archived := filepath.Join(root, "platforms", "plat", "archive", "prds", "2026-already-done")
+	if err := os.MkdirAll(archived, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	ws := workspace.New(root)
+	got := activePRDIDs(ws)
+	if len(got) != 1 {
+		t.Fatalf("activePRDIDs = %v, want exactly the one active record", got)
+	}
+	if strings.Contains(got[0], "already-done") {
+		t.Errorf("activePRDIDs offers the archived record %q", got[0])
+	}
+
+	// End to end through the screen: the picked id reaches `prd validate` as the
+	// positional, and the previewed line parses back (R-5.10).
+	form := screenNamed(t, mutatingScreens(ws, root), "validate PRD (writes)").ResolveForm()
+	if len(form.Fields[0].Choices) != 1 || form.Fields[0].Choices[0] != got[0] {
+		t.Fatalf("picker choices = %v, want %v", form.Fields[0].Choices, got)
+	}
+	action, err := form.Build([]string{got[0]})
+	if err != nil {
+		t.Fatalf("build: %v", err)
+	}
+	back, err := parse(shellSplit(action.Preview())[1:])
+	if err != nil {
+		t.Fatalf("the previewed command does not parse: %s (%v)", action.Preview(), err)
+	}
+	if back.Cmd != "prd" || back.Action != "validate" || back.ID != got[0] {
+		t.Errorf("preview %q parses to %s %s %q", action.Preview(), back.Cmd, back.Action, back.ID)
+	}
+}
+
+// screenNamed finds one screen by title, failing rather than returning a zero
+// value, so a renamed screen reports itself instead of a nil dereference.
+func screenNamed(t *testing.T, screens []tui.Screen, title string) tui.Screen {
+	t.Helper()
+	for _, s := range screens {
+		if s.Title == title {
+			return s
+		}
+	}
+	t.Fatalf("no screen titled %q", title)
+	return tui.Screen{}
 }
 
 // ---------------------------------------------- R-5.8 / R-5.9 on a real tree

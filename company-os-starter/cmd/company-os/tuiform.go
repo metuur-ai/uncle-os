@@ -186,6 +186,39 @@ func mutatingScreens(ws *workspace.Workspace, root string) []tui.Screen {
 			},
 		},
 		{
+			// tui-lifecycle-completion unit 2. Sited immediately after the screen
+			// that creates what it validates, for the same reason unit 1 sits
+			// after `discover new`: the two are one step of the reader's work,
+			// and a checker that lives three screens from the thing it checks is
+			// a checker nobody finds.
+			//
+			// `prd validate` reads the record and reports; it does not rewrite it
+			// the way `discover validate` does. It is HERE anyway, not in the PRD
+			// browser, because the browser is a listing and the rule that keeps it
+			// safe is structural — browsing screens do not dispatch commands at
+			// all, so there is no per-command judgement call to get wrong later.
+			Title: "validate PRD (writes)",
+			Form: &tui.Form{
+				Fields: []tui.Field{
+					{
+						Label:   "prd",
+						Choices: activePRDIDs(ws),
+						Help:    prdFieldHelp(activePRDIDs(ws)),
+					},
+				},
+				Build: func(v []string) (tui.Action, error) {
+					// Id only, as in unit 1: `prd validate` searches every
+					// platform's change-records/active/ for the id
+					// (ux-simplification 1.2, resolvePlatform), so asking for the
+					// platform would be asking the reader a question the tool
+					// already answers from the id they just picked.
+					return newInvocation(ws, &Args{
+						Root: root, Cmd: "prd", Action: "validate", ID: v[0],
+					}), nil
+				},
+			},
+		},
+		{
 			Title: "add team (writes)",
 			Form: &tui.Form{
 				Fields: []tui.Field{idField("team")},
@@ -339,6 +372,43 @@ func briefIDsWithStatus(ws *workspace.Workspace, status string) []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+// activePRDIDs lists the change records `prd validate` can act on.
+//
+// Active only: archived records under archive/prds/ have already been through
+// `prd complete`, and offering one would offer a check on work that is finished.
+// Ids are deduplicated across platforms for the same reason briefIDsWithStatus
+// deduplicates across teams — the picker offers an id, resolvePlatform resolves
+// the rest, and a genuinely ambiguous id is reported better by that command than
+// by a list that cannot say which one it means.
+func activePRDIDs(ws *workspace.Workspace) []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, pdir := range ws.AllPlatforms() {
+		dir := filepath.Join(pdir, "change-records", "active")
+		for _, id := range subdirNames(dir) {
+			if seen[id] {
+				continue
+			}
+			seen[id] = true
+			out = append(out, id)
+		}
+	}
+	sort.Strings(out)
+	return out
+}
+
+// prdFieldHelp says plainly when there is nothing to validate, following
+// platformFieldHelp's rule: a required field with no Choices is
+// indistinguishable from a text box, so the help has to carry the news.
+func prdFieldHelp(active []string) string {
+	if len(active) == 0 {
+		return "the active PRD to check. This workspace has none — create one " +
+			"with \"new PRD\" first."
+	}
+	return "the active PRD to check. Validating reports what the record is " +
+		"still missing; it changes nothing."
 }
 
 // briefFieldHelp says plainly when there is nothing to validate, following

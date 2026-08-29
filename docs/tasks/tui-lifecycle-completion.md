@@ -77,7 +77,34 @@ protect, and it survives this change.
   - preview shows `company-os discover validate --team <t> <id>`
   - acceptance: create a brief in the TUI, validate it in the TUI, and see it
     appear in the "new PRD" form's picker — the exact path that is broken today
-- [ ] 2. `prd validate` screen (est ~45m) — picker lists active PRDs
+- [x] 2. `prd validate` screen (est ~45m) — picker lists active PRDs
+  **LANDED 2026-08-28.** "validate PRD (writes)" added to `mutatingScreens`,
+  sited immediately after the screen that creates what it checks. Picker lists
+  active records via a new `activePRDIDs` — archived ones under `archive/prds/`
+  are excluded, because a check on finished work is a choice that does nothing.
+  The form collects the PRD id only; `--platform` is resolved from the id
+  (ux-simplification 1.2, `resolvePlatform`). `make check` exit 0, five goldens
+  byte-identical.
+
+  **Required Amendment 6 to R-5.5** — the enumeration only. Amendment 5 had
+  already named this as one of the three remaining gaps and set the standard.
+  The one real judgement: `prd validate` mutates nothing, so `(writes)` and a
+  place in `mutatingScreens` over-warn. It goes there anyway, because the
+  read-only catalog dispatches no commands at all and that is structural rather
+  than per-command; the first browsing screen to dispatch would be the precedent,
+  and the next one added there would not be so harmless.
+
+  Added `TestValidatePRDPickerOffersActiveRecordsOnly` — the generic catalog
+  tests run on a fixture with no change records, where every picker is
+  legitimately empty, so nothing until now proved a picker ever fills.
+
+  **Known cosmetic wart, not introduced here:** the preview renders
+  `company-os prd validate <id> --platform ''`, because `screenCommand` always
+  prints a flag marked `required` and the parser's suspension of `--platform`
+  for `validate` lives in `parseSubcommand`, which the renderer cannot see.
+  Unit 1 shipped the same shape (`discover validate <id> --team ''`). Teaching
+  the renderer the suspension rules would duplicate them; the fix belongs in one
+  place or neither, and it is not this unit's scope.
 - [ ] 3. `reality new` screen (est ~45m) — pickers for platform + component
 - [ ] 4. `prd complete` screen (est ~1h) — the done-gate refuses on unchecked
       checklist items or a stale reality doc, so the screen must render that

@@ -170,7 +170,7 @@ friction F5 (35-40 domain terms) and F6 (EARS and `@spec` syntax) are untouched.
 | R-5.2 | THE SYSTEM SHALL NOT launch the TUI from a bare invocation, from any other subcommand, or from any environment-variable trigger. |
 | R-5.3 | IF `tui` is invoked with no TTY attached, THE SYSTEM SHALL print an explanatory message to stderr, exit 7, and make no filesystem change. |
 | R-5.4 | THE SYSTEM SHALL ship read-only screens first, enumerated and asserted by test: workspace overview, `today --role`, validate results, component browser, PRD browser, discovery browser, `governance explain`, `skills list`, `ids list`, and `workspace status`. |
-| R-5.5 | **Restated 2026-07-27 and 2026-08-28 — see [Amendment 4](#amendment-4--the-add-forms-2026-07-27) and [Amendment 5](#amendment-5--discover-validate-and-the-dead-end-it-closes-2026-08-28).** THE SYSTEM SHALL ship mutating forms only after R-5.4 is complete, each justified by an observed request rather than by completeness: `discover new`, `prd new`, `add team`, `add platform`, `add component`, and `discover validate`. THE SYSTEM SHALL NOT build forms for `workspace sync` or `scratchpad init`. THE SYSTEM SHALL NOT allow any browsing screen to reach `discover validate`, which rewrites the brief it is asked about. |
+| R-5.5 | **Restated 2026-07-27 and twice on 2026-08-28 — see [Amendment 4](#amendment-4--the-add-forms-2026-07-27), [Amendment 5](#amendment-5--discover-validate-and-the-dead-end-it-closes-2026-08-28) and [Amendment 6](#amendment-6--prd-validate-2026-08-28).** THE SYSTEM SHALL ship mutating forms only after R-5.4 is complete, each justified by an observed request rather than by completeness: `discover new`, `prd new`, `add team`, `add platform`, `add component`, `discover validate`, and `prd validate`. THE SYSTEM SHALL NOT build forms for `workspace sync` or `scratchpad init`. THE SYSTEM SHALL NOT allow any browsing screen to reach `discover validate`, which rewrites the brief it is asked about. |
 | R-5.6 | WHEN the TUI is about to perform a mutating action, THE SYSTEM SHALL display the exact flag-complete `company-os` invocation equivalent to that action before executing it. |
 | R-5.7 | THE SYSTEM SHALL derive the previewed command from the same argument structure it executes, and SHALL NOT hand-write a preview string per screen, because a hand-written preview drifts from what runs and destroys the property justifying interactive mutation. |
 | R-5.8 | WHILE a mutating action is previewed, THE SYSTEM SHALL require explicit confirmation and SHALL make no filesystem change until confirmation is given. |
@@ -193,6 +193,41 @@ friction F5 (35-40 domain terms) and F6 (EARS and `@spec` syntax) are untouched.
 
 | R-5.23 | WHEN the reader leaves the recovery menu of R-5.17 without selecting a workspace, THE SYSTEM SHALL exit 0, because quitting a menu is not a failure. |
 | R-5.26 | WHERE a mutating form offers choices describing workspace state the reader can change from inside the same session, THE SYSTEM SHALL resolve that form when its screen is opened rather than when the catalog is built, so a value created a moment ago is offerable without relaunching. Added 2026-07-27; see [Amendment 4](#amendment-4--the-add-forms-2026-07-27). |
+
+### Amendment 6 — `prd validate` (2026-08-28)
+
+**Authority:** the same restated goal that authorised Amendment 5 — *"I want to
+make it simple for users, non developer, to follow."* Amendment 5 named
+`prd validate` as one of the three remaining lifecycle gaps and said they ship
+"under the same standard, one at a time". This is the second of the three.
+
+**Statement being amended:** R-5.5's enumeration, which after Amendment 5 read
+`discover new`, `prd new`, `add team`, `add platform`, `add component`, and
+`discover validate`. `prd validate` is added to it.
+
+**The gap.** After Amendment 5 a reader can create a brief, validate it, and
+create a PRD from it — and then has nothing to tell them whether the PRD they
+just wrote is complete. `prd validate` is the command that answers that, and it
+is the check the reader wants *before* filling in a governance checklist, not
+after. Without a screen for it the menu still sends them to a terminal at
+exactly the point they most want reassurance.
+
+**Why it is a mutating screen even though it mutates nothing.** `prd validate`
+reads and reports; unlike `discover validate` it rewrites no frontmatter. It is
+in `mutatingScreens` regardless, because the read-only catalog is a set of
+listings that dispatch no commands at all. That is a structural property, not a
+per-command judgement, and it is worth more than the accuracy of one title: a
+screen that dispatched a command from the browsing half would be the first
+precedent for doing so, and the next one added there would not be so harmless.
+The `(writes)` title over-warns, which is the safe direction to be wrong in.
+
+**What is NOT relaxed.** R-5.6 through R-5.9 apply unchanged — preview, explicit
+confirmation, no filesystem change before it. The `workspace sync` and
+`scratchpad init` exclusions stand on Amendment 2's reasoning. The prohibition
+on any browsing screen reaching `discover validate` stands.
+
+**Scope.** `reality new` and `prd complete` remain, and ship under the same
+standard — see `docs/tasks/tui-lifecycle-completion.md`.
 
 ### Amendment 5 — `discover validate`, and the dead end it closes (2026-08-28)
 
