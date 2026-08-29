@@ -170,7 +170,7 @@ friction F5 (35-40 domain terms) and F6 (EARS and `@spec` syntax) are untouched.
 | R-5.2 | THE SYSTEM SHALL NOT launch the TUI from a bare invocation, from any other subcommand, or from any environment-variable trigger. |
 | R-5.3 | IF `tui` is invoked with no TTY attached, THE SYSTEM SHALL print an explanatory message to stderr, exit 7, and make no filesystem change. |
 | R-5.4 | THE SYSTEM SHALL ship read-only screens first, enumerated and asserted by test: workspace overview, `today --role`, validate results, component browser, PRD browser, discovery browser, `governance explain`, `skills list`, `ids list`, and `workspace status`. |
-| R-5.5 | **Restated 2026-07-27 and twice on 2026-08-28 — see [Amendment 4](#amendment-4--the-add-forms-2026-07-27), [Amendment 5](#amendment-5--discover-validate-and-the-dead-end-it-closes-2026-08-28) and [Amendment 6](#amendment-6--prd-validate-2026-08-28).** THE SYSTEM SHALL ship mutating forms only after R-5.4 is complete, each justified by an observed request rather than by completeness: `discover new`, `prd new`, `add team`, `add platform`, `add component`, `discover validate`, and `prd validate`. THE SYSTEM SHALL NOT build forms for `workspace sync` or `scratchpad init`. THE SYSTEM SHALL NOT allow any browsing screen to reach `discover validate`, which rewrites the brief it is asked about. |
+| R-5.5 | **Restated 2026-07-27, twice on 2026-08-28 and again 2026-08-29 — see [Amendment 4](#amendment-4--the-add-forms-2026-07-27), [Amendment 5](#amendment-5--discover-validate-and-the-dead-end-it-closes-2026-08-28), [Amendment 6](#amendment-6--prd-validate-2026-08-28) and [Amendment 7](#amendment-7--reality-new-and-the-pair-that-exists-nowhere-2026-08-29).** THE SYSTEM SHALL ship mutating forms only after R-5.4 is complete, each justified by an observed request rather than by completeness: `discover new`, `prd new`, `add team`, `add platform`, `add component`, `discover validate`, `prd validate`, and `reality new`. THE SYSTEM SHALL NOT build forms for `workspace sync` or `scratchpad init`. THE SYSTEM SHALL NOT allow any browsing screen to reach `discover validate`, which rewrites the brief it is asked about. WHERE a form collects two values whose valid combinations the workspace constrains, THE SYSTEM SHALL refuse an invalid combination in `Build`, before any preview is offered. |
 | R-5.6 | WHEN the TUI is about to perform a mutating action, THE SYSTEM SHALL display the exact flag-complete `company-os` invocation equivalent to that action before executing it. |
 | R-5.7 | THE SYSTEM SHALL derive the previewed command from the same argument structure it executes, and SHALL NOT hand-write a preview string per screen, because a hand-written preview drifts from what runs and destroys the property justifying interactive mutation. |
 | R-5.8 | WHILE a mutating action is previewed, THE SYSTEM SHALL require explicit confirmation and SHALL make no filesystem change until confirmation is given. |
@@ -193,6 +193,50 @@ friction F5 (35-40 domain terms) and F6 (EARS and `@spec` syntax) are untouched.
 
 | R-5.23 | WHEN the reader leaves the recovery menu of R-5.17 without selecting a workspace, THE SYSTEM SHALL exit 0, because quitting a menu is not a failure. |
 | R-5.26 | WHERE a mutating form offers choices describing workspace state the reader can change from inside the same session, THE SYSTEM SHALL resolve that form when its screen is opened rather than when the catalog is built, so a value created a moment ago is offerable without relaunching. Added 2026-07-27; see [Amendment 4](#amendment-4--the-add-forms-2026-07-27). |
+
+### Amendment 7 — `reality new`, and the pair that exists nowhere (2026-08-29)
+
+**Authority:** the same restated goal as Amendments 5 and 6. Third of the four
+gaps Amendment 5 enumerated.
+
+**Statement being amended:** R-5.5's enumeration gains `reality new`, and R-5.5
+gains one new clause about invalid combinations — see below.
+
+**The gap.** `prd complete` refuses while a component's reality doc is older
+than the PRD (invariant 4). A reader who reaches the end of a change and has no
+reality doc at all cannot write one from the menu, which is the point in the
+lifecycle where the refusal they are about to hit is least self-explanatory.
+
+**Why this form needed a new clause and the previous six did not.** It is the
+first form whose two fields constrain each other: a component belongs to one
+platform, and a form has no way to narrow one picker from another picker's
+value. So the catalog can hand `Build` a `(platform, component)` pair that
+exists nowhere in the workspace.
+
+That pair **does not fail.** `scaffold.RealityNew` resolves the platform
+directory and writes `<platform>/reality/components/<id>.md` without ever asking
+whether the component lives under that platform — so a mis-picked pair
+scaffolds one platform's component underneath another and reports success. The
+form refuses the pair in `Build`, which is the seam `addInvocation` already uses
+for the empty-slug case: the reader stays in the form with the reason, and
+nothing is written.
+
+The clause is written as a general rule rather than as a note about this screen,
+because the next two-field form will have the same shape and the reasoning is
+not specific to reality docs.
+
+**Not fixed here, and deliberately.** The underlying CLI accepts the mismatched
+pair from any caller, not just the TUI — `company-os reality new --platform
+other svc` misfiles just as silently. Closing that belongs in `RealityNew`,
+where it would apply to every caller, and it is a CLI behavior change that this
+unit's acceptance excludes. The form guards the path it opens; the CLI hazard
+predates it and is recorded in `docs/tasks/tui-lifecycle-completion.md`.
+
+**Picker scope.** Only components without a reality doc are offered, because
+`RealityNew` refuses to overwrite an existing one. The screen resolves at open
+time under R-5.26 so the list shrinks as docs are written within a session.
+
+**Scope.** `prd complete` remains — the last of the four.
 
 ### Amendment 6 — `prd validate` (2026-08-28)
 

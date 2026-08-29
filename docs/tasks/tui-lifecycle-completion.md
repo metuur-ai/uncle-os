@@ -105,7 +105,36 @@ protect, and it survives this change.
   Unit 1 shipped the same shape (`discover validate <id> --team ''`). Teaching
   the renderer the suspension rules would duplicate them; the fix belongs in one
   place or neither, and it is not this unit's scope.
-- [ ] 3. `reality new` screen (est ~45m) — pickers for platform + component
+- [x] 3. `reality new` screen (est ~45m) — pickers for platform + component
+  **LANDED 2026-08-29.** "new reality doc (writes)" added to `mutatingScreens`.
+  Resolved at open time (R-5.26) like `add component`: the component list must
+  both grow as components are added and **shrink** as docs are written, within
+  one sitting. Only components without a reality doc are offered —
+  `scaffold.RealityNew` refuses to overwrite, so the rest are certain errors.
+  `make check` exit 0, five goldens byte-identical.
+
+  **Required Amendment 7 to R-5.5** — the enumeration, plus one genuinely new
+  clause. This is the first form whose two fields constrain each other, and a
+  form cannot narrow one picker from another picker's value, so the catalog can
+  hand `Build` a `(platform, component)` pair that exists nowhere. **That pair
+  does not fail:** `RealityNew` never checks that the component lives under the
+  platform it was given, so it would scaffold one platform's component
+  underneath another and report success. `realityInvocation` refuses it in
+  `Build` — `addInvocation`'s seam, for the same reason. The new clause is
+  written generally, because the next two-field form will have the same shape.
+
+  Tests: `TestRealityScreenRefusesAComponentFromAnotherPlatform` (both
+  directions, plus a tree digest proving the refusal wrote nothing) and
+  `TestRealityPickerOffersOnlyComponentsWithoutADoc` (reopening the screen after
+  writing a doc, which is what proves R-5.26 holds here).
+
+  **CLI hazard found, not fixed — needs a decision.** `company-os reality new
+  --platform other svc` misfiles silently for *any* caller, not just the TUI:
+  `internal/scaffold/commands.go:451` resolves the platform dir and writes,
+  using `ws.FindComponent` only to look up a display name. The form guards the
+  path it opens. Closing it properly means refusing in `RealityNew`, which is a
+  CLI behavior change this unit's acceptance excludes — so it is deferred as its
+  own decision, not folded in here.
 - [ ] 4. `prd complete` screen (est ~1h) — the done-gate refuses on unchecked
       checklist items or a stale reality doc, so the screen must render that
       refusal legibly rather than as a wall of text

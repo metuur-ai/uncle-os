@@ -219,6 +219,37 @@ func mutatingScreens(ws *workspace.Workspace, root string) []tui.Screen {
 			},
 		},
 		{
+			// tui-lifecycle-completion unit 3.
+			//
+			// Resolved at open time for the same reason `add component` is: a
+			// reader who scaffolds a component and then its reality doc in one
+			// sitting must see the component they just created, and the choices
+			// here also SHRINK as docs are written (R-5.26).
+			Title: "new reality doc (writes)",
+			FormFn: func() *tui.Form {
+				rows := componentCatalog(ws)
+				targets := realityTargets(rows)
+				current := baseNames(ws.AllPlatforms())
+				return &tui.Form{
+					Fields: []tui.Field{
+						{
+							Label:   "platform",
+							Choices: current,
+							Help:    platformFieldHelp(current),
+						},
+						{
+							Label:   "component",
+							Choices: targets,
+							Help:    realityFieldHelp(targets),
+						},
+					},
+					Build: func(v []string) (tui.Action, error) {
+						return realityInvocation(ws, root, rows, v[0], v[1])
+					},
+				}
+			},
+		},
+		{
 			Title: "add team (writes)",
 			Form: &tui.Form{
 				Fields: []tui.Field{idField("team")},
@@ -310,6 +341,76 @@ func addInvocation(ws *workspace.Workspace, root, kind, id, platform string) (tu
 	}
 	return newInvocation(ws, &Args{
 		Root: root, Cmd: "add", Kind: kind, Name: id, Platform: platform,
+	}), nil
+}
+
+// realityTargets lists the components `reality new` can still act on: the ones
+// with no reality doc yet.
+//
+// scaffold.RealityNew refuses to overwrite an existing doc, so offering a
+// component that already has one is offering a certain conflict error. Ids are
+// NOT deduplicated across platforms — the same id under two platforms is two
+// separate documents to write, and the platform field is what tells them apart.
+func realityTargets(rows []componentRow) []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, r := range rows {
+		if r.reality || seen[r.id] {
+			continue
+		}
+		seen[r.id] = true
+		out = append(out, r.id)
+	}
+	sort.Strings(out)
+	return out
+}
+
+// realityFieldHelp says plainly when there is nothing left to scaffold, which
+// here is the HEALTHY state rather than the empty one — every component already
+// has its reality doc — and must not read like a workspace defect.
+func realityFieldHelp(targets []string) string {
+	if len(targets) == 0 {
+		return "the component whose current state to describe. Every component " +
+			"in this workspace already has a reality doc."
+	}
+	return "the component whose current state to describe. Only components " +
+		"without one are offered; `prd complete` refuses while this doc is " +
+		"older than the PRD."
+}
+
+// realityInvocation refuses a component that belongs to a different platform.
+//
+// The two pickers are independent — a form has no way to narrow one field from
+// another's value — so the catalog can hand Build a pair that exists nowhere.
+// That pair does not fail: scaffold.RealityNew resolves the platform directory
+// and writes `<chosen-platform>/reality/components/<id>.md` without ever asking
+// whether the component lives there, so a mis-picked pair scaffolds a reality
+// doc for one platform's component underneath another. Refusing here is
+// addInvocation's seam, used for the same reason: the reader stays in the form
+// with the reason, and nothing is written.
+//
+// An id the catalog does not know at all is passed through rather than refused.
+// It cannot have come from the picker, so it was typed, and the CLI's own
+// handling of an unknown component is the same whoever invoked it.
+func realityInvocation(ws *workspace.Workspace, root string, rows []componentRow, platform, component string) (tui.Action, error) {
+	var elsewhere []string
+	for _, r := range rows {
+		if r.id != component {
+			continue
+		}
+		if r.platform == platform {
+			elsewhere = nil
+			break
+		}
+		elsewhere = append(elsewhere, r.platform)
+	}
+	if len(elsewhere) > 0 {
+		return nil, fmt.Errorf("%q is a component of %s, not of %q",
+			component, strings.Join(elsewhere, ", "), platform)
+	}
+	return newInvocation(ws, &Args{
+		Root: root, Cmd: "reality", Action: "new",
+		Platform: platform, ComponentArg: component,
 	}), nil
 }
 

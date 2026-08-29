@@ -276,6 +276,9 @@ func TestMutatingScreensAreTheR55Names(t *testing.T) {
 		// an observed request, one form at a time. It sits after the screen that
 		// creates what it checks.
 		"validate PRD (writes)",
+		// Amendment 7 (2026-08-29): `reality new`, third of the four lifecycle
+		// gaps Amendment 5 enumerated.
+		"new reality doc (writes)",
 		"add team (writes)",
 		"add platform (writes)",
 		"add component (writes)",
@@ -459,6 +462,67 @@ func TestValidatePRDPickerOffersActiveRecordsOnly(t *testing.T) {
 	}
 	if back.Cmd != "prd" || back.Action != "validate" || back.ID != got[0] {
 		t.Errorf("preview %q parses to %s %s %q", action.Preview(), back.Cmd, back.Action, back.ID)
+	}
+}
+
+// TestRealityScreenRefusesAComponentFromAnotherPlatform is unit 3's real risk,
+// and the reason the refusal lives in Build rather than being left to the CLI:
+// the mis-picked pair does not fail. scaffold.RealityNew never asks whether the
+// component belongs to the platform it was given, so it would scaffold one
+// platform's component underneath another and report success.
+//
+// Both directions are asserted. A test that only checked the refusal would pass
+// on a Build that refuses everything.
+func TestRealityScreenRefusesAComponentFromAnotherPlatform(t *testing.T) {
+	root := tuiWorkspace(t)
+	var out, errOut bytes.Buffer
+	if code := run([]string{"--root", root, "add", "platform", "other"},
+		&out, &errOut); code != 0 {
+		t.Fatalf("add platform failed (%d): %s", code, errOut.String())
+	}
+	ws := workspace.New(root)
+	form := screenNamed(t, mutatingScreens(ws, root), "new reality doc (writes)").ResolveForm()
+
+	// "svc" belongs to "plat" (tuiWorkspace), so this pair exists nowhere.
+	before := treeDigest(t, root)
+	if _, err := form.Build([]string{"other", "svc"}); err == nil {
+		t.Fatal("built an invocation for a component of another platform")
+	} else if !strings.Contains(err.Error(), "plat") {
+		t.Errorf("refusal does not name where the component lives: %v", err)
+	}
+	if after := treeDigest(t, root); after != before {
+		t.Error("a refused build touched the workspace")
+	}
+
+	action, err := form.Build([]string{"plat", "svc"})
+	if err != nil {
+		t.Fatalf("the pair that DOES exist was refused: %v", err)
+	}
+	if !strings.Contains(action.Preview(), "reality new") {
+		t.Errorf("preview is not a reality new: %s", action.Preview())
+	}
+}
+
+// TestRealityPickerOffersOnlyComponentsWithoutADoc: RealityNew refuses to
+// overwrite, so a component that already has a doc is a choice guaranteed to
+// error. The screen resolves at open time (R-5.26), so the list must SHRINK
+// once the doc is written — checked here by reopening rather than by rebuilding
+// the catalog, which is what a reader does in one sitting.
+func TestRealityPickerOffersOnlyComponentsWithoutADoc(t *testing.T) {
+	root := tuiWorkspace(t)
+	ws := workspace.New(root)
+	screen := screenNamed(t, mutatingScreens(ws, root), "new reality doc (writes)")
+	if got := screen.ResolveForm().Fields[1].Choices; !slices.Equal(got, []string{"svc"}) {
+		t.Fatalf("component choices = %v, want [svc]", got)
+	}
+
+	var out, errOut bytes.Buffer
+	if code := run([]string{"--root", root, "reality", "new",
+		"--platform", "plat", "svc"}, &out, &errOut); code != 0 {
+		t.Fatalf("reality new failed (%d): %s", code, errOut.String())
+	}
+	if got := screen.ResolveForm().Fields[1].Choices; len(got) != 0 {
+		t.Errorf("component choices = %v after the doc was written, want none", got)
 	}
 }
 
