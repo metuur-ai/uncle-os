@@ -241,6 +241,43 @@ and PRD collapsed) — is not attempted here and is excluded by N8. **This is wh
 the change is held rather than locked.** The validation protocol exists to decide
 between the two axes before more is specified.
 
-**A6 — `find` staleness assigned, not dropped.** See N9. Follow-up: a staleness
-hint when derived surfaces are older than their sources; the drift detection
-already exists (`cmd/company-os/tuiadvise.go:69-115`).
+**A6 — `find` staleness assigned, not dropped — and PROMOTED by the workload
+evidence.** See N9. `internal/find/find.go:124-428` consumes four derived
+surfaces with no freshness check and returns stale hits silently. At ~40
+changes/month that is hundreds of consultations a year with an invisible failure
+mode, hitting hardest the user least equipped to detect it. Cheap: reuse the
+drift detection already in `cmd/company-os/tuiadvise.go:69-115`. **This is the
+highest-value code item not currently scoped.**
+
+**A7 — `profile: solo` is killed, in writing, not parked.** The two-root finding
+is real (a `platforms/` + `teams/` workspace validates clean and idempotent with
+zero code changes) and the work is S–M. It is still **not worth doing**: it
+optimizes workspace *setup*, which the owner reports happens **quarterly**,
+against an explicit instruction to design for today's reality. Left on the board
+as "the big conceptual option" it will keep attracting attention it no longer
+deserves. Recorded as closed so the next reader does not re-derive it. Reopen
+only if adoption — not per-change cost — becomes the goal.
+
+**A8 — the throughput/fidelity risk, named because nobody had named it.** Read
+U2, U3, U7 and U6 together rather than separately. U2 removes the step where an
+author states which platform and components a change touches; U3 turns the
+guidance chain into a paste-through script, so a full lifecycle can run with no
+command composed by a human; U7 collapses the warnings that were — clumsily — the
+only signal that an artifact was still empty; U6 blesses gate 3 accepting four
+fields where `prd validate` wants six. **Individually each removes friction;
+together they remove the moments at which an operator is obliged to look at the
+artifact.** At 40 changes/month with agents in the loop, that composition is a
+well-formed pipeline for producing artifacts that pass every gate and say
+nothing. Gates measure structure; nothing measures whether a reality doc
+describes reality. Throughput rose, the only quality feedback fell, and no
+instrument watches the second number. Not addressed here; recorded so the next
+change cannot claim it was unforeseen.
+
+**A9 — U2's inference has a quarterly expiry.** Inference is unique-match-only,
+which is correct. It therefore works today and **stops working at the first
+`add platform`** — an event the owner reports happens quarterly. By then the
+docs, the operators' habits and every agent prompt will have standardized on the
+flag-free form, and it breaks for all of them simultaneously with a usage error.
+Survivable if anticipated: the help text and tutorial should say inference holds
+*while* the workspace admits one candidate, and someone should decide before it
+happens whether ambiguity ought to prompt rather than fail.

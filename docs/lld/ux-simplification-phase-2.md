@@ -266,9 +266,36 @@ U1(output lines) → U7`.
 
 ## Key Decisions
 
-**D1 — Optimize for non-technical users.** U1 and U7 are the success condition;
-U2/U3/U5 are accompanying work. Review found the first draft claimed this and
-then wrote Success Criteria that did not reflect it; SC1–SC4 and SC10 now do.
+**D1 — Optimize for the practiced non-technical operator.** *(Rewritten
+2026-08-28. The original read "Optimize for non-technical users. U1 is therefore
+the centerpiece and lands first; CLI ergonomics follow." Senior review flagged
+that as contradicted-but-unretracted once the workload evidence arrived, and it
+was right to.)*
+
+The owner gave two facts, not two competing answers: **non-technical** is an
+identity fact, **~40 changes/month** is a frequency fact. They compose into one
+person — a practiced non-technical operator — and that person is served by
+neither of the obvious readings:
+
+- A **menu** fails them at repetition 400. U1 is correctly demoted.
+- **Engineer-shaped CLI ergonomics** would be the wrong correction. U2/U3/U7 are
+  not engineer features: U2 removes three IDs this person must hold, U3 makes the
+  printed line pasteable, U7 removes noise from a screen they read ~480 times a
+  year. Nothing there assumes an engineer.
+
+So the audience never changed; its *cadence* did. The distinction matters because
+"we demoted the non-technical unit" and "we retargeted at the practiced version
+of the same person" are one commit apart and a year of drift apart.
+
+**Open and gating (recorded, not resolved): headcount.** 40 changes/month ÷ N
+producers decides this. N=1 is ~2 changes/business-day and deep muscle memory, so
+the demotion is strongly right. N=8 is ~5/month each — roughly weekly, not muscle
+memory — and a menu plausibly wins, which would make the demotion wrong. The same
+number decides whether an observation session has a valid participant to recruit
+at all. It was drafted as one of five owner questions and is the one that did not
+come back.
+
+U1 and U7 remain the Group A success condition; SC1–SC4 and SC10 reflect it.
 
 **D2 — Document the PRD contract split rather than widen gate 3.** *Rejected:*
 widening gate 3 — better enforcement, but changes goldens and can fail active
