@@ -309,3 +309,152 @@ func TestExistingFlagCarryingInvocationsUnchanged(t *testing.T) {
 		t.Errorf("stderr = %q, want the existing not-found message", stderr.String())
 	}
 }
+
+// ============================================================================
+// ux-simplification Phase 2 (Unit 2): `prd new` context inference.
+//
+// The Phase 1 tests above cover inference that LOCATES an existing artifact.
+// These cover inference that decides where a NEW one belongs — a different
+// claim, so they use a different resolver (InferPlatformForNew enumerates
+// platforms/ rather than searching for a record by id) and get their own
+// tests rather than extending the ones above.
+// ============================================================================
+
+// TestPRDNewInfersSolePlatform is the headline case (R-2.1): a workspace with
+// exactly one platform needs no --platform, because there is only one answer.
+func TestPRDNewInfersSolePlatform(t *testing.T) {
+	root := inferWorkspace(t, nil, nil) // scratchWorkspace makes exactly "plat"
+
+	var stdout, stderr bytes.Buffer
+	code := run([]string{"--root", root, "prd", "new",
+		"--team", "core", "--title", "Sole platform"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("run() = %d, want 0\nstdout: %s\nstderr: %s",
+			code, stdout.String(), stderr.String())
+	}
+	created := filepath.Join(root, "platforms", "plat",
+		"change-records", "active", "2026-sole-platform", "prd.md")
+	if _, err := os.Stat(created); err != nil {
+		t.Errorf("PRD not created under the inferred platform: %v", err)
+	}
+}
+
+// TestPRDNewAmbiguousPlatformListsCandidates pins R-2.2: several platforms is
+// a usage error naming every one of them, never a guess. `prd new` WRITES, so
+// a wrong inference files the record in the wrong catalog.
+func TestPRDNewAmbiguousPlatformListsCandidates(t *testing.T) {
+	root := inferWorkspace(t, []string{"alpha", "beta"}, nil)
+
+	var stdout, stderr bytes.Buffer
+	code := run([]string{"--root", root, "prd", "new",
+		"--team", "core", "--title", "Ambiguous"}, &stdout, &stderr)
+	if code != int(model.ExitUsage) {
+		t.Fatalf("run() = %d, want %d\nstderr: %s", code, model.ExitUsage, stderr.String())
+	}
+	for _, want := range []string{"alpha", "beta", "plat", "--platform"} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Errorf("stderr = %q, missing %q", stderr.String(), want)
+		}
+	}
+}
+
+// TestPRDNewExplicitPlatformWins pins R-2.6 for the create path: the flag is
+// used unread even where inference would have refused as ambiguous.
+func TestPRDNewExplicitPlatformWins(t *testing.T) {
+	root := inferWorkspace(t, []string{"alpha", "beta"}, nil)
+
+	var stdout, stderr bytes.Buffer
+	code := run([]string{"--root", root, "prd", "new", "--team", "core",
+		"--platform", "beta", "--title", "Explicit"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("run() = %d, want 0\nstderr: %s", code, stderr.String())
+	}
+	created := filepath.Join(root, "platforms", "beta",
+		"change-records", "active", "2026-explicit", "prd.md")
+	if _, err := os.Stat(created); err != nil {
+		t.Errorf("PRD not created under the explicit platform: %v", err)
+	}
+}
+
+// TestPRDNewNoPlatformKeepsExistingVoice pins R-2.3: a workspace with no
+// platforms at all is not an ambiguity the user can fix with a flag, so the
+// existing PlatformDir diagnostic is left to speak rather than a usage error
+// naming a remedy that does not exist.
+func TestPRDNewNoPlatformKeepsExistingVoice(t *testing.T) {
+	root := t.TempDir()
+	mkAll(t, filepath.Join(root, "teams", "core"))
+
+	var stdout, stderr bytes.Buffer
+	code := run([]string{"--root", root, "prd", "new",
+		"--team", "core", "--title", "Nowhere"}, &stdout, &stderr)
+	if code == 0 {
+		t.Fatalf("run() = 0, want a failure\nstdout: %s", stdout.String())
+	}
+	if code == int(model.ExitUsage) {
+		t.Errorf("run() = %d (usage); a platform-less workspace is not a "+
+			"usage error the user can fix by passing --platform", code)
+	}
+}
+
+// ============================================================================
+// ux-simplification Phase 2 (Unit 3): the guidance chain prints resolved values.
+// ============================================================================
+
+// writeDraftBrief creates a status:draft brief under the named team.
+func writeDraftBrief(t *testing.T, root, team, id string) {
+	t.Helper()
+	dir := filepath.Join(root, "teams", team, "product", "discovery", id)
+	mkAll(t, dir)
+	writeFile(t, filepath.Join(dir, "brief.md"),
+		"---\ntype: discovery-brief\nid: "+id+"\ntitle: Guidance\n"+
+			"status: draft\nteam: "+team+"\ncreated: 2026-01-01\n"+
+			"tags: [kind/discovery, team/"+team+", status/draft]\n---\n\n"+
+			// All three DiscoverySections must be present or validation FAILS
+			// before any guidance is emitted — which would make these tests
+			// pass vacuously by finding no placeholder in an error message.
+			"# Discovery: Guidance\n\n## Problem signal\nP\n\n"+
+			"## Hypothesis\nH\n\n"+
+			"## Success criteria\nS\n\n## Stakeholders\n\n## Risks\n")
+}
+
+// TestDiscoverValidateGuidanceResolvesPlaceholders is R-3.1/R-3.6: in a
+// workspace with one platform the printed `prd new` carries real values, so the
+// user can paste it instead of going to look two ids up.
+func TestDiscoverValidateGuidanceResolvesPlaceholders(t *testing.T) {
+	root := inferWorkspace(t, nil, nil) // exactly one platform: "plat"
+	writeDraftBrief(t, root, "core", "2026-guidance")
+
+	var stdout, stderr bytes.Buffer
+	if code := run([]string{"--root", root, "discover", "validate", "2026-guidance"},
+		&stdout, &stderr); code != 0 && code != 1 {
+		t.Fatalf("run() = %d\nstdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
+	}
+	out := stdout.String()
+	if strings.Contains(out, "<platform-id>") {
+		t.Errorf("guidance still carries the platform placeholder:\n%s", out)
+	}
+	if !strings.Contains(out, "--platform plat") {
+		t.Errorf("guidance should name the sole platform:\n%s", out)
+	}
+}
+
+// TestDiscoverValidateGuidanceKeepsPlaceholdersWhenAmbiguous is R-3.2: with
+// several platforms there is nothing to substitute, and the placeholder is the
+// honest answer. Ambiguity must NOT turn this read-mostly command into a usage
+// error — the guidance is advice, not a gate.
+func TestDiscoverValidateGuidanceKeepsPlaceholdersWhenAmbiguous(t *testing.T) {
+	root := inferWorkspace(t, []string{"alpha", "beta"}, nil)
+	writeDraftBrief(t, root, "core", "2026-ambiguous")
+
+	var stdout, stderr bytes.Buffer
+	code := run([]string{"--root", root, "discover", "validate", "2026-ambiguous"},
+		&stdout, &stderr)
+	if code == int(model.ExitUsage) {
+		t.Fatalf("ambiguity turned discover validate into a usage error:\n%s",
+			stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "<platform-id>") {
+		t.Errorf("guidance should keep the placeholder when ambiguous:\n%s",
+			stdout.String())
+	}
+}

@@ -456,11 +456,17 @@ func TestArgumentErrorDiagnostics(t *testing.T) {
 			"usage: company-os discover [-h] --team TEAM {new,validate} [title]",
 			"company-os discover: error: the following arguments are required: --team",
 		},
+		// ux-simplification Phase 2 (Unit 2) retired the `prd new --platform`
+		// case that used to live here: the flag is now suspended for `new` and
+		// resolved by InferPlatformForNew, so a missing --platform is a runtime
+		// decision (infer, or name the candidates) rather than a parse error.
+		// `reality new` keeps the unconditional-required-flag path under test —
+		// it is the last create-command whose --platform the parser enforces.
 		{
 			"missing --platform",
-			[]string{"prd", "new", "--team", "customer-engagement", "--title", "T"},
-			prdUsage,
-			"company-os prd: error: the following arguments are required: --platform",
+			[]string{"reality", "new", "billing-api"},
+			realityUsage,
+			"company-os reality: error: the following arguments are required: --platform",
 		},
 		{
 			"missing --components", []string{"check", "ready", "--team", "customer-engagement"},
@@ -566,9 +572,17 @@ func TestArgumentErrorDiagnostics(t *testing.T) {
 			"company-os discover: error: the following arguments are required: --team",
 		},
 		{
-			"surplus positional loses to the required check, prd",
-			[]string{"prd", "new", "id1", "extra"}, prdUsage,
-			"company-os prd: error: the following arguments are required: --platform",
+			// Repointed by ux-simplification Phase 2 (Unit 2). This case
+			// documents PRECEDENCE — a missing required flag outranks a surplus
+			// positional — which needs a command whose flag the parser still
+			// enforces. `prd new` no longer qualifies: with --platform
+			// suspended there is no required check left to win, so the surplus
+			// positional now surfaces on its own, exactly as it already did for
+			// `prd validate id1 extra` and `prd promote id1 extra` (both
+			// suspended since Phase 1). That is consistency, not regression.
+			"surplus positional loses to the required check, reality",
+			[]string{"reality", "new", "id1", "extra"}, realityUsage,
+			"company-os reality: error: the following arguments are required: --platform",
 		},
 
 		// --- a flag missing its value ---
@@ -631,7 +645,8 @@ func TestArgumentErrorDiagnostics(t *testing.T) {
 
 // Usage lines long enough to be worth naming once.
 const (
-	todayUsage = "usage: company-os today [-h] [--role {developer,team-lead," +
+	realityUsage = "usage: company-os reality [-h] --platform PLATFORM {new} component"
+	todayUsage   = "usage: company-os today [-h] [--role {developer,team-lead," +
 		"product-owner,architect,vp-engineering,director-of-product}] [--team TEAM]"
 	prdUsage = "usage: company-os prd [-h] [--team TEAM] --platform PLATFORM " +
 		"[--components COMPONENTS] [--title TITLE] " +

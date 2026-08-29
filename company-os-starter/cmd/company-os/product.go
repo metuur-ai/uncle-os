@@ -59,7 +59,27 @@ func cmdPRD(ws *workspace.Workspace, args *Args, _ io.Writer) ([]model.GateResul
 			return product.DraftNew(ws, args.Team, args.Platform, title,
 				args.FromDiscovery, rebuildSections)
 		}
-		return product.PRDNew(ws, args.Team, args.Platform, args.Components,
+		// ux-simplification Phase 2 (Unit 2): infer --team and --platform when
+		// the workspace admits exactly one answer. Team is resolved FIRST and
+		// before PRDNew, because carryDiscovery (internal/product/prd.go)
+		// raises its own "--team required" the moment it is handed an empty
+		// team with a discovery id — that check would fire before any
+		// inference downstream of it could run.
+		team, err := product.InferTeamForNew(ws, args.Team, args.FromDiscovery)
+		if err != nil {
+			return nil, err
+		}
+		platform, err := product.InferPlatformForNew(ws, args.Platform)
+		if err != nil {
+			return nil, err
+		}
+		// Components last: it reads the team's effective governance, so it
+		// needs the resolved team, not the raw flag.
+		components, err := product.InferComponentsForNew(ws, args.Components, team)
+		if err != nil {
+			return nil, err
+		}
+		return product.PRDNew(ws, team, platform, components,
 			args.Title, args.FromDiscovery)
 	case "validate":
 		// ux-simplification 1.2: --platform is optional for validate and

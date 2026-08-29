@@ -175,11 +175,14 @@ var commandSpecs = []cmdSpec{
 		},
 		flags: []flagSpec{
 			strFlag("team", func(a *Args) *string { return &a.Team }),
-			// ux-simplification 1.2: --platform stays required for `new` but
-			// is suspended for `validate` and `complete`, where the PRD id can
-			// be searched across every platform's active and archived records.
+			// ux-simplification 1.2 suspended --platform for `validate` and
+			// `complete` (the id locates the record); Phase 2 Unit 2 suspends
+			// it for `new` as well (a single-platform workspace has one answer).
+			// It remains required in the sense that matters: an ambiguous or
+			// absent workspace still refuses, just after inference rather than
+			// before it.
 			{name: "platform", required: true,
-				help: "required unless the id is unique across the workspace",
+				help: "required unless uniquely inferable from the workspace",
 				str:  func(a *Args) *string { return &a.Platform }},
 			{name: "components", def: "",
 				str: func(a *Args) *string { return &a.Components }},
@@ -351,6 +354,13 @@ var commandSpecs = []cmdSpec{
 		// there is no way to reach the UI except by typing its name — no bare
 		// invocation, no other subcommand, no environment variable (R-5.2).
 		// A bare `company-os` still prints help and exits 2, as it always has.
+		// ux-simplification Phase 2 (Unit 1): R-1.4 wanted this help to name the
+		// UI's screens and its gap. It cannot — help() forbids a description
+		// line, because none of the oracle's sub-parsers sets one and R-0.8
+		// freezes the human-facing output (cmd/company-os/main.go:214-217).
+		// The disclosure therefore lives in company-os-starter/README.md and
+		// both TUTORIAL.md copies, which is where a reader deciding whether to
+		// rely on the UI is actually looking.
 		name: "tui", help: "interactive terminal UI (browse, and scaffold with confirmation)", goOnly: true,
 	},
 	{
@@ -673,9 +683,19 @@ func parseSubcommand(a *Args, spec cmdSpec, argv []string) ([]string, error) {
 		// platform's change-records/active/ and archive/prds/ by the dispatch
 		// layer (resolvePlatform), so the user need not know where the record
 		// lives before asking the tool to check it.
+		//
+		// ux-simplification Phase 2 (Unit 2): `prd new` suspends it for a fifth
+		// reason, and a different one — not "the tool can find where the record
+		// already lives" but "the workspace admits exactly one place it could
+		// go". InferPlatformForNew enumerates platforms/ and proceeds only on a
+		// unique match; several platforms still produce a usage error naming
+		// every candidate, so the requirement is enforced after inference
+		// rather than dropped. This is the `governance resolve` pattern —
+		// checked at runtime because the parser cannot read the workspace.
 		if spec.name == "prd" && f.name == "platform" &&
 			(seen["draft"] || a.Action == "promote" || a.Action == "abandon" ||
-				a.Action == "validate" || a.Action == "complete") {
+				a.Action == "validate" || a.Action == "complete" ||
+				a.Action == "new") {
 			continue
 		}
 		// ux-simplification 1.2: `discover validate` suspends --team so the

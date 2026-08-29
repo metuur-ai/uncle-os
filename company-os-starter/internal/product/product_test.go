@@ -391,3 +391,60 @@ func contains(items []string, want string) bool {
 	}
 	return false
 }
+
+// ux-simplification Phase 2 (Unit 7): empty-section warnings aggregate.
+//
+// The three cases below are the whole contract: collapse only when it helps
+// (several warnings, nobody blocked), and leave the two paths where per-section
+// detail is earned exactly as they were.
+func TestApplyFormatPolicyAggregatesUnenforcedWarnings(t *testing.T) {
+	format := []Issue{
+		{Code: model.CodeSectionEmpty, Fields: model.Fields{"section": "Problem signal"}},
+		{Code: model.CodeSectionEmpty, Fields: model.Fields{"section": "Hypothesis"}},
+		{Code: model.CodeSectionEmpty, Fields: model.Fields{"section": "Success criteria"}},
+	}
+
+	t.Run("several empty, not enforced -> one finding", func(t *testing.T) {
+		blocking, warnings := applyFormatPolicy(nil, format, false)
+		if len(blocking) != 0 {
+			t.Fatalf("blocking = %d, want 0 — guidance must never block", len(blocking))
+		}
+		if len(warnings) != 1 {
+			t.Fatalf("warnings = %d, want 1 aggregated finding", len(warnings))
+		}
+		msg := Message(model.CodeSectionEmpty, warnings[0].Fields)
+		for _, want := range []string{
+			"Problem signal", "Hypothesis", "Success criteria", "doc-formats.yaml",
+		} {
+			if !strings.Contains(msg, want) {
+				t.Errorf("aggregated message %q missing %q", msg, want)
+			}
+		}
+		// The opt-in pointer is the repetitive half; it must appear once.
+		if n := strings.Count(msg, "doc-formats.yaml"); n != 1 {
+			t.Errorf("opt-in pointer appears %d times, want exactly 1", n)
+		}
+	})
+
+	t.Run("several empty, enforced -> one finding each, all blocking", func(t *testing.T) {
+		blocking, warnings := applyFormatPolicy(nil, format, true)
+		if len(blocking) != 3 {
+			t.Errorf("blocking = %d, want 3 — enforced teams keep per-section detail",
+				len(blocking))
+		}
+		if len(warnings) != 0 {
+			t.Errorf("warnings = %d, want 0 when enforced", len(warnings))
+		}
+	})
+
+	t.Run("exactly one empty -> unchanged per-section form", func(t *testing.T) {
+		_, warnings := applyFormatPolicy(nil, format[:1], false)
+		if len(warnings) != 1 {
+			t.Fatalf("warnings = %d, want 1", len(warnings))
+		}
+		msg := Message(model.CodeSectionEmpty, warnings[0].Fields)
+		if !strings.Contains(msg, "section 'Problem signal' is empty") {
+			t.Errorf("single-empty message changed shape: %q", msg)
+		}
+	})
+}
