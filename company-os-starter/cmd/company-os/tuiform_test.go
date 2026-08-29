@@ -263,6 +263,13 @@ func TestMutatingScreensAreTheR55Names(t *testing.T) {
 	got := mutatingScreens(ws, "")
 	want := []string{
 		"new discovery brief (writes)",
+		// Amendment 5 (2026-08-28): `discover validate` gained a form because
+		// without it the catalog dead-ends — a brief created one screen up
+		// cannot reach "new PRD"'s picker, which lists validated briefs only.
+		// It sits HERE, adjacent to the screen that creates what it validates,
+		// and NOT in the discovery browser; that prohibition is unchanged and
+		// is asserted separately below.
+		"validate discovery brief (writes)",
 		"new PRD (writes)",
 		"add team (writes)",
 		"add platform (writes)",
@@ -280,9 +287,21 @@ func TestMutatingScreensAreTheR55Names(t *testing.T) {
 		}
 	}
 
-	// No screen in the whole catalog may reach a forbidden command, and no
-	// browsing screen may reach `discover validate`, which rewrites the brief it
-	// is asked about.
+	// Two prohibitions, and Amendment 5 (2026-08-28) separated them, because
+	// only one was ever load-bearing.
+	//
+	//   1. `workspace sync` and `scratchpad init` get no form ANYWHERE.
+	//   2. `discover validate` gets no form in a BROWSING screen — it rewrites
+	//      status: draft to status: validated, and a browser that edits what it
+	//      browses is the defect read-only-first exists to prevent. It is now
+	//      offered as a mutating form, behind preview and confirmation.
+	//
+	// Before Amendment 5 the second was enforced as "nowhere", which also
+	// forbade the safe home and left the catalog unable to finish a change.
+	mutating := map[string]bool{}
+	for _, s := range mutatingScreens(ws, "") {
+		mutating[s.Title] = true
+	}
 	for _, s := range screensFor(ws, "") {
 		form := s.ResolveForm()
 		if form == nil {
@@ -292,10 +311,13 @@ func TestMutatingScreensAreTheR55Names(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: build: %v", s.Title, err)
 		}
-		for _, forbidden := range []string{
-			"workspace sync", "scratchpad init", "discover validate"} {
-			if strings.Contains(action.Preview(), forbidden) {
-				t.Errorf("%s previews %q — R-5.5 forbids a form for it", s.Title, forbidden)
+		forbidden := []string{"workspace sync", "scratchpad init"}
+		if !mutating[s.Title] {
+			forbidden = append(forbidden, "discover validate")
+		}
+		for _, f := range forbidden {
+			if strings.Contains(action.Preview(), f) {
+				t.Errorf("%s previews %q — R-5.5 forbids a form for it", s.Title, f)
 			}
 		}
 	}

@@ -106,6 +106,38 @@ func mutatingScreens(ws *workspace.Workspace, root string) []tui.Screen {
 			},
 		},
 		{
+			// tui-lifecycle-completion unit 1. This is the screen the file
+			// header used to argue against, and the argument still holds — it
+			// is why the screen is HERE, in mutatingScreens, titled "(writes)"
+			// and behind Preview/Commit, rather than in the discovery browser.
+			// `discover validate` rewrites status: draft to status: validated;
+			// a browsing screen must never quietly edit what is being browsed.
+			//
+			// Without it the UI dead-ends: a brief created one screen up cannot
+			// reach the "new PRD" picker, which lists validated briefs only.
+			Title: "validate discovery brief (writes)",
+			Form: &tui.Form{
+				Fields: []tui.Field{
+					{
+						Label:   "brief",
+						Choices: draftBriefIDs(ws),
+						Help:    briefFieldHelp(draftBriefIDs(ws)),
+					},
+				},
+				Build: func(v []string) (tui.Action, error) {
+					// Id only: the team is resolved from the brief's own
+					// directory (ux-simplification 1.2, resolveTeam). Passing a
+					// team here would add a second answer to a question the
+					// filesystem already answers, and the preview line stays
+					// short enough for a non-developer to read.
+					return newInvocation(ws, &Args{
+						Root: root, Cmd: "discover", Action: "validate",
+						TitleArg: v[0],
+					}), nil
+				},
+			},
+		},
+		{
 			Title: "new PRD (writes)",
 			Form: &tui.Form{
 				Fields: []tui.Field{
@@ -266,10 +298,31 @@ func componentsHelp(ids []string) string {
 //
 // Only `status: validated` ones are offered: internal/product rejects anything
 // else with exit 5, so offering a draft would be offering a value the command is
-// certain to refuse. Reading the status is a read — `discover validate`, the
-// command that would MAKE a brief validated, writes to it and is not called from
-// anywhere in the UI.
+// certain to refuse.
+//
+// (Historical note, now resolved: this used to add "…and `discover validate`,
+// the command that would MAKE a brief validated, is not called from anywhere in
+// the UI." That was the dead end — a brief created in the TUI could never reach
+// this list without leaving for a terminal. The validate screen below closes it.)
 func validatedBriefIDs(ws *workspace.Workspace) []string {
+	return briefIDsWithStatus(ws, "validated")
+}
+
+// draftBriefIDs lists the briefs the validate screen can act on.
+//
+// The inverse selection matters: offering an already-validated brief would be
+// offering a no-op dressed as a choice. `discover validate` on a validated brief
+// succeeds and rewrites it byte-identically, so nothing breaks — it just wastes
+// the only decision the screen asks for.
+func draftBriefIDs(ws *workspace.Workspace) []string {
+	return briefIDsWithStatus(ws, "draft")
+}
+
+// briefIDsWithStatus is the shared scan. Ids are deduplicated across teams
+// because the picker offers an id and `discover validate` resolves the team from
+// it (ux-simplification 1.2); two teams holding the same id is the ambiguity
+// that command already reports, and it reports it better than a picker could.
+func briefIDsWithStatus(ws *workspace.Workspace, status string) []string {
 	seen := map[string]bool{}
 	var out []string
 	for _, tdir := range ws.AllTeams() {
@@ -278,7 +331,7 @@ func validatedBriefIDs(ws *workspace.Workspace) []string {
 			if seen[id] {
 				continue
 			}
-			if frontmatterField(filepath.Join(dir, id, "brief.md"), "status") == "validated" {
+			if frontmatterField(filepath.Join(dir, id, "brief.md"), "status") == status {
 				seen[id] = true
 				out = append(out, id)
 			}
@@ -286,4 +339,16 @@ func validatedBriefIDs(ws *workspace.Workspace) []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+// briefFieldHelp says plainly when there is nothing to validate, following
+// platformFieldHelp's rule: a required field with no Choices is
+// indistinguishable from a text box, so the help has to carry the news.
+func briefFieldHelp(drafts []string) string {
+	if len(drafts) == 0 {
+		return "the draft brief to validate. This workspace has none — create " +
+			"one with \"new discovery brief\" first."
+	}
+	return "the draft brief to validate. Validating fills in " +
+		"status: validated, which is what makes it selectable in \"new PRD\"."
 }

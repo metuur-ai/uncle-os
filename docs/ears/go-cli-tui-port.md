@@ -170,7 +170,7 @@ friction F5 (35-40 domain terms) and F6 (EARS and `@spec` syntax) are untouched.
 | R-5.2 | THE SYSTEM SHALL NOT launch the TUI from a bare invocation, from any other subcommand, or from any environment-variable trigger. |
 | R-5.3 | IF `tui` is invoked with no TTY attached, THE SYSTEM SHALL print an explanatory message to stderr, exit 7, and make no filesystem change. |
 | R-5.4 | THE SYSTEM SHALL ship read-only screens first, enumerated and asserted by test: workspace overview, `today --role`, validate results, component browser, PRD browser, discovery browser, `governance explain`, `skills list`, `ids list`, and `workspace status`. |
-| R-5.5 | **Restated 2026-07-27 — see [Amendment 4](#amendment-4--the-add-forms-2026-07-27).** THE SYSTEM SHALL ship mutating forms only after R-5.4 is complete, each justified by an observed request rather than by completeness: `discover new`, `prd new`, `add team`, `add platform`, and `add component`. THE SYSTEM SHALL NOT build forms for `workspace sync` or `scratchpad init`. |
+| R-5.5 | **Restated 2026-07-27 and 2026-08-28 — see [Amendment 4](#amendment-4--the-add-forms-2026-07-27) and [Amendment 5](#amendment-5--discover-validate-and-the-dead-end-it-closes-2026-08-28).** THE SYSTEM SHALL ship mutating forms only after R-5.4 is complete, each justified by an observed request rather than by completeness: `discover new`, `prd new`, `add team`, `add platform`, `add component`, and `discover validate`. THE SYSTEM SHALL NOT build forms for `workspace sync` or `scratchpad init`. THE SYSTEM SHALL NOT allow any browsing screen to reach `discover validate`, which rewrites the brief it is asked about. |
 | R-5.6 | WHEN the TUI is about to perform a mutating action, THE SYSTEM SHALL display the exact flag-complete `company-os` invocation equivalent to that action before executing it. |
 | R-5.7 | THE SYSTEM SHALL derive the previewed command from the same argument structure it executes, and SHALL NOT hand-write a preview string per screen, because a hand-written preview drifts from what runs and destroys the property justifying interactive mutation. |
 | R-5.8 | WHILE a mutating action is previewed, THE SYSTEM SHALL require explicit confirmation and SHALL make no filesystem change until confirmation is given. |
@@ -193,6 +193,50 @@ friction F5 (35-40 domain terms) and F6 (EARS and `@spec` syntax) are untouched.
 
 | R-5.23 | WHEN the reader leaves the recovery menu of R-5.17 without selecting a workspace, THE SYSTEM SHALL exit 0, because quitting a menu is not a failure. |
 | R-5.26 | WHERE a mutating form offers choices describing workspace state the reader can change from inside the same session, THE SYSTEM SHALL resolve that form when its screen is opened rather than when the catalog is built, so a value created a moment ago is offerable without relaunching. Added 2026-07-27; see [Amendment 4](#amendment-4--the-add-forms-2026-07-27). |
+
+### Amendment 5 — `discover validate`, and the dead end it closes (2026-08-28)
+
+**Authority:** the codebase owner, restating the goal directly — *"I want to make
+it simple for users, non developer, to follow."* A user request, not a review
+finding, and therefore the justification standard Amendment 4 established: a
+mutating form ships when an observed request arrives for it.
+
+**Statement being amended:**
+
+> R-5.5 | … each justified by an observed request rather than by completeness:
+> `discover new`, `prd new`, `add team`, `add platform`, and `add component`.
+
+**What the five-form catalog turned out to be.** It can *start* a unit of work
+and cannot *finish* one. The gap is not evenly spread — it falls in one exact
+place. `prd new`'s `from-discovery` picker lists `status: validated` briefs only
+(`cmd/company-os/tuiform.go`, `validatedBriefIDs`), and the command that sets
+that status is `discover validate`, which R-5.5 forbade a form for. So a brief
+created on one screen **cannot appear on the next**, with no error and no
+explanation — the reader is simply not offered their own work. A non-developer
+following the menu reaches screen two and stops.
+
+`tuiform.go`'s header predicted this and named the remedy: `discover validate`
+"is a mutation wearing a read-only name, and wiring it anywhere that reads as
+browsing is the exact defect read-only-first exists to prevent. **If it is ever
+offered, it belongs HERE, behind a preview and a confirmation, not in a
+browser.**" This amendment does exactly that and nothing more.
+
+**What is NOT relaxed.** The prohibition that carried the real safety property
+stands: no *browsing* screen may reach `discover validate`. The discovery
+browser still cannot edit what it browses. R-5.6 through R-5.9 apply unchanged —
+preview, explicit confirmation, no filesystem change before it. The form is in
+`mutatingScreens`, titled `(writes)` like its neighbours.
+
+**Why the earlier prohibition was still right when written.** It was made while
+the read-only catalog was being established, when the risk was a browser that
+mutates. That risk is real and unchanged. What has changed is that the catalog
+now has a mutating half with a preview-and-confirm discipline, which is a home
+the requirement did not have in 2026-07.
+
+**Scope.** This amendment covers `discover validate` only. `prd validate`,
+`reality new` and `prd complete` are the remaining lifecycle gaps and ship under
+the same standard, one at a time — see
+`docs/tasks/tui-lifecycle-completion.md`.
 
 ### Amendment 4 — the `add` forms (2026-07-27)
 
