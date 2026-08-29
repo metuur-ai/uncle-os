@@ -232,6 +232,17 @@ func runScreen(ws *workspace.Workspace, args *Args) (string, error) {
 			err = rerr
 		}
 	}
+	// A quiet error has already said what it had to say, on the command's own
+	// output stream — which here is `buf`, the body this returns. main.go
+	// suppresses the `error: …` line for exactly these; the TUI has to make the
+	// same call, and until `prd complete` reached the catalog nothing exercised
+	// it. `prd complete`'s refusal is the only quiet error in the system, and it
+	// opens with "done-check failed — a change is not done until reality is
+	// updated", so passing it on renders that sentence twice: once as the block's
+	// own header and once as an `error:` line beneath it.
+	if model.IsQuiet(err) && strings.TrimSpace(buf.String()) != "" {
+		err = nil
+	}
 	header := screenCommand(args)
 	if header == "" {
 		return buf.String(), err

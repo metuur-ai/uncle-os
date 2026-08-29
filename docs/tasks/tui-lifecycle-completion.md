@@ -135,9 +135,37 @@ protect, and it survives this change.
   path it opens. Closing it properly means refusing in `RealityNew`, which is a
   CLI behavior change this unit's acceptance excludes — so it is deferred as its
   own decision, not folded in here.
-- [ ] 4. `prd complete` screen (est ~1h) — the done-gate refuses on unchecked
+- [x] 4. `prd complete` screen (est ~1h) — the done-gate refuses on unchecked
       checklist items or a stale reality doc, so the screen must render that
       refusal legibly rather than as a wall of text
+  **LANDED 2026-08-29.** "complete PRD (writes)" added to `mutatingScreens`,
+  resolved at open time (R-5.26) so the list shrinks as records are completed.
+  Reuses `activePRDIDs` from unit 2. `make check` exit 0, five goldens
+  byte-identical.
+
+  **The wall of text was not there.** The refusal already names each unchecked
+  count, each missing reality doc by component and path, and prints the exact
+  `reality new` command that fixes it — six lines. Nothing was reformatted. The
+  real defect was different and invisible until this screen existed: `prd
+  complete`'s refusal is the only QUIET error in the system, `main.go` suppresses
+  the `error:` line for it, and `runScreen` did not — so the TUI would have
+  printed "done-check failed …" as the block header and again as an error line
+  beneath it. Fixed in `runScreen`, and written up as **R-5.27** about quiet
+  errors generally, since the duplication follows from the contract rather than
+  from this command.
+
+  **No `force` field, now or later** (recorded as a prohibition in R-5.5, not
+  just as an omission). `--force` overrides the gate enforcing invariant 4; a
+  gate waved through from a menu is not a gate, and the reader likeliest to
+  reach for it there is the one who least knows what it protects. Not an R-5.10
+  gap: R-5.10 requires every collected value to have a flag, not every flag to
+  have a field.
+
+  Tests: `TestCompleteScreenRendersTheDoneCheckRefusalOnce` counts the sentence
+  rather than checking it appears (checking appearance passes on the bug) and
+  asserts the reasons and the fix line survive the suppression;
+  `TestCompleteScreenHasNoForceField` pins the prohibition at both the field and
+  the preview.
 - [ ] 5. Docs: update the boundary disclosure in `company-os-starter/README.md`
       and both `TUTORIAL.md` copies — they currently say these four steps
       require the CLI, which is the honest statement *today* and becomes false

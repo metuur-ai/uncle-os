@@ -279,6 +279,8 @@ func TestMutatingScreensAreTheR55Names(t *testing.T) {
 		// Amendment 7 (2026-08-29): `reality new`, third of the four lifecycle
 		// gaps Amendment 5 enumerated.
 		"new reality doc (writes)",
+		// Amendment 8 (2026-08-29): `prd complete`, the last of the four gaps.
+		"complete PRD (writes)",
 		"add team (writes)",
 		"add platform (writes)",
 		"add component (writes)",
@@ -523,6 +525,77 @@ func TestRealityPickerOffersOnlyComponentsWithoutADoc(t *testing.T) {
 	}
 	if got := screen.ResolveForm().Fields[1].Choices; len(got) != 0 {
 		t.Errorf("component choices = %v after the doc was written, want none", got)
+	}
+}
+
+// TestCompleteScreenRendersTheDoneCheckRefusalOnce is unit 4's legibility
+// requirement, made precise.
+//
+// `prd complete`'s refusal is the only QUIET error in the system: it prints its
+// whole block to stdout and writes nothing to stderr, and main.go suppresses the
+// `error: …` line for it. runScreen did not, because nothing in the catalog
+// could produce a quiet error until this screen existed — so the refusal would
+// have opened with "done-check failed …" as the block header and then repeated
+// that same sentence as an error line beneath it.
+//
+// The count is what is asserted. Checking merely that the sentence APPEARS
+// passes on the duplicated rendering, which is the defect.
+func TestCompleteScreenRendersTheDoneCheckRefusalOnce(t *testing.T) {
+	root := tuiWorkspace(t)
+	var out, errOut bytes.Buffer
+	if code := run([]string{"--root", root, "prd", "new",
+		"--platform", "plat", "--title", "Quiet hours", "--components", "svc"},
+		&out, &errOut); code != 0 {
+		t.Fatalf("prd new failed (%d): %s", code, errOut.String())
+	}
+	ws := workspace.New(root)
+	form := screenNamed(t, mutatingScreens(ws, root), "complete PRD (writes)").ResolveForm()
+	id := form.Fields[0].Choices[0]
+	action, err := form.Build([]string{id})
+	if err != nil {
+		t.Fatalf("build: %v", err)
+	}
+
+	// The PRD is brand new: its checklist is unchecked and svc has no reality
+	// doc, so the gate refuses. That refusal is the interesting render.
+	body, commitErr := action.Commit()
+	if commitErr != nil {
+		t.Errorf("the quiet refusal reached the UI as an error: %v", commitErr)
+	}
+	if n := strings.Count(body, "done-check failed"); n != 1 {
+		t.Errorf("the refusal sentence appears %d times, want 1:\n%s", n, body)
+	}
+	// The block must still carry the reasons and the way out; suppressing the
+	// duplicate must not have suppressed the diagnosis.
+	for _, want := range []string{
+		"checklist item(s) unchecked",
+		"no reality doc for component 'svc'",
+		"fix: company-os reality new --platform plat svc",
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("refusal does not carry %q:\n%s", want, body)
+		}
+	}
+}
+
+// TestCompleteScreenHasNoForceField. `prd complete --force` overrides the
+// done-gate that enforces invariant 4. A gate that can be waved through from a
+// menu is not a gate, and the reader most likely to reach for it from a menu is
+// the one who least knows what it protects.
+func TestCompleteScreenHasNoForceField(t *testing.T) {
+	ws := workspace.New(tuiWorkspace(t))
+	for _, f := range screenNamed(t, mutatingScreens(ws, ""), "complete PRD (writes)").ResolveForm().Fields {
+		if f.Label == "force" {
+			t.Error("the complete screen offers a force field")
+		}
+	}
+	action, err := screenNamed(t, mutatingScreens(ws, ""), "complete PRD (writes)").
+		ResolveForm().Build([]string{"any-prd"})
+	if err != nil {
+		t.Fatalf("build: %v", err)
+	}
+	if strings.Contains(action.Preview(), "--force") {
+		t.Errorf("the previewed command carries --force: %s", action.Preview())
 	}
 }
 

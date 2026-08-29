@@ -250,6 +250,40 @@ func mutatingScreens(ws *workspace.Workspace, root string) []tui.Screen {
 			},
 		},
 		{
+			// tui-lifecycle-completion unit 4 — the last step of a change, and
+			// the one that decides whether the previous three amounted to
+			// anything.
+			//
+			// There is NO force field, and there will not be one. `prd complete
+			// --force` overrides the done-gate that enforces invariant 4, and a
+			// gate that can be waved through from a menu by a reader who does not
+			// yet know what it protects is not a gate. The flag stays where using
+			// it is a deliberate act: typed, at a terminal. This is not an
+			// R-5.10 gap — R-5.10 requires every value the TUI collects to have a
+			// flag, not every flag to have a field.
+			Title: "complete PRD (writes)",
+			// Resolved at open time: this list shrinks as records are completed,
+			// and a reader who completes two in one sitting must not be offered
+			// the first one again (R-5.26).
+			FormFn: func() *tui.Form {
+				active := activePRDIDs(ws)
+				return &tui.Form{
+					Fields: []tui.Field{
+						{
+							Label:   "prd",
+							Choices: active,
+							Help:    completeFieldHelp(active),
+						},
+					},
+					Build: func(v []string) (tui.Action, error) {
+						return newInvocation(ws, &Args{
+							Root: root, Cmd: "prd", Action: "complete", ID: v[0],
+						}), nil
+					},
+				}
+			},
+		},
+		{
 			Title: "add team (writes)",
 			Form: &tui.Form{
 				Fields: []tui.Field{idField("team")},
@@ -342,6 +376,19 @@ func addInvocation(ws *workspace.Workspace, root, kind, id, platform string) (tu
 	return newInvocation(ws, &Args{
 		Root: root, Cmd: "add", Kind: kind, Name: id, Platform: platform,
 	}), nil
+}
+
+// completeFieldHelp names what completing does, because it is the one action in
+// the catalog whose effects a reader cannot undo from the catalog: the record
+// moves to archive/prds/, an outcome review is scheduled, and no screen here
+// moves it back.
+func completeFieldHelp(active []string) string {
+	if len(active) == 0 {
+		return "the PRD to complete. This workspace has no active change records."
+	}
+	return "the PRD to complete. It is archived, an outcome review is scheduled " +
+		"for 90 days out, and the done-check refuses while any checklist item " +
+		"is unchecked or a reality doc is older than the PRD."
 }
 
 // realityTargets lists the components `reality new` can still act on: the ones

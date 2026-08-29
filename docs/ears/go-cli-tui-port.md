@@ -170,7 +170,8 @@ friction F5 (35-40 domain terms) and F6 (EARS and `@spec` syntax) are untouched.
 | R-5.2 | THE SYSTEM SHALL NOT launch the TUI from a bare invocation, from any other subcommand, or from any environment-variable trigger. |
 | R-5.3 | IF `tui` is invoked with no TTY attached, THE SYSTEM SHALL print an explanatory message to stderr, exit 7, and make no filesystem change. |
 | R-5.4 | THE SYSTEM SHALL ship read-only screens first, enumerated and asserted by test: workspace overview, `today --role`, validate results, component browser, PRD browser, discovery browser, `governance explain`, `skills list`, `ids list`, and `workspace status`. |
-| R-5.5 | **Restated 2026-07-27, twice on 2026-08-28 and again 2026-08-29 — see [Amendment 4](#amendment-4--the-add-forms-2026-07-27), [Amendment 5](#amendment-5--discover-validate-and-the-dead-end-it-closes-2026-08-28), [Amendment 6](#amendment-6--prd-validate-2026-08-28) and [Amendment 7](#amendment-7--reality-new-and-the-pair-that-exists-nowhere-2026-08-29).** THE SYSTEM SHALL ship mutating forms only after R-5.4 is complete, each justified by an observed request rather than by completeness: `discover new`, `prd new`, `add team`, `add platform`, `add component`, `discover validate`, `prd validate`, and `reality new`. THE SYSTEM SHALL NOT build forms for `workspace sync` or `scratchpad init`. THE SYSTEM SHALL NOT allow any browsing screen to reach `discover validate`, which rewrites the brief it is asked about. WHERE a form collects two values whose valid combinations the workspace constrains, THE SYSTEM SHALL refuse an invalid combination in `Build`, before any preview is offered. |
+| R-5.5 | **Restated 2026-07-27, twice on 2026-08-28 and twice on 2026-08-29 — see [Amendment 4](#amendment-4--the-add-forms-2026-07-27), [Amendment 5](#amendment-5--discover-validate-and-the-dead-end-it-closes-2026-08-28), [Amendment 6](#amendment-6--prd-validate-2026-08-28), [Amendment 7](#amendment-7--reality-new-and-the-pair-that-exists-nowhere-2026-08-29) and [Amendment 8](#amendment-8--prd-complete-and-the-flag-that-gets-no-field-2026-08-29).** THE SYSTEM SHALL ship mutating forms only after R-5.4 is complete, each justified by an observed request rather than by completeness: `discover new`, `prd new`, `add team`, `add platform`, `add component`, `discover validate`, `prd validate`, `reality new`, and `prd complete`. THE SYSTEM SHALL NOT build forms for `workspace sync` or `scratchpad init`. THE SYSTEM SHALL NOT allow any browsing screen to reach `discover validate`, which rewrites the brief it is asked about. WHERE a form collects two values whose valid combinations the workspace constrains, THE SYSTEM SHALL refuse an invalid combination in `Build`, before any preview is offered. THE SYSTEM SHALL NOT offer a field for `prd complete --force`, which overrides the done-gate enforcing invariant 4. |
+| R-5.27 | WHEN a screen's command returns an error whose diagnostic it has already written to its own output, THE SYSTEM SHALL render that output alone and SHALL NOT add a second error line, so the TUI and the flag CLI report the same refusal in the same words exactly once. Added 2026-08-29; see [Amendment 8](#amendment-8--prd-complete-and-the-flag-that-gets-no-field-2026-08-29). |
 | R-5.6 | WHEN the TUI is about to perform a mutating action, THE SYSTEM SHALL display the exact flag-complete `company-os` invocation equivalent to that action before executing it. |
 | R-5.7 | THE SYSTEM SHALL derive the previewed command from the same argument structure it executes, and SHALL NOT hand-write a preview string per screen, because a hand-written preview drifts from what runs and destroys the property justifying interactive mutation. |
 | R-5.8 | WHILE a mutating action is previewed, THE SYSTEM SHALL require explicit confirmation and SHALL make no filesystem change until confirmation is given. |
@@ -193,6 +194,45 @@ friction F5 (35-40 domain terms) and F6 (EARS and `@spec` syntax) are untouched.
 
 | R-5.23 | WHEN the reader leaves the recovery menu of R-5.17 without selecting a workspace, THE SYSTEM SHALL exit 0, because quitting a menu is not a failure. |
 | R-5.26 | WHERE a mutating form offers choices describing workspace state the reader can change from inside the same session, THE SYSTEM SHALL resolve that form when its screen is opened rather than when the catalog is built, so a value created a moment ago is offerable without relaunching. Added 2026-07-27; see [Amendment 4](#amendment-4--the-add-forms-2026-07-27). |
+
+### Amendment 8 — `prd complete`, and the flag that gets no field (2026-08-29)
+
+**Authority:** the same restated goal as Amendments 5–7. Last of the four gaps.
+With it, a whole change can be completed from the menu — which was the goal
+those four amendments existed to reach.
+
+**Statement being amended:** R-5.5 gains `prd complete` and one prohibition;
+R-5.27 is added.
+
+**No `force` field, now or later.** `prd complete --force` overrides the
+done-gate that enforces invariant 4 — *a change is done only when reality is
+updated*. A gate that can be waved through from a menu is not a gate, and the
+reader most likely to reach for it from a menu is precisely the one who least
+knows what it protects. The flag stays where using it is a deliberate act:
+typed, at a terminal, by someone who went looking for it.
+
+This is **not** an R-5.10 gap. R-5.10 requires every value the TUI collects to
+have a flag equivalent, so that a TUI action is reproducible in CI. It does not
+require every flag to have a field, and reading it that way would make the
+menu's surface a mirror of the CLI's rather than a chosen subset — which is the
+opposite of what a menu is for.
+
+**R-5.27, and why it only surfaced now.** `prd complete`'s refusal is the only
+QUIET error in the system: it prints its whole block to stdout and writes
+nothing to stderr, and `main.go` suppresses the `error: …` line for it.
+`runScreen` did not, because until this screen existed no command in the catalog
+could return one. The refusal opens with *"done-check failed — a change is not
+done until reality is updated"*, so passing it through would have rendered that
+sentence twice — once as the block's own header, once as an error line beneath
+it. The requirement is written about quiet errors generally rather than about
+this command, because the duplication is a property of the contract and not of
+the refusal.
+
+**What the refusal already got right, and was not touched.** It names each
+unchecked item count, each missing reality doc by component and path, and prints
+the exact `reality new` command that fixes it. The task file budgeted work for
+rendering it legibly; the block was already legible, and the only defect was the
+duplicate. Nothing was reformatted.
 
 ### Amendment 7 — `reality new`, and the pair that exists nowhere (2026-08-29)
 
