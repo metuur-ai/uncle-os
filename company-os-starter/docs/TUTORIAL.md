@@ -71,27 +71,27 @@ outside a workspace too, and offers to scaffold one there. Four views exist
 discovery briefs. It also gives one-key fixes for regenerating derived state and
 re-resolving governance.
 
-**Know its boundary before you rely on it: the TUI can start a unit of work but
-not finish one.** `discover validate`, `prd validate`, `reality new` and
-`prd complete` have no menu entry. The visible consequence is that **a brief you
-create in the TUI will not appear in the TUI's own "new PRD" form** — that form
-lists only validated briefs, and nothing in the UI validates one. (Deliberate:
-`discover validate` rewrites the brief, and the TUI will not hide a mutation
-behind a browsing screen.)
-
-So the loop crosses surfaces:
+**The whole loop is in the menu.** Every step below — write a brief, validate
+it, write the PRD from it, check the PRD, describe current state, complete the
+change — has a guided form. Each previews the exact command it is about to run
+and writes nothing until you confirm, so the menu teaches the CLI rather than
+replacing it.
 
 ```bash
-company-os tui                              # create the brief
-company-os discover validate <brief-id>     # CLI — the TUI cannot
-company-os tui                              # create the PRD (brief now listed)
-company-os prd validate <prd-id>            # CLI
-company-os prd complete <prd-id>            # CLI, after reality is updated
+company-os tui        # and that is the loop, end to end
 ```
 
-The rest of this tutorial uses the CLI throughout. If you run this loop often,
-that is the faster surface anyway — and as of the flag inference shown below,
-the commands above are complete as written, not abbreviations.
+Two deliberate omissions. `prd complete --force` has no field: it overrides the
+check that a change is not done until reality is updated, and that stays a
+typed, deliberate act. And no browsing screen writes — `discover validate`
+rewrites the brief it is given, so it lives with the forms, never in the
+discovery browser. `workspace sync` and `scratchpad init` have no forms either;
+both need a value the workspace does not contain.
+
+The rest of this tutorial uses the CLI throughout, because a tutorial has to
+show you what ran. If you run this loop often the CLI is the faster surface
+anyway — and as of the flag inference shown below, the commands are complete as
+written, not abbreviations.
 
 ## 0.5 Configuring paths on your machine
 

@@ -2,8 +2,14 @@
 type: tasks
 id: tasks-tui-lifecycle-completion
 title: TUI Lifecycle Completion — Tasks
-status: draft
+status: complete
 ---
+
+> **Complete 2026-08-29.** All five units landed (Amendments 5–8 to R-5.5, plus
+> R-5.27). A change can be taken end to end from `company-os tui`. One thing
+> found and deliberately not fixed is carried forward in unit 3: `reality new`
+> misfiles a component under the wrong platform for *any* caller, and closing it
+> in `RealityNew` is a CLI change that needs its own decision.
 
 # TUI Lifecycle Completion — Tasks
 
@@ -166,10 +172,28 @@ protect, and it survives this change.
   asserts the reasons and the fix line survive the suppression;
   `TestCompleteScreenHasNoForceField` pins the prohibition at both the field and
   the preview.
-- [ ] 5. Docs: update the boundary disclosure in `company-os-starter/README.md`
+- [x] 5. Docs: update the boundary disclosure in `company-os-starter/README.md`
       and both `TUTORIAL.md` copies — they currently say these four steps
       require the CLI, which is the honest statement *today* and becomes false
       as each unit lands
+  **LANDED 2026-08-29.** All three "What the TUI cannot do" sections replaced
+  with what it now does: the six lifecycle screens in order, and the
+  cross-surface `bash` blocks deleted, since the loop no longer crosses surfaces.
+  Both TUTORIAL copies were byte-identical in this section and were edited
+  identically.
+
+  The disclosure was **replaced, not deleted.** What a tool refuses is as
+  load-bearing as what it offers, so the three genuine exclusions are now stated
+  positively in all three docs: no `--force` field, no browsing screen writes,
+  and no forms for `workspace sync` / `scratchpad init`.
+
+  Also corrected `tuiform.go`'s header, which was stale from unit 1 onward and
+  said `discover validate` "is deliberately absent from both this file and the
+  read-only catalog" — false the moment unit 1 landed. It now records what the
+  comment predicted, that the prediction was met, and which half of the
+  prohibition still stands. `prd validate`'s weaker justification is stated
+  there too rather than left for a reader to infer from a `(writes)` title that
+  over-warns.
 
 ## Acceptance (every unit)
 

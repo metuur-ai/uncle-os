@@ -1,14 +1,25 @@
 package main
 
-// The mutating forms (R-5.5): `discover new`, `prd new`, and the three `add`
-// kinds — team, platform, component.
+// The mutating forms (R-5.5). Two groups, and the difference matters:
+//
+//   - The lifecycle of one change, in order — `discover new`, `discover
+//     validate`, `prd new`, `prd validate`, `reality new`, `prd complete`. A
+//     reader following the menu top to bottom is following the method.
+//   - Growing the federation — the three `add` kinds: team, platform, component.
+//
+// The lifecycle group was completed on 2026-08-29 (Amendments 5–8). Before
+// that the catalog could START a unit of work and not finish one, and the gap
+// was invisible rather than blocked: `prd new`'s picker lists validated briefs
+// only, nothing in the UI validated one, so a reader was simply not offered the
+// brief they had just written.
 //
 // R-5.5 still forbids forms for `workspace sync` and `scratchpad init`, and
 // that cut still holds: both need values no reader has in their head at the
 // menu (a repo URL and a commit pin; a path outside the workspace).
 //
-// The first two are the commands a product owner AUTHORS — the ones whose
-// arguments are a title they are still wording and a team they have to look up.
+// `discover new` and `prd new` are the commands a product owner AUTHORS — the
+// ones whose arguments are a title they are still wording and a team they have
+// to look up. They shipped first, alone.
 // This file used to argue from that to a closed set of two: "nobody is going to
 // scaffold infrastructure through a form instead of typing the command, so a
 // form for those two would be surface with no reader." That was a prediction
@@ -23,17 +34,33 @@ package main
 // fail at commit. A form whose fields are wrong for the chosen value is the
 // kind of surface a menu is supposed to remove.
 //
+// `reality new` is the one form that CANNOT be split that way — its two fields
+// constrain each other and a form cannot narrow one picker from another's value
+// — so it enforces the same property at the other end, in Build. See
+// realityInvocation, and R-5.5's combination clause.
+//
 // Everything a form collects becomes a field of *Args and nothing else (R-5.10):
 // the invocation is rendered from that *Args by screenCommand, and the SAME
 // *Args is what runScreen dispatches through `commands`. There is no second
 // spelling of the command and no path that shells out to this binary (R-5.12).
 //
-// `discover validate` is deliberately absent from both this file and the
-// read-only catalog: it REWRITES `status: draft` to `status: validated` in the
-// brief (internal/product/discover.go), so it is a mutation wearing a read-only
-// name, and wiring it anywhere that reads as browsing is the exact defect
-// read-only-first exists to prevent. If it is ever offered, it belongs HERE,
-// behind a preview and a confirmation, not in a browser.
+// `discover validate` is in this file and NOT in the read-only catalog, and the
+// distinction is the whole reason it took an amendment to add. It REWRITES
+// `status: draft` to `status: validated` in the brief
+// (internal/product/discover.go), so it is a mutation wearing a read-only name,
+// and wiring it anywhere that reads as browsing is the exact defect
+// read-only-first exists to prevent. This comment used to say it was absent from
+// both — "if it is ever offered, it belongs HERE, behind a preview and a
+// confirmation, not in a browser." Amendment 5 offered it exactly there. The
+// prohibition that carried the safety is untouched and still asserted: no
+// browsing screen may reach it.
+//
+// `prd validate` is here on a weaker claim, and it is worth being honest about
+// which: unlike `discover validate`, it mutates nothing at all. It is a form
+// rather than a browser because the read-only catalog dispatches no commands — a
+// structural property, not a per-command judgement — and the first browsing
+// screen to dispatch would be the precedent that erodes it. `(writes)` in that
+// one title over-warns, which is the safe direction to be wrong in.
 
 import (
 	"fmt"
