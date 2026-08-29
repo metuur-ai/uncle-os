@@ -24,7 +24,7 @@ review due 2027-01-19; re-run: company-os governance resolve --team web
 ```
 
 That review date isn't cosmetic — `declare` sets it 180 days out
-automatically. `company-os validate` gate `[2/7]` fails once a deviation's
+automatically. `company-os validate` gate `[2/8]` fails once a deviation's
 `reviewDate` is in the past, so a deviation is a standing decision you'll be
 asked to re-affirm, not a permanent escape hatch.
 
@@ -49,7 +49,7 @@ note: mandatory rules require approval by the rule owner before this is valid.
 ```
 
 `--expires` is required — there's no such thing as a permanent exception.
-`company-os validate` gate `[2/7]` fails on any exception missing an
+`company-os validate` gate `[2/8]` fails on any exception missing an
 `expires` date, or one that's already past it.
 
 ## Which one do I need?
@@ -74,7 +74,7 @@ $ company-os governance resolve --team web
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `validate` gate `[2/7]` fails: "deviation ... expired" | `reviewDate` passed | re-run `deviation declare` for the same rule, or drop it if it's no longer needed |
-| `validate` gate `[2/7]` fails: "exception ... has NO expiry" | hand-edited `exceptions.yaml` without an `expires` field | always create exceptions via `exception request`, never by hand |
+| `validate` gate `[2/8]` fails: "deviation ... expired" | `reviewDate` passed | re-run `deviation declare` for the same rule, or drop it if it's no longer needed |
+| `validate` gate `[2/8]` fails: "exception ... has NO expiry" | hand-edited `exceptions.yaml` without an `expires` field | always create exceptions via `exception request`, never by hand |
 | Deviation rejected / rule still shows as required | you tried to deviate a `mandatory` rule | mandatory rules can only be excepted, never deviated — use `exception request` |
 | Exception "drafted" but still enforced | mandatory-rule exceptions need the rule owner's approval before they're valid, per the CLI's own note | follow up with the rule owner; the CLI records the request, it doesn't grant it |

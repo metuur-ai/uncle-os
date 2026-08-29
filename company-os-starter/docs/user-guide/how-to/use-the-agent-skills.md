@@ -143,7 +143,7 @@ $ company-os validate
 ```
 
 ```text
-[7/7] custom skills layering (shadowing + extends resolution)
+[7/8] custom skills layering (shadowing + extends resolution)
   [ok] skills layered cleanly (1 canonical, 1 team; no shadowing or dangling extends)
 ```
 

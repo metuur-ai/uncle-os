@@ -62,6 +62,37 @@ exact command to run. `--all` lists every pending item instead of just the
 top one. Run it any time you land in an unfamiliar workspace — before reading
 docs, before running anything else.
 
+### Prefer a menu? `company-os tui`
+
+If you would rather browse than memorize commands, `company-os tui` opens a
+menu-driven UI over the same commands. It is safe as a first command — it runs
+outside a workspace too, and offers to scaffold one there. Four views exist
+*only* in the TUI: a workspace overview, and browsers for components, PRDs and
+discovery briefs. It also gives one-key fixes for regenerating derived state and
+re-resolving governance.
+
+**Know its boundary before you rely on it: the TUI can start a unit of work but
+not finish one.** `discover validate`, `prd validate`, `reality new` and
+`prd complete` have no menu entry. The visible consequence is that **a brief you
+create in the TUI will not appear in the TUI's own "new PRD" form** — that form
+lists only validated briefs, and nothing in the UI validates one. (Deliberate:
+`discover validate` rewrites the brief, and the TUI will not hide a mutation
+behind a browsing screen.)
+
+So the loop crosses surfaces:
+
+```bash
+company-os tui                              # create the brief
+company-os discover validate <brief-id>     # CLI — the TUI cannot
+company-os tui                              # create the PRD (brief now listed)
+company-os prd validate <prd-id>            # CLI
+company-os prd complete <prd-id>            # CLI, after reality is updated
+```
+
+The rest of this tutorial uses the CLI throughout. If you run this loop often,
+that is the faster surface anyway — and as of the flag inference shown below,
+the commands above are complete as written, not abbreviations.
+
 ## 0.5 Configuring paths on your machine
 
 Your absolute paths are yours; the committed YAML must stay portable. The rule
@@ -141,14 +172,20 @@ created teams/customer-engagement/product/discovery/2026-per-channel-quiet-hours
 next: fill Problem signal, Hypothesis, Success criteria, then run: ...
 ```
 
-Try validating the empty brief — the contract pushes back:
+Try validating the empty brief. The brief validates — and the CLI tells you what
+you have not filled in yet, without blocking you:
 
 ```bash
 $ company-os discover validate 2026-per-channel-quiet-hours --team customer-engagement
-  [FAIL] section 'Problem signal' is empty
-  [FAIL] section 'Hypothesis' is empty
-  [FAIL] section 'Success criteria' is empty
+  [warn] 3 sections are empty: Problem signal, Hypothesis, Success criteria — format guidance only; the team may use its own structure (opt in via standards/doc-formats.yaml)
+  [ok] brief '2026-per-channel-quiet-hours' validated (status: validated)
 ```
+
+That is *strict on artifacts, flexible on process* in one line: the **headings**
+are the contract and a missing one always fails, but whether a section has prose
+in it yet is your team's business. A team that wants empty sections to block
+opts in with `enforce: true` in `teams/<t>/standards/doc-formats.yaml`, and then
+gets one blocking `[FAIL]` per empty section instead of this single warning.
 
 Fill the three mandatory sections (how you research them — interviews, data,
 prototypes — is `guidance`-tier, i.e. your choice), then:
@@ -164,9 +201,7 @@ same workspace:
 
 ```bash
 $ company-os discover validate 2026-test-flag-free
-  [warn] section 'Problem signal' is empty — format guidance only; the team may use its own structure (opt in via standards/doc-formats.yaml)
-  [warn] section 'Hypothesis' is empty — format guidance only; the team may use its own structure (opt in via standards/doc-formats.yaml)
-  [warn] section 'Success criteria' is empty — format guidance only; the team may use its own structure (opt in via standards/doc-formats.yaml)
+  [warn] 3 sections are empty: Problem signal, Hypothesis, Success criteria — format guidance only; the team may use its own structure (opt in via standards/doc-formats.yaml)
   [ok] brief '2026-test-flag-free' validated (status: validated)
 ```
 
@@ -224,11 +259,20 @@ the flag on a fresh PRD:
 
 ```bash
 $ company-os prd validate 2026-test-flag-free
-  [warn] section 'Problem statement' is empty — format guidance only; the team may use its own structure (opt in via standards/doc-formats.yaml)
-  [warn] section 'Success metrics' is empty — format guidance only; the team may use its own structure (opt in via standards/doc-formats.yaml)
-  [warn] section 'Proposed change' is empty — format guidance only; the team may use its own structure (opt in via standards/doc-formats.yaml)
+  [warn] 3 sections are empty: Problem statement, Success metrics, Proposed change — format guidance only; the team may use its own structure (opt in via standards/doc-formats.yaml)
   [FAIL] process contract field 'decisionOwner' missing or TODO
 ```
+
+> **Why `prd validate` is stricter than `company-os validate`.** They check
+> different things on purpose, so a PRD can pass the workspace gate and still
+> fail here. Gate `[3/8] active PRD contracts` is the **active-record floor** —
+> a workspace-wide sweep asserting four fields (`title`, `team`, `components`,
+> `governanceSnapshot`) on every PRD already live under
+> `change-records/active/`. `prd validate` is the **author-time pre-flight** —
+> it adds `platform` and `decisionOwner`, which the author is expected to settle
+> before delivering, and which the gate does not demand of a document whose
+> location already states its platform. If the two ever agree exactly, one of
+> them is redundant.
 
 ## 4. Composable Definition of Ready during refinement
 
@@ -472,7 +516,7 @@ signal ──> discover new ──> discover validate ──> prd new (snapshot+
 ## 11. Finding things: `company-os find`
 
 Local search is otherwise fragmented across derived tags, the ids registry,
-per-directory `index.md` files, CLAUDE.md context nodes, and feature-indexes.
+per-directory `index.md` files, and feature-indexes.
 `find` is one front door over all of them — case-insensitive substring match,
 exact-id hits ranked first, grouped output by match kind:
 

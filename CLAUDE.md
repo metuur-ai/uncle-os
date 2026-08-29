@@ -77,13 +77,13 @@ A workspace is one directory containing four authored peer roots, plus an option
 
 1. **Rule tiers.** Every requirement/control is `mandatory` (only escapable via an expiring, approved *exception*), `default` (comply-or-explain via a *deviation*), or `guidance` (untracked). Mandatory rules must be written as verifiable **outcomes, not implementations** — this is what preserves team flexibility. `resolve_team_governance` rejects any deviation aimed at a mandatory rule.
 
-2. **Single source of truth.** The component descriptor (`platforms/<p>/components/<id>.yaml`) is authoritative for both component↔platform relationships *and* the accountable team. `company-os validate` step [1/7] fails if a team's ownership registry claims `accountable` but the descriptor's `ownership.accountableTeam` disagrees. Humans edit one file; tooling reconciles the rest.
+2. **Single source of truth.** The component descriptor (`platforms/<p>/components/<id>.yaml`) is authoritative for both component↔platform relationships *and* the accountable team. `company-os validate` step [1/8] fails if a team's ownership registry claims `accountable` but the descriptor's `ownership.accountableTeam` disagrees. Humans edit one file; tooling reconciles the rest.
 
 3. **Generated files are derived, never hand-edited.** `teams/<t>/generated/effective-governance.yaml` is produced by `governance resolve` (merges company baseline + platform requirements filtered by relationship/componentType + team deviations). CI regenerates and diffs. The same rule applies to frontmatter `tags:` — `graph build` derives them from IDs (`derive_tags`); editing tags by hand is overwritten on the next build.
 
 4. **A change is done only when reality is updated.** `prd complete` refuses to archive while any `- [ ]` governance checklist item is unchecked, or while a component's `reality/components/<id>.md` has an `updated:` date older than the PRD's `created:` date. On success it moves the PRD to `archive/prds/`, writes an `outcome.md` due in 90 days, and appends `log.md`.
 
-5. **Deviations and exceptions expire.** `validate` step [2/7] fails on any past `reviewDate` (deviation) or missing/past `expires` (exception).
+5. **Deviations and exceptions expire.** `validate` step [2/8] fails on any past `reviewDate` (deviation) or missing/past `expires` (exception).
 
 6. **Synced slices are read-only, and the lock is the oracle.** `workspace sync` materializes each slice at `0444`/`0555` and records a per-file hash map plus the resolved slice set. Gate `[8/8]` fails on a hand-edit *and* on a slice-set change made without a re-sync (the old files still hash clean, so nothing else catches it). Never edit a slice — change the source repo, bump the pin, re-sync.
 

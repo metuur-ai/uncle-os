@@ -46,6 +46,60 @@ company-os validate
 
 Then follow `docs/TUTORIAL.md` for the full discovery → PRD → complete loop.
 
+## Browsing without memorizing commands: `company-os tui`
+
+`company-os tui` opens a menu-driven terminal UI. It is safe to run as your
+first command — it is one of the few that works outside a workspace, where it
+offers to scaffold one.
+
+It is the only way to reach four views:
+
+- **workspace overview** — what exists, at a glance
+- **component browser** — descriptors and their reality docs
+- **PRD browser** — active change records and archived ones
+- **discovery browser** — briefs by team
+
+It also mirrors read-only commands (`today`, `validate`, `governance explain`,
+`skills list`, `ids list`, `workspace status`), offers guided forms for
+`discover new`, `prd new` and `add team|platform|component`, and gives one-key
+repairs for the two things people forget: regenerating derived state (`derive`)
+and re-resolving governance after a deviation.
+
+### What the TUI cannot do — read this before relying on it
+
+**The TUI can start a unit of work; it cannot finish one.** These steps have no
+menu entry and must be run from the CLI:
+
+| Step | Command |
+|---|---|
+| Validate a discovery brief | `company-os discover validate <brief-id>` |
+| Validate a PRD | `company-os prd validate <prd-id>` |
+| Scaffold a reality doc | `company-os reality new --platform <p> <component>` |
+| Complete a PRD | `company-os prd complete <prd-id>` |
+
+The consequence you would otherwise hit without warning: **a brief created in
+the TUI does not appear in the TUI's own "new PRD" form.** That form lists only
+briefs with `status: validated`, and the command that validates one is not
+reachable from the UI. This is deliberate — `discover validate` rewrites the
+brief, so it is a mutation, and the TUI refuses to hide mutations behind
+browsing — but the effect is a gap you have to step around.
+
+The full loop, mixing both surfaces:
+
+```bash
+company-os tui                                  # create the brief
+company-os discover validate <brief-id>         # CLI — the TUI cannot
+company-os tui                                  # create the PRD (brief now listed)
+company-os prd validate <prd-id>                # CLI
+# ... deliver the change, update the reality doc ...
+company-os prd complete <prd-id>                # CLI
+```
+
+If you run the loop often, the CLI is the faster surface anyway: `discover
+validate` and `prd new` both infer `--team`, `--platform` and `--components`
+when the workspace admits one answer, so the flag-free forms above are complete
+commands, not abbreviations.
+
 ## Design rules encoded here
 
 1. Strict on process and structure, flexible on document formats — validators

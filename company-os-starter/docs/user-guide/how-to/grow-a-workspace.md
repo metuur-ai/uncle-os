@@ -47,7 +47,7 @@ next: company-os reality new --platform loyalty crumb-club-app
 This writes `platforms/loyalty/components/crumb-club-app.yaml` — the
 descriptor that is the **single source of truth** for both platform links
 and the accountable team. Set `ownership.accountableTeam` there; a team's
-own `ownership/components.yaml` must agree, or gate `[1/7]` in `company-os
+own `ownership/components.yaml` must agree, or gate `[1/8]` in `company-os
 validate` fails.
 
 > **Tip:** running `add component` without `--platform` fails fast with
@@ -83,6 +83,6 @@ $ company-os validate
 | Symptom | Cause | Fix |
 |---|---|---|
 | `add component requires --platform <platform-id>` | forgot `--platform` | pass an existing platform id — check with `company-os ids list --prefix platform://` |
-| `validate` gate `[1/7]` fails after adding a component | `ownership.accountableTeam` in the descriptor doesn't match the team's `ownership/components.yaml` | edit one of the two to agree — the descriptor is authoritative |
+| `validate` gate `[1/8]` fails after adding a component | `ownership.accountableTeam` in the descriptor doesn't match the team's `ownership/components.yaml` | edit one of the two to agree — the descriptor is authoritative |
 | `reality new` refuses with "already exists" | the reality doc was already scaffolded | edit the existing file instead of re-running `reality new` |
 | Newly added platform/team/component missing from `company-os today` | generated views are stale | run `company-os derive` |
