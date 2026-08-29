@@ -453,6 +453,58 @@ func TestRealityNewFallsBackToTheComponentID(t *testing.T) {
 	}
 }
 
+// TestRealityNewRefusesAComponentOfAnotherPlatform is the 2026-08-29 departure
+// from the oracle. Before it, this call resolved the platform directory and
+// WROTE — reporting success for a document filed against a platform whose
+// descriptor does not name the component, which nothing downstream then reads.
+//
+// The third case is the one that keeps the fix honest: an unknown component
+// still scaffolds, because a reality doc written before its descriptor is a real
+// order of work, and refusing it would be a new prohibition rather than the
+// correction of a silent misfile.
+func TestRealityNewRefusesAComponentOfAnotherPlatform(t *testing.T) {
+	root := initWorkspace(t)
+	ws := workspace.New(root)
+	if _, err := Add(ws, AddPlatform, "platform-2", "", nil); err != nil {
+		t.Fatalf("add platform: %v", err)
+	}
+	if _, err := Add(ws, AddComponent, "billing-api", "platform-1", nil); err != nil {
+		t.Fatalf("add component: %v", err)
+	}
+
+	err := mustFail(t, ws, "platform-2", "billing-api")
+	if got := codeOf(t, err); got != model.ExitWorkspace {
+		t.Errorf("exit code = %d, want %d", got, model.ExitWorkspace)
+	}
+	for _, want := range []string{"platform-1", "platform-2", "billing-api",
+		"platforms/platform-1/components/billing-api.yaml"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("message does not name %q: %s", want, err.Error())
+		}
+	}
+	if _, statErr := os.Stat(filepath.Join(root, "platforms", "platform-2",
+		"reality", "components", "billing-api.md")); statErr == nil {
+		t.Error("the refused call wrote the doc anyway")
+	}
+
+	// The owning platform still works, and an undeclared component still does.
+	if _, err := RealityNew(ws, "platform-1", "billing-api", nil); err != nil {
+		t.Errorf("the owning platform was refused: %v", err)
+	}
+	if _, err := RealityNew(ws, "platform-2", "never-declared", nil); err != nil {
+		t.Errorf("an undeclared component was refused: %v", err)
+	}
+}
+
+func mustFail(t *testing.T, ws *workspace.Workspace, platform, component string) error {
+	t.Helper()
+	if _, err := RealityNew(ws, platform, component, nil); err != nil {
+		return err
+	}
+	t.Fatalf("RealityNew(%q, %q) succeeded", platform, component)
+	return nil
+}
+
 // TestRealityNewRefusesToOverwrite pins code 8 and the workspace-RELATIVE path
 // in the message — `reality new` renders the path differently from _write_new,
 // which uses the absolute one.

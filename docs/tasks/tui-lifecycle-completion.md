@@ -6,10 +6,10 @@ status: complete
 ---
 
 > **Complete 2026-08-29.** All five units landed (Amendments 5–8 to R-5.5, plus
-> R-5.27). A change can be taken end to end from `company-os tui`. One thing
-> found and deliberately not fixed is carried forward in unit 3: `reality new`
-> misfiles a component under the wrong platform for *any* caller, and closing it
-> in `RealityNew` is a CLI change that needs its own decision.
+> R-5.27). A change can be taken end to end from `company-os tui`. The one
+> hazard found along the way — `reality new` misfiling a component under the
+> wrong platform for *any* caller — was approved separately and closed in
+> `RealityNew` the same day (Amendment 9, R-0.7a(m)). Nothing is carried forward.
 
 # TUI Lifecycle Completion — Tasks
 
@@ -134,13 +134,14 @@ protect, and it survives this change.
   `TestRealityPickerOffersOnlyComponentsWithoutADoc` (reopening the screen after
   writing a doc, which is what proves R-5.26 holds here).
 
-  **CLI hazard found, not fixed — needs a decision.** `company-os reality new
-  --platform other svc` misfiles silently for *any* caller, not just the TUI:
-  `internal/scaffold/commands.go:451` resolves the platform dir and writes,
-  using `ws.FindComponent` only to look up a display name. The form guards the
-  path it opens. Closing it properly means refusing in `RealityNew`, which is a
-  CLI behavior change this unit's acceptance excludes — so it is deferred as its
-  own decision, not folded in here.
+  **CLI hazard found here, closed separately.** `company-os reality new
+  --platform other svc` misfiled silently for *any* caller, not just the TUI:
+  `RealityNew` resolved the platform dir and wrote, using `ws.FindComponent`
+  only to look up a display name. Deferred out of this unit because it is a CLI
+  behavior change the acceptance excludes; approved and landed the same day as
+  Amendment 9 / R-0.7a(m). The form's `Build` refusal stays — R-5.5's
+  combination clause requires it, and it keeps the reader in the form rather
+  than walking them back through an approved preview.
 - [x] 4. `prd complete` screen (est ~1h) — the done-gate refuses on unchecked
       checklist items or a stale reality doc, so the screen must render that
       refusal legibly rather than as a wall of text

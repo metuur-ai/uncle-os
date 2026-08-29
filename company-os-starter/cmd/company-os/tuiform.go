@@ -456,12 +456,14 @@ func realityFieldHelp(targets []string) string {
 //
 // The two pickers are independent — a form has no way to narrow one field from
 // another's value — so the catalog can hand Build a pair that exists nowhere.
-// That pair does not fail: scaffold.RealityNew resolves the platform directory
-// and writes `<chosen-platform>/reality/components/<id>.md` without ever asking
-// whether the component lives there, so a mis-picked pair scaffolds a reality
-// doc for one platform's component underneath another. Refusing here is
-// addInvocation's seam, used for the same reason: the reader stays in the form
-// with the reason, and nothing is written.
+//
+// scaffold.RealityNew refuses that pair as of 2026-08-29, so this is no longer
+// the only thing standing between a mis-pick and a misfiled document. It stays
+// anyway, and R-5.5 requires it to: refusing in Build keeps the reader IN the
+// form, next to the picker they have to change, with nothing written and no
+// preview offered. Refusing after confirmation would be correct and would still
+// make them walk back through a preview they had already approved.
+// addInvocation's empty-slug check is the same seam for the same reason.
 //
 // An id the catalog does not know at all is passed through rather than refused.
 // It cannot have come from the picker, so it was typed, and the CLI's own
