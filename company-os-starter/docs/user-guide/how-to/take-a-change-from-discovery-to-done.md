@@ -10,6 +10,12 @@ output, lives in
 This page is the same loop as a repeatable recipe once you already know the
 shape.
 
+Every step below also has a guided form in `company-os tui`, which previews the
+command it is about to run and writes nothing until you confirm — see
+[browse-and-scaffold-in-the-tui.md](browse-and-scaffold-in-the-tui.md). The
+commands here stay the faster surface once the shape is familiar, and they are
+what goes in a script or a runbook.
+
 ## 1. Capture the problem (team-private)
 
 ```bash
@@ -107,4 +113,6 @@ company-os validate
 | `discover validate` fails on all three sections | brief created but never filled in | edit `brief.md`'s Problem signal / Hypothesis / Success criteria |
 | `prd new` errors about missing `--platform` | `--platform` is required even when `--from-discovery` is set | pass the platform the components belong to |
 | `prd complete` fails with "reality doc ... not updated" | you completed before editing the reality doc | edit it and bump `updated:` to today or later, then retry |
+| `prd complete` fails with "no reality doc for component" | the component has never had one scaffolded | run the `company-os reality new` command the refusal prints, then edit it |
+| `reality new` refuses with "belongs to platform X, not Y" | wrong `--platform` — the descriptor names a different one | re-run with the platform in the message |
 | `check ready`/`check done` output looks empty for governance | components not yet passed through `governance resolve` | run `company-os governance resolve --team <team>` first |

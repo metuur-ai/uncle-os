@@ -36,7 +36,7 @@ code and never parse stdout.
 | `0` | success | the command did what you asked |
 | `1` | validation failed | a `validate` gate reported `[FAIL]`, or `discover validate` / `prd validate` refused an artifact |
 | `2` | usage error | unknown subcommand, bad flag, missing or invalid argument, or `company-os` with no subcommand at all |
-| `3` | workspace error | you are not in a workspace root, or a platform, team, component, brief, PRD or manifest repo you named does not exist |
+| `3` | workspace error | you are not in a workspace root; or a platform, team, component, brief, PRD or manifest repo you named does not exist; or it exists somewhere other than where you said — `reality new --platform` for a component another platform's descriptor claims |
 | `4` | artifact error | a YAML file or frontmatter block is malformed, or a `workspace.yaml` breaks its schema |
 | `5` | precondition failed | a gate refused: `prd complete` before `reality/` was updated, or `prd new --from-discovery` against a brief that is not `validated` |
 | `6` | external tool error | git is missing or older than 2.27, a clone or sparse-checkout failed, or `workspace sync --frozen` could not reconstruct a slice from the lock and the cache |
@@ -188,7 +188,18 @@ behavior.
 company-os reality new <component> --platform ID
 ```
 
-`--platform` is required. Refuses to overwrite an existing reality doc.
+`--platform` is required. Refuses to overwrite an existing reality doc (exit
+`8`), and refuses a component whose descriptor names a different platform (exit
+`3`).
+
+The second refusal is newer than the command. Until 2026-08-29 a mismatched pair
+was written rather than refused: the doc landed under the platform you named,
+and nothing read it — the component browser looks under the *owning* platform,
+and so does `prd complete`'s done-check. You saw `created` and the gate you ran
+it to satisfy went on refusing, with nothing connecting the two.
+
+A component the workspace does not know at all is still scaffolded, because
+writing a reality doc before its descriptor exists is a legitimate order of work.
 
 ```bash
 $ company-os reality new online-ordering-app --platform ordering
@@ -542,7 +553,7 @@ either `workspace sync` or `validate` as the next step.
 ## `tui`
 
 Interactive terminal UI over the current workspace: ten read-only screens and
-five forms that scaffold artifacts.
+nine forms that write.
 
 ```text
 company-os tui
@@ -556,11 +567,21 @@ get executed, so it cannot drift from what actually happens.
 `Esc` goes back one level and quits only at the top level. `Ctrl-C` always
 quits. `q` quits except while typing into a field.
 
-The forms cover `discover new`, `prd new`, `add team`, `add platform`, and
-`add component`. There is deliberately no form for `workspace sync` or
-`scratchpad init`: both need values that cannot be derived from the workspace,
-and a form that supplies a plausible-but-wrong repo URL, commit pin, or external
-path is worse than no form.
+The forms cover a whole change — `discover new`, `discover validate`, `prd new`,
+`prd validate`, `reality new`, `prd complete` — plus `add team`,
+`add platform`, and `add component`. Every picker is built when its screen is
+opened, so each step offers what the step before it created.
+
+Three deliberate omissions:
+
+- No form for `workspace sync` or `scratchpad init`: both need values that
+  cannot be derived from the workspace, and a form that supplies a
+  plausible-but-wrong repo URL, commit pin, or external path is worse than no
+  form.
+- No field for `prd complete --force`, which overrides the check that a change
+  is not done until reality is updated. Use it from a terminal or not at all.
+- No command runs from a read-only screen. `discover validate` rewrites the
+  brief it is given, so it is a form and never part of the discovery browser.
 
 This subcommand has no `--json` and is not part of the agent contract — it is a
 human surface. Scripts and agents use the underlying commands, where the

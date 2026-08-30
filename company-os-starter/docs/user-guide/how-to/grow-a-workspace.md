@@ -85,4 +85,5 @@ $ company-os validate
 | `add component requires --platform <platform-id>` | forgot `--platform` | pass an existing platform id — check with `company-os ids list --prefix platform://` |
 | `validate` gate `[1/8]` fails after adding a component | `ownership.accountableTeam` in the descriptor doesn't match the team's `ownership/components.yaml` | edit one of the two to agree — the descriptor is authoritative |
 | `reality new` refuses with "already exists" | the reality doc was already scaffolded | edit the existing file instead of re-running `reality new` |
+| `reality new` refuses with "belongs to platform X, not Y" | the `--platform` you passed is not the one the component's descriptor names | re-run with the platform in the message — the descriptor is authoritative, and a doc filed under the other platform is read by nothing |
 | Newly added platform/team/component missing from `company-os today` | generated views are stale | run `company-os derive` |
