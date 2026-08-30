@@ -63,7 +63,7 @@ Branch on the code; never grep stdout.
 ```yaml
 # .github/workflows/os-validate.yml (any OS repo)
 - name: install company-os
-  env: {COMPANY_OS_VERSION: v1.1.1}   # pin it; don't track latest in CI
+  env: {COMPANY_OS_VERSION: v1.1.2}   # pin it; don't track latest in CI
   run: |
     curl -fsSLo /usr/local/bin/company-os \
       <release-url>/$COMPANY_OS_VERSION/company-os_${COMPANY_OS_VERSION}_linux_amd64
