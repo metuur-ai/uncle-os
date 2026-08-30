@@ -18,7 +18,10 @@ status: complete
 > resolved their pickers at catalog build, so nothing created in a session was
 > offered by the next screen: Amendment 5's dead end, moved one screen later.
 > Fixed by making every picker resolve at open time (Amendment 10, R-5.26
-> restated). Nothing is carried forward.
+> restated). Asking the same question of the read-only catalog found it there
+> too — the component browser and `governance explain` shared one hoisted scan —
+> so R-5.4 gained a clause and `internal/tui` gained `ChoicesFn`. Nothing is
+> carried forward.
 
 # TUI Lifecycle Completion — Tasks
 

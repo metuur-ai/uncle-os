@@ -169,7 +169,7 @@ friction F5 (35-40 domain terms) and F6 (EARS and `@spec` syntax) are untouched.
 | R-5.1 | THE SYSTEM SHALL provide an interactive terminal UI launched only by the explicit subcommand `company-os tui`. |
 | R-5.2 | THE SYSTEM SHALL NOT launch the TUI from a bare invocation, from any other subcommand, or from any environment-variable trigger. |
 | R-5.3 | IF `tui` is invoked with no TTY attached, THE SYSTEM SHALL print an explanatory message to stderr, exit 7, and make no filesystem change. |
-| R-5.4 | THE SYSTEM SHALL ship read-only screens first, enumerated and asserted by test: workspace overview, `today --role`, validate results, component browser, PRD browser, discovery browser, `governance explain`, `skills list`, `ids list`, and `workspace status`. |
+| R-5.4 | THE SYSTEM SHALL ship read-only screens first, enumerated and asserted by test: workspace overview, `today --role`, validate results, component browser, PRD browser, discovery browser, `governance explain`, `skills list`, `ids list`, and `workspace status`. A read-only screen SHALL read the workspace when it is opened, and SHALL NOT reuse a scan taken when the catalog was built — a browser that omits what the reader created a moment ago is asserting the workspace does not contain it. Second sentence added 2026-08-29; see [Amendment 10](#amendment-10--the-stale-catalog-in-both-halves-2026-08-29). |
 | R-5.5 | **Restated 2026-07-27, twice on 2026-08-28 and twice on 2026-08-29 — see [Amendment 4](#amendment-4--the-add-forms-2026-07-27), [Amendment 5](#amendment-5--discover-validate-and-the-dead-end-it-closes-2026-08-28), [Amendment 6](#amendment-6--prd-validate-2026-08-28), [Amendment 7](#amendment-7--reality-new-and-the-pair-that-exists-nowhere-2026-08-29) and [Amendment 8](#amendment-8--prd-complete-and-the-flag-that-gets-no-field-2026-08-29).** THE SYSTEM SHALL ship mutating forms only after R-5.4 is complete, each justified by an observed request rather than by completeness: `discover new`, `prd new`, `add team`, `add platform`, `add component`, `discover validate`, `prd validate`, `reality new`, and `prd complete`. THE SYSTEM SHALL NOT build forms for `workspace sync` or `scratchpad init`. THE SYSTEM SHALL NOT allow any browsing screen to reach `discover validate`, which rewrites the brief it is asked about. WHERE a form collects two values whose valid combinations the workspace constrains, THE SYSTEM SHALL refuse an invalid combination in `Build`, before any preview is offered. THE SYSTEM SHALL NOT offer a field for `prd complete --force`, which overrides the done-gate enforcing invariant 4. |
 | R-5.27 | WHEN a screen's command returns an error whose diagnostic it has already written to its own output, THE SYSTEM SHALL render that output alone and SHALL NOT add a second error line, so the TUI and the flag CLI report the same refusal in the same words exactly once. Added 2026-08-29; see [Amendment 8](#amendment-8--prd-complete-and-the-flag-that-gets-no-field-2026-08-29). |
 | R-5.6 | WHEN the TUI is about to perform a mutating action, THE SYSTEM SHALL display the exact flag-complete `company-os` invocation equivalent to that action before executing it. |
@@ -193,9 +193,9 @@ friction F5 (35-40 domain terms) and F6 (EARS and `@spec` syntax) are untouched.
 | R-5.22 | **Restated 2026-07-27 — see [Amendment 2](#amendment-2--advisor-scope-corrected-2026-07-27).** IF resolving a detected problem requires a value that cannot be derived from the workspace — a federation manifest needs repo URLs and commit pins; an unresolved feature-index reference needs an authoring decision — THE SYSTEM SHALL report and explain the problem and SHALL NOT offer a fix, because a form that writes a plausible-but-wrong value is worse than the missing one. |
 
 | R-5.23 | WHEN the reader leaves the recovery menu of R-5.17 without selecting a workspace, THE SYSTEM SHALL exit 0, because quitting a menu is not a failure. |
-| R-5.26 | **Restated 2026-08-29 — see [Amendment 10](#amendment-10--the-condition-that-was-the-defect-2026-08-29).** THE SYSTEM SHALL resolve a mutating form that offers ANY choices when its screen is opened rather than when the catalog is built, so a value created a moment ago is offerable without relaunching. A form with no choices to offer may be built statically. Added 2026-07-27 as a conditional requirement; see [Amendment 4](#amendment-4--the-add-forms-2026-07-27). |
+| R-5.26 | **Restated 2026-08-29 — see [Amendment 10](#amendment-10--the-stale-catalog-in-both-halves-2026-08-29).** THE SYSTEM SHALL resolve a mutating form that offers ANY choices when its screen is opened rather than when the catalog is built, so a value created a moment ago is offerable without relaunching. A form with no choices to offer may be built statically. Added 2026-07-27 as a conditional requirement; see [Amendment 4](#amendment-4--the-add-forms-2026-07-27). |
 
-### Amendment 10 — the condition that was the defect (2026-08-29)
+### Amendment 10 — the stale catalog, in both halves (2026-08-29)
 
 **Authority:** found by the acceptance test the four lifecycle units were built
 for and which none of them had actually run — the loop driven end to end through
@@ -242,6 +242,20 @@ stale.
 `TestTheWholeLoopRunsInOneSession` asserts the behaviour it exists to protect.
 The second is the one that found this, and it is the only test in the suite that
 drives more than one screen.
+
+**The same defect was in the read-only half, and R-5.4 gains a clause for it.**
+Asking the question of the other catalog found `readOnlyScreens` hoisting one
+`componentCatalog(ws)` call out of two closures — the **component browser** and
+`governance explain`'s picker. A component created by `add component`, one
+screen away, appeared in neither until the reader quit and relaunched.
+
+Being read-only did not make this smaller. It made it quieter, which is worse: a
+picker that omits a component offers one fewer choice, but a **browser** that
+omits it is asserting the workspace does not contain it, in the one screen a
+reader opens to find out. `internal/tui` gains `Screen.ChoicesFn` and
+`ResolveChoices`, exactly symmetric to `FormFn` and `ResolveForm` and resolved
+once per open for the same reason — `View` and the key handlers run per
+keystroke and must not touch the filesystem.
 
 ### Amendment 9 — the misfiled reality doc (2026-08-29)
 
