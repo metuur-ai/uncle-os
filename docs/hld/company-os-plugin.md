@@ -2,7 +2,7 @@
 
 ## Overview
 
-The four canonical skills carry the layer of the methodology that no validator
+The five canonical skills carry the layer of the methodology that no validator
 can express. `creating-prd` does not restate what `company-os prd new` does — it
 says *"run every command with `--json` and branch on the exit code"*, then tells
 the agent what exit 5 means in context, which warnings on a **passing** run are
@@ -14,7 +14,7 @@ them; this is the reasoning between the verbs, and it is the reason "strict on
 artifacts, flexible on process" is workable rather than merely stated.
 
 Today an agent reaches it only by having the workspace checked out and knowing to
-go read files. This change packages the four as a Claude Code plugin so they load
+go read files. This change packages the five as a Claude Code plugin so they load
 into context automatically, under names that stay unambiguous in a session where
 they sit beside skills from a dozen unrelated publishers. That is what the `cos-`
 prefix is for, and it is the only place a mixed skill namespace actually exists —
@@ -45,7 +45,7 @@ it.
 
 ## Goals
 
-1. The four canonical skills are installable as a Claude Code plugin and load
+1. The five canonical skills are installable as a Claude Code plugin and load
    under `cos-`-prefixed names.
 2. Each plugin skill names the canonical workspace file it derives from, so its
    source is one lookup away.
@@ -78,7 +78,7 @@ Observable when this ships:
 - `claude plugin validate` reports no errors against the repository.
 - A Go test asserts the manifest's required fields and their types, and fails on
   a malformed manifest without any external tool.
-- With the plugin installed, the four skills are offered under their `cos-`
+- With the plugin installed, the five skills are offered under their `cos-`
   names.
 - Each plugin skill's body names its canonical source path, and that path exists.
 - Each plugin skill's body states that a workspace's layered skill is

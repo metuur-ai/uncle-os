@@ -18,7 +18,8 @@ templates/            Example artifact formats — not contracts (see
                       templates/README.md); discovery, PRD, ADR, outcome,
                       reality doc, deviations, exceptions, SKILL template
 skills/               Canonical skills: running-discovery, creating-prd,
-                      completing-a-change, requesting-an-exception
+                      completing-a-change, reality-from-prds,
+                      requesting-an-exception
 schemas/SCHEMAS.md    Human-readable artifact contracts
 docs/FRONTMATTER-CORE.md  The minimal frontmatter core — the shared interop
                       contract for teams, tools, and Obsidian

@@ -66,7 +66,7 @@ reason. Nothing is broken; the layers simply aren't there yet.
 
 Discovery globs **one level deep** and matches `*.SKILL.md` exactly, so
 `skills/creating-prd/SKILL.md` is invisible — the file must be
-`skills/creating-prd.SKILL.md`. (The four reference skills shipped in the
+`skills/creating-prd.SKILL.md`. (The five reference skills shipped in the
 starter kit under `skills/<name>/SKILL.md` are examples to copy, not a workspace
 layout; rename them on the way in.)
 
@@ -194,13 +194,14 @@ extends: platform-skill://ordering/nope but no such base skill exists
 
 ## What ships, and what you inherit
 
-The starter kit carries four reference skills, one per lifecycle step:
+The starter kit carries five reference skills:
 
 | Skill | Covers |
 |---|---|
 | `skill://product/running-discovery` | problem signal → validated brief |
 | `skill://product/creating-prd` | validated brief → PRD that passes `prd validate` |
 | `skill://product/completing-a-change` | shipped code → archived PRD + updated reality |
+| `skill://product/reality-from-prds` | completed PRDs → reality doc, PRD-cited and user-confirmed |
 | `skill://governance/requesting-an-exception` | a mandatory rule a component cannot satisfy |
 
 `examples/workspace` additionally carries `skill://governance/syncing-knowledge`

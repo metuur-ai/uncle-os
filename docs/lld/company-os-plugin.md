@@ -11,6 +11,7 @@ changes.
 skills/cos-creating-prd/SKILL.md
 skills/cos-running-discovery/SKILL.md
 skills/cos-completing-a-change/SKILL.md
+skills/cos-reality-from-prds/SKILL.md
 skills/cos-requesting-an-exception/SKILL.md
 ```
 

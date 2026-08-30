@@ -4,6 +4,11 @@
 
 Four file moves and eight frontmatter lines. No Go changes except one new test.
 
+A fifth shipped skill, `skills/reality-from-prds/SKILL.md`, is already
+conforming — it carries `type: skill` and `tags: [authority/canonical]` — and
+needs no repair. It is out of scope here, but the test in this change should
+sweep it with the other four so the invariant holds for the whole set.
+
 ### The moves
 
 ```
@@ -24,7 +29,7 @@ Two edits per file. Add `type: skill`, which `CoreFieldErrors`
 (`internal/product/contract.go:65-68`) requires of every artifact. Then replace
 the hand-written tag list with what derivation produces.
 
-All four currently read `tags: [authority/canonical, kind/skill, process/<x>]`.
+The four repaired files currently read `tags: [authority/canonical, kind/skill, process/<x>]`.
 `DeriveTags` (`internal/graph/tags.go:69-117`) reads `type`, `platform`, `team`,
 `components`, `boundedContext`, `status`, `authority`, `fromDiscovery`, `prd`,
 and `role`. Of the four files' frontmatter, only `authority: canonical` is an

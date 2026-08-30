@@ -17,14 +17,14 @@ layout wrong means the plugin loads with nothing in it.
 
 ## Unit 2: The skills
 
-**Why:** These four carry the judgment the CLI cannot encode — what an exit code
+**Why:** These five carry the judgment the CLI cannot encode — what an exit code
 means here, which warning on a passing run is load-bearing, which shortcut past a
 gate is forbidden. Packaging them is the entire value of this change; the naming
 is what keeps them findable in a crowded session.
 
 | ID | EARS statement |
 | --- | --- |
-| R-2.1 | THE SYSTEM SHALL provide one plugin skill for each of the four canonical starter-kit skills. |
+| R-2.1 | THE SYSTEM SHALL provide one plugin skill for each of the five canonical starter-kit skills. |
 | R-2.2 | THE SYSTEM SHALL name each plugin skill's directory `cos-<name>`, where `<name>` is the canonical skill's name. |
 | R-2.3 | THE SYSTEM SHALL give each plugin skill frontmatter containing a `name` equal to its directory name and a description. |
 | R-2.4 | THE SYSTEM SHALL state in each plugin skill's body the workspace-relative path of the canonical skill file it derives from. |

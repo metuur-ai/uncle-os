@@ -64,7 +64,7 @@ filename exactly.
 
 ## Unit 3: Prefix validation gate
 
-**Why:** The four starter-kit skills drifted into a layout their own discovery
+**Why:** The starter-kit skills drifted into a layout their own discovery
 glob cannot match, and nobody noticed, because the rule lives only in a
 template's prose. A naming convention that nothing checks decays on the first
 skill written in a repo whose author never read the template. Enforcement is
@@ -109,7 +109,7 @@ CI contract.
 | R-4.5 | WHEN `company-os validate` runs against `examples/failing-workspace`, THE SYSTEM SHALL report the same 15 failing findings as before this change, with skill paths and ids prefixed, and SHALL close with the same problem count. |
 | R-4.6 | THE SYSTEM SHALL update every Go test assertion that names a skill in a committed `examples/` fixture so the assertion matches the prefixed value. |
 | R-4.6a | THE SYSTEM SHALL NOT update any Go test assertion that names a skill synthesized by a test fixture, including those in `internal/skills/skills_test.go` and `internal/skills/gate_oracle_test.go`. |
-| R-4.7 | THE SYSTEM SHALL provide test coverage that copies each of the four starter-kit skills into a synthesized workspace and asserts discovery finds it, the prefix gate passes it, and no core-field or tag-drift finding is raised against it. |
+| R-4.7 | THE SYSTEM SHALL provide test coverage that copies each of the five starter-kit skills into a synthesized workspace and asserts discovery finds it, the prefix gate passes it, and no core-field or tag-drift finding is raised against it. |
 | R-4.8 | WHEN `make check` runs, THE SYSTEM SHALL complete gofmt, vet, `go test ./...`, and `examples/acceptance.sh` without failure. |
 
 ## Unit 5: Federated slice migration
