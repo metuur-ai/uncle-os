@@ -131,6 +131,36 @@ for W in workspace standalone-team; do
   fi
 done
 
+# 4b. a freshly scaffolded workspace passes its own validate (R-6.10 of
+#     okf-provenance-and-indexes).
+#
+#     This covers a hole nothing else here can. Sections 2-4 all run against
+#     COMMITTED fixtures, so a generator that only ever behaves on an
+#     already-derived tree looks green everywhere. `init` is the one path that
+#     builds a workspace from nothing, and a per-directory index is exactly the
+#     kind of derived artifact that can be emitted by one code path and missed by
+#     another — D-2.2 named that failure before it was built, and until this
+#     section existed the harness could not have caught it.
+#
+#     A scaffolded team gets both definition-of-ready and definition-of-done, so
+#     teams/<t>/standards/ clears the two-document threshold and a correct `init`
+#     MUST leave an index there. That is asserted too, so the check cannot pass
+#     by generating nothing at all.
+#
+#     The temp directory is left for the OS to reap, as $TMP above already is.
+echo "== fresh init passes its own validate =="
+FRESH="$(mktemp -d)/ws"
+if "$CLI" --root "$FRESH" init --company "Acme" --team core --platform core \
+     >/dev/null 2>&1 && "$CLI" --root "$FRESH" validate >/dev/null 2>&1; then
+  if [ -f "$FRESH/teams/core/standards/index.md" ]; then
+    echo "ok: init -> validate exits 0, with the expected generated index"
+  else
+    echo "FAIL: init -> validate passed but generated no index"; fail=1
+  fi
+else
+  echo "FAIL: a freshly initialized workspace does not pass its own validate"; fail=1
+fi
+
 # 5. federation reproducibility (build-at-test-time integration check). Proves
 #    the sync guarantee end to end: a sparse governance-only fetch from a real
 #    git repo, materialized read-only slices that contain ONLY allowlisted paths,

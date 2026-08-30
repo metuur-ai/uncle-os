@@ -26,6 +26,40 @@ type: prd            # doc kind; known kinds derive a #kind/* tag
 id: 2026-faster-webhooks   # stable, unique; outcome reviews may use `prd:` instead
 ```
 
+## Recommended on every document
+
+```yaml
+description: "Fans out webhook delivery; retries are best-effort and unbounded."
+```
+
+`description:` is recommended on every document and **blocks nothing**. Its
+consumer is the generated per-directory `index.md`, which renders each document's
+title and description so a reader — human or agent — can decide what to open
+without opening anything.
+
+An index of titles alone is `ls` with extra steps. Two rules keep it from becoming
+that. Both are tests you run against a specific document, not advice:
+
+1. **Carry at least one fact not derivable from the document's filename,
+   `title:`, `type:`, or directory path.** If a reader could reconstruct your
+   sentence from the four things the index already displays, the sentence costs
+   space and earns nothing.
+2. **Do not let it read as true when pasted onto a sibling document in the same
+   directory.** Copy the sentence onto the file next to it. If it still reads
+   true, it describes the directory rather than the document, and it needs
+   rewriting.
+
+Applied to `platforms/communications/reality/customer-notification-service.md`:
+
+| Description | Verdict |
+| --- | --- |
+| `"Reality doc for the customer notification service"` | Fails rule 1 — every word already appears in the filename, the `type:`, and the path |
+| `"Current state of the customer notification service"` | Fails rule 2 — reads true pasted onto any reality doc in that directory |
+| `"Fans out webhook delivery; retries are best-effort and unbounded."` | Passes — the retry semantics appear in neither the filename nor the type |
+
+**Quote the value.** A useful description usually contains a colon, and
+`description: One sentence: what this says` is a YAML parse error.
+
 ## Tier 2 — Lifecycle (required per doc family)
 
 ```yaml
@@ -113,12 +147,69 @@ Guides live at `company-os/onboarding/<role>.md` (company scope) and
 prints a pointer to the matching guide, preferring team scope over company
 scope.
 
+## Provenance — `generated:` and `verified:` (optional, advisory)
+
+Who produced this document, and has a person confirmed it? Both fields are
+optional and **neither blocks anything, ever**.
+
+```yaml
+generated:
+  by: claude-opus-5/1        # producer that wrote the content
+  at: 2026-08-26
+verified:
+  - by: human:ada            # who confirmed it, and when
+    at: 2026-08-26
+  - by: process:nightly-audit
+    at: 2026-08-25
+```
+
+They are kept separate because **a document's author need not be its confirmer**
+— that distinction is the entire value of the pair.
+
+**Actor convention.** Three shapes, distinguishable by prefix:
+
+| Form | Means |
+| --- | --- |
+| `<producer>/<version>` | an agent, e.g. `claude-opus-5/1` |
+| `human:<id>` | a person |
+| `process:<id>` | an automated process |
+
+**Trust tier** is *derived at read time* from `verified:`, never stored:
+
+| `verified:` contains | Tier |
+| --- | --- |
+| nothing, or is absent | `unverified` |
+| only agents and processes | `machine-confirmed` |
+| at least one `human:` actor | `human-reviewed` |
+
+`unverified` is the default and is not an accusation — most documents are simply
+unreviewed.
+
+**No gate consumes the tier, and none may.** A trust signal that can block turns
+into an approval field, and this system already has three of those which disagree
+with each other. This one is allowed to be wrong without stopping anyone's work.
+
+**Existing approval fields feed it, one way.** Where a document carries
+`decisionOwner:` or `approvedBy:`, a `human:` actor is derived *in memory* so the
+tier means something today rather than reading `unverified` everywhere. Those
+fields are never rewritten and keep every gate that consumes them. A value still
+carrying its scaffolded `TODO` derives nothing.
+
 ## Reserved doc types (inert)
 
 `account-context`, `customer-call`, and `data-catalog` are **reserved** type
 names. They are inert today — no required-field gate runs against them until
 their consumer ships — but the names are claimed so producers can start emitting
 them without collision.
+
+`index` is reserved on the same terms, with one difference: it will be *written*
+by the tool rather than by a producer. It is the `type:` of the generated
+per-directory `index.md`. No gate will ever run against it, because `index.md` is
+skipped by name during graph traversal — it is never ingested as a graph
+document, so it derives no tags and is never checked for core fields. The `type:`
+exists for consumers outside this repository that filter on it; nothing inside
+reads it. Do not add it to the tag vocabulary expecting a `kind/index` tag: that
+code would be unreachable.
 
 ## Generated — never hand-written
 
@@ -144,6 +235,8 @@ Unknown fields are preserved, never rejected.
 | Field tier | Checked by | Blocking? |
 | --- | --- | --- |
 | Identity + lifecycle | `validate` gate 4, `discover validate`, `prd validate` | Yes, everywhere |
+| `description` (recommended) | Nothing — consumed by the generated `index.md` | No, ever |
+| `generated` / `verified` (optional) | Nothing — feed an advisory trust tier | No, ever |
 | References → tag derivation | `validate` gate 4 (drift vs `derive`) | Yes, everywhere |
 | Process accountability | `prd validate` / `prd complete` gates | Yes, at that gate |
 | Section structure (templates/) | `discover validate`, `prd validate` | No — warnings, unless the team opts in |

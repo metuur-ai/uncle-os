@@ -2,6 +2,7 @@
 type: prd
 id: 2026-per-channel-quiet-hours
 title: Per-channel quiet hours
+description: "Targets push opt-out below 3.0% within 60 days, with urgent messages deliberately exempt from the window."
 status: completed
 team: customer-engagement
 platform: communications

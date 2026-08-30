@@ -1,6 +1,7 @@
 ---
 type: concept
 id: concept://component
+description: "May relate to several platforms, but has exactly one canonical descriptor owning relationships and accountability."
 tags: [ontology/concept]
 aliases: [Component]
 relationships:

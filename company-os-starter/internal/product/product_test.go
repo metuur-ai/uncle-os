@@ -235,6 +235,52 @@ func TestDoneGateAcceptsAFreshRealityDoc(t *testing.T) {
 	}
 }
 
+// TestOutcomeDocCarriesADescription is R-1.6 of okf-provenance-and-indexes.
+//
+// It asserts the rendered value, not just the key. `outcome.md` is written by
+// the machine at `prd complete` time, so unlike the three hand-authored
+// templates it must not ship a `<...>` placeholder — every archived outcome
+// would then carry unfilled boilerplate. The writer already holds the title and
+// the due date, so it emits a real sentence, and the due date is what makes the
+// description satisfy the R-1.2 rubric (a fact not derivable from the filename,
+// the `type:`, or the path) rather than merely satisfying R-1.6's letter.
+//
+// @spec req://uncle-os/okf-provenance-and-indexes@0.1#R-1.6
+func TestOutcomeDocCarriesADescription(t *testing.T) {
+	ws := fixture(t)
+	seedActivePRD(t, ws, "2026-outcome-desc", "created: 2026-01-01", "updated: 2026-06-01")
+
+	if _, err := PRDComplete(ws, "payments", "2026-outcome-desc", false, nil); err != nil {
+		t.Fatalf("prd complete refused: %v", err)
+	}
+	raw, err := os.ReadFile(filepath.Join(ws.Platforms, "payments", "archive",
+		"prds", "2026-outcome-desc", "outcome.md"))
+	if err != nil {
+		t.Fatalf("reading the emitted outcome.md: %v", err)
+	}
+	var line string
+	for _, l := range strings.Split(string(raw), "\n") {
+		if strings.HasPrefix(l, "description:") {
+			line = l
+			break
+		}
+	}
+	if line == "" {
+		t.Fatalf("outcome.md emits no `description:` (R-1.6):\n%s", raw)
+	}
+	value := strings.TrimSpace(strings.TrimPrefix(line, "description:"))
+	if !strings.HasPrefix(value, `"`) || !strings.HasSuffix(value, `"`) {
+		t.Errorf("description is not quoted: %s", line)
+	}
+	if strings.Contains(value, "<") {
+		t.Errorf("description ships an unfilled placeholder: %s", line)
+	}
+	if !strings.Contains(line, "due") {
+		t.Errorf("description omits the due date, the one fact not already in "+
+			"the filename, type or path: %s", line)
+	}
+}
+
 // TestDoneGateStaleRealityRefuses is R-0.3 from the refusing side, with the
 // oracle's exact sentence.
 func TestDoneGateStaleRealityRefuses(t *testing.T) {

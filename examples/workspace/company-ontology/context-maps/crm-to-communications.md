@@ -1,6 +1,7 @@
 ---
 type: context-map
 id: map://crm--communications
+description: "Published-language integration: a Customer becomes a Recipient only once subscribed to at least one channel."
 tags: [ontology/context-map]
 upstream: context://crm
 downstream: context://communications

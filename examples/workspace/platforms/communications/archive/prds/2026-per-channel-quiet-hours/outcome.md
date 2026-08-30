@@ -1,5 +1,6 @@
 ---
 type: outcome-review
+description: "Due 2026-10-16 and still empty: no actuals, verdict, or learnings recorded yet."
 prd: 2026-per-channel-quiet-hours
 due: 2026-10-16
 status: pending

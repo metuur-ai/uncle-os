@@ -388,6 +388,19 @@ commit as the title backfill (3.4) or the harness's double-build check goes red.
     file under `company-os-starter/templates/`. The repo `CLAUDE.md` makes the sync
     a hard constraint — the section names the built-in emits are what `validate`
     greps for. Re-estimate ~75m.
+  - **Re-planned again 2026-08-26 — there are FOUR sync points, not two.** Found
+    while implementing story 1.2 of `okf-provenance-and-indexes`, which added
+    `description:` to these same two constants. `DiscoveryTemplate` and
+    `PRDTemplate` are pinned byte-for-byte to frozen Python oracles under
+    `internal/scaffold/testdata/` by `TestBuiltinsMatchPythonModuleStrings`, so
+    adding `title:`/`resource:` makes that test go red by design. The test's own
+    comment sanctions editing the oracle as "a deliberate act"
+    (`internal/scaffold/template_test.go:41-44`); do that, and **extend** the
+    divergence note rather than replacing it — the note's value is the list of
+    lines changed on purpose, and story 1.2 has already added one. Also:
+    placeholders may contain no `{` or `}`, since `formatTemplate`
+    (`internal/product/pysem.go:136`) reads a bare brace as a substitution field
+    or an error. Re-estimate ~90m.
   - acceptance: R-3.5 — `prd new`, `discover new`, and `reality new` emit `title:`,
     with `reality new` additionally emitting `resource:`; `internal/scaffold/template.go`
     and `templates/*.md` stay in sync per the repo `CLAUDE.md`.
@@ -407,6 +420,14 @@ commit as the title backfill (3.4) or the harness's double-build check goes red.
     field, so this is an additive change to a writer that already holds the value —
     not the plumbing exercise the estimate assumed. `templates/outcome-review.md`
     must move with it (see re-plan note 3).
+  - **Update 2026-08-26.** Story 1.3 of `okf-provenance-and-indexes` has since
+    added `description:` to this same writer (`fa40dd6`) and moved
+    `templates/outcome-review.md` with it. The `title:` line belongs directly
+    beneath that `description:`. That story deliberately did **not** ship R-3.6 —
+    doing so would have left this box unchecked while the behaviour landed — so
+    this task is unaffected in scope, only in the surrounding lines. Note the
+    `// byte for byte` claim on `outcomeDoc` is now qualified by a divergence
+    note; extend it rather than deleting it.
   - acceptance: R-3.6 — the writer emits `title:`, keeps `prd:` as the identity
     field per `CoreFieldErrors` (`internal/product/contract.go:65`), and no
     title-fallback path assumes `id:` exists.

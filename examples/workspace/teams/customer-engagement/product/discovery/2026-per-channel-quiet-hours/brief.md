@@ -2,6 +2,7 @@
 type: discovery-brief
 id: 2026-per-channel-quiet-hours
 title: Per-channel quiet hours
+description: "412 Q2 tickets and a 3x push-versus-email opt-out gap; validated and carried forward into the PRD."
 status: validated
 team: customer-engagement
 created: 2026-07-18

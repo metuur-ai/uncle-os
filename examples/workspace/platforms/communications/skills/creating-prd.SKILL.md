@@ -1,5 +1,6 @@
 ---
 id: skill://product/creating-prd
+description: "Scaffold from a validated discovery rather than copying an old PRD, so the governance snapshot carries approved deviations."
 type: skill
 version: '1.3'
 authority: canonical

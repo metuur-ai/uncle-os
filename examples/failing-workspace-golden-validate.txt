@@ -10,6 +10,7 @@ validating workspace <WORKSPACE>
   [ok] ghost: deviation company-standard://retro-cadence current (review 2035-01-14)
   [FAIL] ghost: exception for company-standard://security-service-baseline has NO expiry — invalid
   [FAIL] ghost: exception for company-standard://customer-data-privacy expired 2020-01-01
+  [warn] ghost: exception for company-standard://tier-1-observability is approved by a placeholder (TODO: rule owner) — replace it with the rule owner
   [ok] ghost: exception company-standard://tier-1-observability valid until 2035-12-31
 
 [3/8] active PRD contracts
@@ -39,6 +40,8 @@ validating workspace <WORKSPACE>
   [FAIL] teams/ghost/team.yaml: roster[1]: needs 'name' and 'role'
   [ok] teams/ghost: no CLAUDE.md node (absent -> pass)
   [ok] company-ontology/CLAUDE.md: context node in sync
+  [FAIL] platforms/beta/archive/prds/2035-old-dirname/index.md: directory qualifies for an index but has none — run: company-os derive
+  [FAIL] teams/ghost/skills/index.md: directory qualifies for an index but has none — run: company-os derive
 
 [6/8] feature-index drift (derived component->artifact map)
   [FAIL] alpha: feature-index drifted from derivation — run: company-os derive
@@ -51,4 +54,4 @@ validating workspace <WORKSPACE>
 
 [8/8] promotion integrity (promoted drafts match their change records)
 
-FAIL — 15 problem(s)
+FAIL — 17 problem(s)

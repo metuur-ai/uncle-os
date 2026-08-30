@@ -1,5 +1,6 @@
 ---
 id: team-standard://customer-engagement/definition-of-done
+description: "Done demands the Representation of Reality documents be updated, not merely tests and peer review."
 type: team-standard
 tags: [team/customer-engagement]
 ---

@@ -1,5 +1,6 @@
 ---
 id: reality-customer-notification-service
+description: "Email and push only; retries carry idempotency keys and urgent-class messages bypass quiet hours."
 type: component-reality
 authority: canonical
 updated: 2026-07-18

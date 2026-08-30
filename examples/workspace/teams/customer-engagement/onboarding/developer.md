@@ -1,6 +1,7 @@
 ---
 type: onboarding-guide
 id: onboarding-ce-developer
+description: "This team's local quirks: its PRD-structure deviation and the one reality doc a developer here updates most."
 role: developer
 team: customer-engagement
 tags: [kind/onboarding, role/developer, team/customer-engagement]

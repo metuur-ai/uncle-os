@@ -1,5 +1,6 @@
 ---
 id: team-standard://customer-engagement/definition-of-ready
+description: "Ready demands identified repositories, known dependencies, testable criteria, and small enough to execute."
 type: team-standard
 tags: [team/customer-engagement]
 ---

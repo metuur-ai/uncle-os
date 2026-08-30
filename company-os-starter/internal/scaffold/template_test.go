@@ -11,6 +11,64 @@ import (
 	"github.com/metuur-ai/uncle-os/company-os-starter/templates"
 )
 
+// TestBuiltinsEmitAQuotedDescription is R-1.5 and R-1.4 of
+// okf-provenance-and-indexes: every scaffolded document carries a
+// `description:`, and the placeholder is quoted.
+//
+// It is separate from TestBuiltinsMatchPythonModuleStrings on purpose. That test
+// is a drift detector — it compares against a frozen file and passes the moment
+// both sides agree, so deleting the description line from a constant and
+// updating the oracle to match would leave it green. This one asserts the
+// requirement itself and stays red until the field comes back.
+//
+// The quoting is load-bearing, not cosmetic: a useful description usually
+// contains a colon, and `description: One sentence: what this says` is a YAML
+// parse error.
+//
+// @spec req://uncle-os/okf-provenance-and-indexes@0.1#R-1.4
+// @spec req://uncle-os/okf-provenance-and-indexes@0.1#R-1.5
+func TestBuiltinsEmitAQuotedDescription(t *testing.T) {
+	for _, tc := range []struct{ name, text string }{
+		{"DiscoveryTemplate", DiscoveryTemplate},
+		{"PRDTemplate", PRDTemplate},
+		{"templates.RealityComponent", templates.RealityComponent},
+	} {
+		line, ok := frontmatterLine(tc.text, "description:")
+		if !ok {
+			t.Errorf("%s emits no `description:` (R-1.5)", tc.name)
+			continue
+		}
+		value := strings.TrimSpace(strings.TrimPrefix(line, "description:"))
+		if !strings.HasPrefix(value, `"`) || !strings.HasSuffix(value, `"`) {
+			t.Errorf("%s: description placeholder is not quoted (R-1.4): %s", tc.name, line)
+		}
+		if strings.ContainsAny(value, "{}") {
+			t.Errorf("%s: description placeholder contains a brace, which "+
+				"formatTemplate would treat as a substitution field: %s", tc.name, line)
+		}
+	}
+}
+
+// frontmatterLine returns the first line inside the leading `---` block that
+// starts with prefix. Deliberately not a YAML parse: these are templates
+// carrying unsubstituted `{name}` fields, which is not valid YAML yet.
+func frontmatterLine(text, prefix string) (string, bool) {
+	body, ok := strings.CutPrefix(text, "---\n")
+	if !ok {
+		return "", false
+	}
+	fm, _, ok := strings.Cut(body, "\n---\n")
+	if !ok {
+		return "", false
+	}
+	for _, line := range strings.Split(fm, "\n") {
+		if strings.HasPrefix(line, prefix) {
+			return line, true
+		}
+	}
+	return "", false
+}
+
 // --- oracle tests: they read the repository, so they run only in a checkout ---
 
 // TestEmbeddedRealityTemplateMatchesDisk is the point of the embed: the bytes
@@ -42,6 +100,18 @@ func TestEmbeddedRealityTemplateMatchesDisk(t *testing.T) {
 // Editing a testdata file to make this pass is a deliberate act: it means the Go
 // template has intentionally diverged from what shipped, and the artifacts every
 // adopter's `discover new` / `prd new` produces will change shape.
+//
+// DIVERGED 2026-08-26 (story 1.2 of okf-provenance-and-indexes, R-1.5). Both
+// oracles gained one line — `description:` — so they are no longer verbatim
+// python-cli-final bytes and the recipe above no longer reproduces them. Re-run
+// it and you get a file one line short. The divergence is exactly the line the
+// requirement adds; anything else appearing in a diff here is still a
+// transcription slip and still a bug.
+//
+// The oracles keep their `.python.txt` names because the other ~20 lines of each
+// are still the frozen Python bytes and that is what this test protects. A
+// second intentional divergence should extend this note rather than replace it —
+// the value of the file is the list of things that were changed on purpose.
 func TestBuiltinsMatchPythonModuleStrings(t *testing.T) {
 	for _, tc := range []struct {
 		symbol string

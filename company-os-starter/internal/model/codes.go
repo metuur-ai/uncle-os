@@ -1,5 +1,7 @@
 package model
 
+import "strings"
+
 // Every finding code and every section slug the CLI can emit, in one file.
 //
 // R-2.4 makes these a CONTRACT — they survive message rewordings, and R-3.4
@@ -46,6 +48,15 @@ const (
 	CodeExceptionNoExpiry = "expiry.exception-no-expiry"
 	CodeExceptionExpired  = "expiry.exception-expired"
 	CodeExceptionValid    = "expiry.exception-valid"
+	// CodeExceptionApproverTODO is R-5.4 of okf-provenance-and-indexes: an
+	// exception whose `approvedBy` still carries its scaffolded placeholder.
+	//
+	// WARN, never fail. `internal/governance/declare.go` scaffolds
+	// `approvedBy: 'TODO: rule owner'` and it has always passed, while
+	// `decisionOwner: TODO` on a PRD hard-fails. Making this block would fail
+	// examples/workspace and every workspace scaffolded from it, violating
+	// invariant I1. The asymmetry stays; it just stops being invisible.
+	CodeExceptionApproverTODO = "expiry.exception-approver-todo"
 
 	// Gate 3 — active PRD contracts (:990, :993).
 	CodePRDFrontmatterMissing = "prd.frontmatter-missing"
@@ -63,6 +74,14 @@ const (
 	CodeNodeHandOwned = "node.hand-owned"
 	CodeNodeDrift     = "node.drift"
 	CodeNodeInSync    = "node.in-sync"
+	// The two below are gate 5's per-directory index report (R-3.1..R-3.5 of
+	// okf-provenance-and-indexes). They live in gate 5 because adding a gate
+	// would renumber and violate invariant I5; the gate's printed HEADER stays
+	// byte-identical for the same reason, which means it under-describes its
+	// contents by design.
+	CodeNodeIndexesInSync = "node.indexes-in-sync"
+	CodeNodeIndexDrift    = "node.index-drift"
+	CodeNodeIndexMissing  = "node.index-missing"
 
 	// Gate 6 — feature-index drift (:1050, :1055, :1062, :1066).
 	CodeFeatureIndexAbsent     = "feature-index.absent"
@@ -251,6 +270,24 @@ const (
 	CodeGraphNodeMarkersUnbalanced = "graph.node-markers-unbalanced"
 	// CodeGraphSummary is the trailing tally at `:1797`.
 	CodeGraphSummary = "graph.summary"
+
+	// The three below belong to the generated per-directory index.md
+	// (okf-provenance-and-indexes, R-2.6/R-2.9/R-2.10). They are deliberately
+	// NOT CodeGraphIndexWritten: that code is the platform feature-index
+	// (`generated/feature-index.yaml`), a different artifact that happens to
+	// share the word "index". Reusing it would merge two unrelated things in
+	// --json and in every downstream filter.
+
+	// CodeGraphDirIndexWritten is one directory's regenerated index.md.
+	CodeGraphDirIndexWritten = "graph.dir-index-written"
+	// CodeGraphDirIndexHandOwned is an index.md carrying no generated markers.
+	// Left alone permanently and reported on every run, exactly as a
+	// marker-less CLAUDE.md is — a passing terminal state, not a stage on the
+	// way to adoption.
+	CodeGraphDirIndexHandOwned = "graph.dir-index-hand-owned"
+	// CodeGraphDirIndexRemoved is a generated index.md deleted because its
+	// directory dropped below the two-document threshold.
+	CodeGraphDirIndexRemoved = "graph.dir-index-removed"
 )
 
 // ---------------------------------------------------------- governance
@@ -614,3 +651,22 @@ const (
 	// the two Python lines.
 	CodeChecklistItem = "checklist.item"
 )
+
+// IsTODO reports whether an approval field still carries its scaffolded
+// placeholder.
+//
+// It lives in model, which imports nothing, because two packages need it and
+// neither may depend on the other: internal/graph derives trust tiers from
+// approval fields (R-5.3) and internal/governance warns about a placeholder
+// approver (R-5.4).
+//
+// Two scaffolders emit one and they disagree: `decisionOwner: TODO`
+// (internal/scaffold/template.go) hard-fails `prd validate`, while
+// `approvedBy: 'TODO: rule owner'` (internal/governance/declare.go) has always
+// passed. That asymmetry is not closed here -- closing it would add a blocking
+// check and violate invariant I1.
+//
+// @spec req://uncle-os/okf-provenance-and-indexes@0.1#R-5.3
+func IsTODO(v string) bool {
+	return strings.HasPrefix(strings.TrimSpace(v), "TODO")
+}
