@@ -448,10 +448,39 @@ type RealityResult struct {
 // The `reality template not found` die at :2041 has no counterpart: it fires
 // only when templates/reality-component.md is missing from the installation,
 // and //go:embed makes that unreachable (R-1.11, carve-out R-0.7a(c)).
+//
+// The ownership check below is NOT the oracle's. It is a deliberate departure,
+// sanctioned as R-0.7a(m) — the sibling of (d), parseDate's done-gate fix: both
+// are places where the oracle answered a question about invariant 4 by
+// accident. The oracle — and this port
+// until 2026-08-29 — resolved the platform directory and wrote, without ever
+// asking whether the component lived under that platform. So
+//
+//	company-os reality new --platform payments svc-owned-by-identity
+//
+// created platforms/payments/reality/components/svc-owned-by-identity.md and
+// reported success. It is the descriptor that is authoritative for the
+// component↔platform relationship (invariant 2), and a reality doc filed
+// against a platform the descriptor does not name is a document about a
+// component that platform does not have. Nothing downstream reads it: the
+// component browser looks under the owning platform, and `prd complete`'s
+// done-check stats the owning platform's path — so the reader who ran the
+// command sees "created", and the gate they ran it to satisfy still refuses.
+// A silent write into a path nothing reads is worse than a refusal.
+//
+// An UNKNOWN component still scaffolds. A reality doc written before its
+// descriptor is a real order of work, and refusing it would be a new
+// prohibition rather than the correction of a silent misfile.
 func RealityNew(ws *workspace.Workspace, platform, component string, rebuild Rebuild) (*RealityResult, error) {
 	pdir, err := ws.PlatformDir(platform)
 	if err != nil {
 		return nil, err
+	}
+	if owner, descriptor, found := ws.FindComponent(component); found && owner != platform {
+		return nil, model.Errorf(model.ExitWorkspace,
+			"component '%s' belongs to platform '%s', not '%s' — its reality doc "+
+				"belongs under the platform its descriptor names (%s)",
+			component, owner, platform, relTo(ws.Root, descriptor))
 	}
 	out := filepath.Join(pdir, "reality", "components", component+".md")
 	rel := relTo(ws.Root, out)

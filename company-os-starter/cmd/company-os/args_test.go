@@ -20,6 +20,11 @@ var portedCommands = map[string]bool{
 	"graph": true, "derive": true, "governance": true, "exception": true,
 	"deviation": true,
 	"discover":  true, "prd": true, "check": true, "validate": true,
+	// ux-simplification 1.1: `next` is a read-only scan, safe to dispatch.
+	"next": true,
+	// ux-simplification 3.1: `find` is read-only search; dispatching it from
+	// the surface test would require a workspace fixture.
+	"find": true,
 	// `tui` is listed for the same reason as the rest — it is implemented — but
 	// it is the one entry whose exclusion is load-bearing rather than tidy:
 	// dispatching it from here would consult the real terminal, and on a
@@ -127,6 +132,28 @@ func TestEverySubcommandParses(t *testing.T) {
 		{
 			argv:  []string{"today", "--role", "architect"},
 			check: func(t *testing.T, a *Args) { want(t, "role", a.Role, "architect") },
+		},
+		{
+			// ux-simplification 1.1: `next` takes --all and nothing else.
+			argv: []string{"next", "--all"},
+			check: func(t *testing.T, a *Args) {
+				want(t, "cmd", a.Cmd, "next")
+				if !a.All {
+					t.Error("--all did not set All")
+				}
+			},
+		},
+		{
+			// ux-simplification 3.1: `find` takes a query positional and
+			// --no-graphify.
+			argv: []string{"find", "alpha-svc", "--no-graphify"},
+			check: func(t *testing.T, a *Args) {
+				want(t, "cmd", a.Cmd, "find")
+				want(t, "query", a.Query, "alpha-svc")
+				if !a.NoGraphify {
+					t.Error("--no-graphify did not set NoGraphify")
+				}
+			},
 		},
 		{
 			argv:  []string{"graph", "build"},
@@ -316,9 +343,9 @@ func TestArgumentErrorDiagnostics(t *testing.T) {
 		// --- invalid choice on a positional ---
 		{
 			"skills action", []string{"skills", "show"},
-			"usage: company-os skills [-h] {list}",
+			"usage: company-os skills [-h] {list,install}",
 			"company-os skills: error: argument action: invalid choice: 'show' " +
-				"(choose from list)",
+				"(choose from list, install)",
 		},
 		{
 			"ids action", []string{"ids", "show"},
@@ -397,9 +424,9 @@ func TestArgumentErrorDiagnostics(t *testing.T) {
 		},
 		{
 			"bad choice outranks the surplus positional", []string{"skills", "bogus", "extra"},
-			"usage: company-os skills [-h] {list}",
+			"usage: company-os skills [-h] {list,install}",
 			"company-os skills: error: argument action: invalid choice: 'bogus' " +
-				"(choose from list)",
+				"(choose from list, install)",
 		},
 
 		// --- invalid choice on a flag ---
@@ -429,11 +456,17 @@ func TestArgumentErrorDiagnostics(t *testing.T) {
 			"usage: company-os discover [-h] --team TEAM {new,validate} [title]",
 			"company-os discover: error: the following arguments are required: --team",
 		},
+		// ux-simplification Phase 2 (Unit 2) retired the `prd new --platform`
+		// case that used to live here: the flag is now suspended for `new` and
+		// resolved by InferPlatformForNew, so a missing --platform is a runtime
+		// decision (infer, or name the candidates) rather than a parse error.
+		// `reality new` keeps the unconditional-required-flag path under test —
+		// it is the last create-command whose --platform the parser enforces.
 		{
 			"missing --platform",
-			[]string{"prd", "new", "--team", "customer-engagement", "--title", "T"},
-			prdUsage,
-			"company-os prd: error: the following arguments are required: --platform",
+			[]string{"reality", "new", "billing-api"},
+			realityUsage,
+			"company-os reality: error: the following arguments are required: --platform",
 		},
 		{
 			"missing --components", []string{"check", "ready", "--team", "customer-engagement"},
@@ -479,7 +512,7 @@ func TestArgumentErrorDiagnostics(t *testing.T) {
 		},
 		{
 			"missing skills action", []string{"skills"},
-			"usage: company-os skills [-h] {list}",
+			"usage: company-os skills [-h] {list,install}",
 			"company-os skills: error: the following arguments are required: action",
 		},
 		{
@@ -539,9 +572,17 @@ func TestArgumentErrorDiagnostics(t *testing.T) {
 			"company-os discover: error: the following arguments are required: --team",
 		},
 		{
-			"surplus positional loses to the required check, prd",
-			[]string{"prd", "new", "id1", "extra"}, prdUsage,
-			"company-os prd: error: the following arguments are required: --platform",
+			// Repointed by ux-simplification Phase 2 (Unit 2). This case
+			// documents PRECEDENCE — a missing required flag outranks a surplus
+			// positional — which needs a command whose flag the parser still
+			// enforces. `prd new` no longer qualifies: with --platform
+			// suspended there is no required check left to win, so the surplus
+			// positional now surfaces on its own, exactly as it already did for
+			// `prd validate id1 extra` and `prd promote id1 extra` (both
+			// suspended since Phase 1). That is consistency, not regression.
+			"surplus positional loses to the required check, reality",
+			[]string{"reality", "new", "id1", "extra"}, realityUsage,
+			"company-os reality: error: the following arguments are required: --platform",
 		},
 
 		// --- a flag missing its value ---
@@ -604,7 +645,8 @@ func TestArgumentErrorDiagnostics(t *testing.T) {
 
 // Usage lines long enough to be worth naming once.
 const (
-	todayUsage = "usage: company-os today [-h] [--role {developer,team-lead," +
+	realityUsage = "usage: company-os reality [-h] --platform PLATFORM {new} component"
+	todayUsage   = "usage: company-os today [-h] [--role {developer,team-lead," +
 		"product-owner,architect,vp-engineering,director-of-product}] [--team TEAM]"
 	prdUsage = "usage: company-os prd [-h] [--team TEAM] --platform PLATFORM " +
 		"[--components COMPONENTS] [--title TITLE] " +

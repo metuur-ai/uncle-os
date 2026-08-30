@@ -10,9 +10,11 @@ package main
 import (
 	"io"
 
+	"github.com/metuur-ai/uncle-os/company-os-starter/internal/find"
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/graph"
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/ids"
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/model"
+	"github.com/metuur-ai/uncle-os/company-os-starter/internal/next"
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/product"
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/roles"
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/workspace"
@@ -39,4 +41,25 @@ func cmdToday(ws *workspace.Workspace, args *Args, _ io.Writer) ([]model.GateRes
 // the parser accepts, so there is nothing to switch on here.
 func cmdGraph(ws *workspace.Workspace, _ *Args, _ io.Writer) ([]model.GateResult, error) {
 	return graph.Build(ws)
+}
+
+// cmdNext is `company-os next` (ux-simplification 1.1). It scans the workspace
+// and returns the single highest-priority pending action plus the exact command
+// to perform it. Read-only: it mutates nothing and therefore prints no guidance
+// chain of its own beyond the command it recommends.
+//
+// `--all` lists every pending item grouped by kind. The default is one action.
+func cmdNext(ws *workspace.Workspace, args *Args, _ io.Writer) ([]model.GateResult, error) {
+	return next.Scan(ws, args.All)
+}
+
+// cmdFind is `company-os find <query>` (ux-simplification 3.1). Read-only
+// unified local search across canonical IDs, derived tags, frontmatter
+// title/id, per-directory index entries, and feature-index component maps.
+// Optionally appends a graphify hook section when the binary and graph.json
+// are both present.
+//
+// Missing query is a usage error; empty results print "no matches" and exit 0.
+func cmdFind(ws *workspace.Workspace, args *Args, _ io.Writer) ([]model.GateResult, error) {
+	return find.Search(ws, args.Query, args.NoGraphify)
 }

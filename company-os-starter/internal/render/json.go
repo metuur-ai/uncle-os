@@ -50,6 +50,11 @@ type Result struct {
 	// ExitCode is the process status this run will exit with (R-3.8): the
 	// payload is written even on failure, and it says what the failure was.
 	ExitCode model.ExitCode
+	// FixRegenerated is the count of derived files whose bytes changed
+	// during a `validate --fix` pre-gate regeneration (ux-simplification
+	// 2.1). Nil when --fix was not requested; non-negative when it was,
+	// including 0 for an already-clean tree.
+	FixRegenerated *int
 }
 
 // JSON writes one payload. It is the only place `--json` bytes are produced.
@@ -60,13 +65,14 @@ type Result struct {
 // special-casing the last byte.
 func JSON(w io.Writer, r Result) error {
 	doc := document{
-		SchemaVersion: SchemaVersion,
-		Build:         model.BuildInfo(),
-		Command:       r.Command,
-		Action:        r.Action,
-		Root:          r.Root,
-		ExitCode:      int(r.ExitCode),
-		Sections:      make([]section, 0, len(r.Sections)),
+		SchemaVersion:  SchemaVersion,
+		Build:          model.BuildInfo(),
+		Command:        r.Command,
+		Action:         r.Action,
+		Root:           r.Root,
+		ExitCode:       int(r.ExitCode),
+		Sections:       make([]section, 0, len(r.Sections)),
+		FixRegenerated: r.FixRegenerated,
 		// Guidance is never null: a consumer testing `.guidance | length` should
 		// not have to distinguish "no next step" from "field absent" (R-3.6).
 		Guidance: []string{},
@@ -91,15 +97,16 @@ func JSON(w io.Writer, r Result) error {
 // `governance explain` and the scaffolding commands as well as validate's gates,
 // and `gates` reads wrong for most of the surface.
 type document struct {
-	SchemaVersion int         `json:"schemaVersion"`
-	Build         model.Build `json:"build"`
-	Command       string      `json:"command"`
-	Action        string      `json:"action,omitempty"`
-	Root          string      `json:"root,omitempty"`
-	ExitCode      int         `json:"exitCode"`
-	Sections      []section   `json:"sections"`
-	Guidance      []string    `json:"guidance"`
-	Error         string      `json:"error,omitempty"`
+	SchemaVersion  int         `json:"schemaVersion"`
+	Build          model.Build `json:"build"`
+	Command        string      `json:"command"`
+	Action         string      `json:"action,omitempty"`
+	Root           string      `json:"root,omitempty"`
+	ExitCode       int         `json:"exitCode"`
+	Sections       []section   `json:"sections"`
+	Guidance       []string    `json:"guidance"`
+	Error          string      `json:"error,omitempty"`
+	FixRegenerated *int        `json:"fixRegenerated,omitempty"`
 }
 
 // section is one model.GateResult. Findings is always an array: a gate that ran

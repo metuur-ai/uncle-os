@@ -37,7 +37,7 @@ and they stop working on 2027-01-01. Every requirement below exists to make
 | R-0.5 | THE SYSTEM SHALL compute the gate-count denominator at run time and SHALL NOT hardcode it. |
 | R-0.6 | WHEN `graph build` is run twice in succession, THE SYSTEM SHALL leave the workspace byte-identical after the second run. |
 | R-0.7 | IF any observable output, exit status, or filesystem effect differs from the Python CLI for the same inputs, and that difference is not listed in R-0.7a, THE SYSTEM SHALL be treated as defective and SHALL be corrected rather than the golden files re-baselined. |
-| R-0.7a | THE SYSTEM SHALL permit exactly these sanctioned differences from the Python CLI, and no others: (a) `write_feature_indexes`' idempotency guard (`bin/company-os:1530-1537`) becomes a semantic compare rather than a byte compare; (b) YAML comments survive a read-modify-write of `deviations.yaml` and `exceptions.yaml`, which PyYAML's `safe_load` destroys today; (c) the "reality template not found" failure at `:2041` ceases to exist because R-1.11 embeds the template; (d) the OKF Phase 0 done-gate date-parsing fix; (e) malformed YAML and malformed frontmatter exit 4 with a diagnostic instead of raising an uncaught `YAMLError` and exiting 1 through a Python traceback — `load_yaml` (`:58`) and `frontmatter` (`:76`) have no `try` today, so code 4's headline case has zero exit sites and the Go port adds them; (f) the hand-rolled conditional-requirement checks at `:601` and `:2021` exit 2 rather than 1; (g) a read-modify-write of an **authored** YAML artifact re-emits it under `yaml.v3`'s layout rather than PyYAML's — measured, 66 of 112 committed YAML documents differ on re-emit, from three PyYAML *emitter* policies (80-column plain-scalar folding on 41, indentless block sequences on 24, single-quoting of a plain `://` scalar inside a flow mapping on 1) that `yaml.v3` neither implements nor exposes a knob for. PyYAML's own `safe_dump` already fails to reproduce the committed bytes of every `deviations.yaml`, `exceptions.yaml`, and `ids/registry.yaml` in the corpus, so `deviation declare` and `exception request` reflow their target file under the Python CLI **today**; the Go port changes only the shape of that reflow, once, at the transition. The node tree survives structurally identical on 112 of 112 and emit reaches a fixed point after one pass, which is what R-0.6 needs. This carve-out SHALL NOT extend to derived artifacts — see R-0.7c; (h) a tab character used as intra-line whitespace (after a `:`, trailing, or inside a flow collection) or inside a plain scalar's content is accepted rather than raising PyYAML's `ScannerError`. Measured against vendored PyYAML 6.0.2, `yaml.v3` rejects a tab in every *structural* position — as indentation, before a key, after a block-sequence `-` — exactly as PyYAML does, and accepts a tab inside a quoted or block-literal scalar exactly as PyYAML does, so the residual divergence cannot change a document's shape; it can only convert an uncaught `ScannerError` into the value the author intended. THE SYSTEM SHALL NOT add a pre-scan to close it: PyYAML accepts tabs inside quoted and block-literal scalars, so any pre-scan cheap enough to be worth writing would reject documents the Python CLI loads today — a regression in the opposite and worse direction; (i) usage and argument-error text — on stderr for errors and on **stdout** for `--help` — is not byte-identical to argparse's, and the top-level usage line legitimately differs in content because Go carries `--json` and `--version` flags Python does not have. Measured: argparse wraps to `COLUMNS`, so `COLUMNS=200 company-os nosuch` emits usage on one line and the non-TTY default of 80 wraps it across three — byte-parity here is parity against an environment variable, and any golden captured from it is not reproducible across CI runners. The *content* is not carved out; see R-1.4a; (j) a **well-formed** YAML document of the wrong *shape* — a non-list `ids:`, a non-mapping registry root, a null `components:` — exits 4 with a diagnostic rather than raising an uncaught `AttributeError`/`TypeError` and exiting 1 through a Python traceback. This is the sibling of (e), which covers only *malformed* YAML; these documents parse cleanly and fail at attribute access. THE FILESYSTEM EFFECT IS NOT CARVED OUT: Python writes nothing on these paths, so the Go port SHALL write nothing; (l) an **argument** of the wrong shape reaching command code — an optional positional argparse allows through as `None`, such as `discover new` with no title (`bin/company-os:2688` declares `title` with `nargs="?"`, so `slugify(None)` raises `AttributeError` at `:73`) — exits 2 with a diagnostic rather than an uncaught traceback exiting 1. This is the CLI-argument sibling of (j), whose stated subject is a YAML document; without it the case has no clause naming it literally; (k) argparse's unique-prefix flag abbreviation (`--plat` → `--platform`) is not reproduced. Zero callers in the repository, zero harness coverage, and argparse's ambiguity resolution is a nontrivial algorithm — closed as a sanctioned omission rather than left open as a permanent deferral. |
+| R-0.7a | THE SYSTEM SHALL permit exactly these sanctioned differences from the Python CLI, and no others: (a) `write_feature_indexes`' idempotency guard (`bin/company-os:1530-1537`) becomes a semantic compare rather than a byte compare; (b) YAML comments survive a read-modify-write of `deviations.yaml` and `exceptions.yaml`, which PyYAML's `safe_load` destroys today; (c) the "reality template not found" failure at `:2041` ceases to exist because R-1.11 embeds the template; (d) the OKF Phase 0 done-gate date-parsing fix; (e) malformed YAML and malformed frontmatter exit 4 with a diagnostic instead of raising an uncaught `YAMLError` and exiting 1 through a Python traceback — `load_yaml` (`:58`) and `frontmatter` (`:76`) have no `try` today, so code 4's headline case has zero exit sites and the Go port adds them; (f) the hand-rolled conditional-requirement checks at `:601` and `:2021` exit 2 rather than 1; (g) a read-modify-write of an **authored** YAML artifact re-emits it under `yaml.v3`'s layout rather than PyYAML's — measured, 66 of 112 committed YAML documents differ on re-emit, from three PyYAML *emitter* policies (80-column plain-scalar folding on 41, indentless block sequences on 24, single-quoting of a plain `://` scalar inside a flow mapping on 1) that `yaml.v3` neither implements nor exposes a knob for. PyYAML's own `safe_dump` already fails to reproduce the committed bytes of every `deviations.yaml`, `exceptions.yaml`, and `ids/registry.yaml` in the corpus, so `deviation declare` and `exception request` reflow their target file under the Python CLI **today**; the Go port changes only the shape of that reflow, once, at the transition. The node tree survives structurally identical on 112 of 112 and emit reaches a fixed point after one pass, which is what R-0.6 needs. This carve-out SHALL NOT extend to derived artifacts — see R-0.7c; (h) a tab character used as intra-line whitespace (after a `:`, trailing, or inside a flow collection) or inside a plain scalar's content is accepted rather than raising PyYAML's `ScannerError`. Measured against vendored PyYAML 6.0.2, `yaml.v3` rejects a tab in every *structural* position — as indentation, before a key, after a block-sequence `-` — exactly as PyYAML does, and accepts a tab inside a quoted or block-literal scalar exactly as PyYAML does, so the residual divergence cannot change a document's shape; it can only convert an uncaught `ScannerError` into the value the author intended. THE SYSTEM SHALL NOT add a pre-scan to close it: PyYAML accepts tabs inside quoted and block-literal scalars, so any pre-scan cheap enough to be worth writing would reject documents the Python CLI loads today — a regression in the opposite and worse direction; (i) usage and argument-error text — on stderr for errors and on **stdout** for `--help` — is not byte-identical to argparse's, and the top-level usage line legitimately differs in content because Go carries `--json` and `--version` flags Python does not have. Measured: argparse wraps to `COLUMNS`, so `COLUMNS=200 company-os nosuch` emits usage on one line and the non-TTY default of 80 wraps it across three — byte-parity here is parity against an environment variable, and any golden captured from it is not reproducible across CI runners. The *content* is not carved out; see R-1.4a; (j) a **well-formed** YAML document of the wrong *shape* — a non-list `ids:`, a non-mapping registry root, a null `components:` — exits 4 with a diagnostic rather than raising an uncaught `AttributeError`/`TypeError` and exiting 1 through a Python traceback. This is the sibling of (e), which covers only *malformed* YAML; these documents parse cleanly and fail at attribute access. THE FILESYSTEM EFFECT IS NOT CARVED OUT: Python writes nothing on these paths, so the Go port SHALL write nothing; (l) an **argument** of the wrong shape reaching command code — an optional positional argparse allows through as `None`, such as `discover new` with no title (`bin/company-os:2688` declares `title` with `nargs="?"`, so `slugify(None)` raises `AttributeError` at `:73`) — exits 2 with a diagnostic rather than an uncaught traceback exiting 1. This is the CLI-argument sibling of (j), whose stated subject is a YAML document; without it the case has no clause naming it literally; (k) argparse's unique-prefix flag abbreviation (`--plat` → `--platform`) is not reproduced. Zero callers in the repository, zero harness coverage, and argparse's ambiguity resolution is a nontrivial algorithm — closed as a sanctioned omission rather than left open as a permanent deferral; (m) `reality new` refuses a component whose descriptor names a different platform, where the oracle (`bin/company-os:2030-2058`) resolved the platform directory and wrote. Added 2026-08-29; see [Amendment 9](#amendment-9--the-misfiled-reality-doc-2026-08-29). This is the sibling of (d): both are places where the oracle answered a question about invariant 4 by accident. The oracle's write reported success for a document filed under a platform whose descriptor does not name the component — which nothing downstream reads, so the reader saw `created` and the done-check they ran it to satisfy still refused. The carve-out is narrow: an **unknown** component still scaffolds, because a reality doc written before its descriptor is a real order of work, and refusing it would be a new prohibition rather than the correction of a silent misfile. |
 | R-0.7c | THE SYSTEM SHALL guard every write of a **derived** YAML artifact on a semantic compare of the parsed structure and SHALL skip the write when it is unchanged — covering `write_feature_indexes` (`:1530-1537`), `resolve_team_governance`'s `generated/effective-governance.yaml` (`:329-330`), and `register_id`'s `ids/registry.yaml` (`:1823`) — because `generated/effective-governance.yaml` is byte-stable under PyYAML's own `safe_dump` today, so re-emitting it under `yaml.v3`'s layout would dirty the tree and break R-0.10. |
 | R-0.7d | THE SYSTEM SHALL collapse duplicate mapping keys on load, keeping the first key's position and the last value, so that a read-modify-write emits one pair as PyYAML's `safe_dump` does rather than preserving both. |
 | R-0.7e | THE SYSTEM SHALL expand YAML aliases to their anchor's value as PyYAML does, and SHALL reject a merge-key or value-key token (`<<`, `=`) used in **any position except a mapping key** — value, sequence item, or bare document — with a syntax error rather than accepting it and materializing an author-never-typed `!!merge` tag into their file. Measured: PyYAML raises `ConstructorError` in all three non-key positions and accepts `<<: {…}`, `<<: *anchor`, `!!merge <<:`, and `=: 5` as legitimate keys. |
@@ -169,8 +169,9 @@ friction F5 (35-40 domain terms) and F6 (EARS and `@spec` syntax) are untouched.
 | R-5.1 | THE SYSTEM SHALL provide an interactive terminal UI launched only by the explicit subcommand `company-os tui`. |
 | R-5.2 | THE SYSTEM SHALL NOT launch the TUI from a bare invocation, from any other subcommand, or from any environment-variable trigger. |
 | R-5.3 | IF `tui` is invoked with no TTY attached, THE SYSTEM SHALL print an explanatory message to stderr, exit 7, and make no filesystem change. |
-| R-5.4 | THE SYSTEM SHALL ship read-only screens first, enumerated and asserted by test: workspace overview, `today --role`, validate results, component browser, PRD browser, discovery browser, `governance explain`, `skills list`, `ids list`, and `workspace status`. |
-| R-5.5 | **Restated 2026-07-27 — see [Amendment 4](#amendment-4--the-add-forms-2026-07-27).** THE SYSTEM SHALL ship mutating forms only after R-5.4 is complete, each justified by an observed request rather than by completeness: `discover new`, `prd new`, `add team`, `add platform`, and `add component`. THE SYSTEM SHALL NOT build forms for `workspace sync` or `scratchpad init`. |
+| R-5.4 | THE SYSTEM SHALL ship read-only screens first, enumerated and asserted by test: workspace overview, `today --role`, validate results, component browser, PRD browser, discovery browser, `governance explain`, `skills list`, `ids list`, and `workspace status`. A read-only screen SHALL read the workspace when it is opened, and SHALL NOT reuse a scan taken when the catalog was built — a browser that omits what the reader created a moment ago is asserting the workspace does not contain it. Second sentence added 2026-08-29; see [Amendment 10](#amendment-10--the-stale-catalog-in-both-halves-2026-08-29). |
+| R-5.5 | **Restated 2026-07-27, twice on 2026-08-28 and twice on 2026-08-29 — see [Amendment 4](#amendment-4--the-add-forms-2026-07-27), [Amendment 5](#amendment-5--discover-validate-and-the-dead-end-it-closes-2026-08-28), [Amendment 6](#amendment-6--prd-validate-2026-08-28), [Amendment 7](#amendment-7--reality-new-and-the-pair-that-exists-nowhere-2026-08-29) and [Amendment 8](#amendment-8--prd-complete-and-the-flag-that-gets-no-field-2026-08-29).** THE SYSTEM SHALL ship mutating forms only after R-5.4 is complete, each justified by an observed request rather than by completeness: `discover new`, `prd new`, `add team`, `add platform`, `add component`, `discover validate`, `prd validate`, `reality new`, and `prd complete`. THE SYSTEM SHALL NOT build forms for `workspace sync` or `scratchpad init`. THE SYSTEM SHALL NOT allow any browsing screen to reach `discover validate`, which rewrites the brief it is asked about. WHERE a form collects two values whose valid combinations the workspace constrains, THE SYSTEM SHALL refuse an invalid combination in `Build`, before any preview is offered. THE SYSTEM SHALL NOT offer a field for `prd complete --force`, which overrides the done-gate enforcing invariant 4. |
+| R-5.27 | WHEN a screen's command returns an error whose diagnostic it has already written to its own output, THE SYSTEM SHALL render that output alone and SHALL NOT add a second error line, so the TUI and the flag CLI report the same refusal in the same words exactly once. Added 2026-08-29; see [Amendment 8](#amendment-8--prd-complete-and-the-flag-that-gets-no-field-2026-08-29). |
 | R-5.6 | WHEN the TUI is about to perform a mutating action, THE SYSTEM SHALL display the exact flag-complete `company-os` invocation equivalent to that action before executing it. |
 | R-5.7 | THE SYSTEM SHALL derive the previewed command from the same argument structure it executes, and SHALL NOT hand-write a preview string per screen, because a hand-written preview drifts from what runs and destroys the property justifying interactive mutation. |
 | R-5.8 | WHILE a mutating action is previewed, THE SYSTEM SHALL require explicit confirmation and SHALL make no filesystem change until confirmation is given. |
@@ -192,7 +193,275 @@ friction F5 (35-40 domain terms) and F6 (EARS and `@spec` syntax) are untouched.
 | R-5.22 | **Restated 2026-07-27 — see [Amendment 2](#amendment-2--advisor-scope-corrected-2026-07-27).** IF resolving a detected problem requires a value that cannot be derived from the workspace — a federation manifest needs repo URLs and commit pins; an unresolved feature-index reference needs an authoring decision — THE SYSTEM SHALL report and explain the problem and SHALL NOT offer a fix, because a form that writes a plausible-but-wrong value is worse than the missing one. |
 
 | R-5.23 | WHEN the reader leaves the recovery menu of R-5.17 without selecting a workspace, THE SYSTEM SHALL exit 0, because quitting a menu is not a failure. |
-| R-5.26 | WHERE a mutating form offers choices describing workspace state the reader can change from inside the same session, THE SYSTEM SHALL resolve that form when its screen is opened rather than when the catalog is built, so a value created a moment ago is offerable without relaunching. Added 2026-07-27; see [Amendment 4](#amendment-4--the-add-forms-2026-07-27). |
+| R-5.26 | **Restated 2026-08-29 — see [Amendment 10](#amendment-10--the-stale-catalog-in-both-halves-2026-08-29).** THE SYSTEM SHALL resolve a mutating form that offers ANY choices when its screen is opened rather than when the catalog is built, so a value created a moment ago is offerable without relaunching. A form with no choices to offer may be built statically. Added 2026-07-27 as a conditional requirement; see [Amendment 4](#amendment-4--the-add-forms-2026-07-27). |
+
+### Amendment 10 — the stale catalog, in both halves (2026-08-29)
+
+**Authority:** found by the acceptance test the four lifecycle units were built
+for and which none of them had actually run — the loop driven end to end through
+one catalog, without relaunching between steps.
+
+**Statement being amended:**
+
+> R-5.26 | WHERE a mutating form offers choices describing workspace state **the
+> reader can change from inside the same session**, THE SYSTEM SHALL resolve
+> that form when its screen is opened rather than when the catalog is built.
+
+**What the condition cost.** Four screens — `new discovery brief`, `validate
+discovery brief`, `new PRD`, `validate PRD` — built their pickers at catalog
+construction, on the reading that their choices were not the kind of state the
+reader changes from inside a session. That reading was wrong on its own terms,
+and wrong in the one place it mattered most: those four screens **are the
+lifecycle**, and each one changes exactly the state the next one lists.
+
+```
+new discovery brief → validate discovery brief → new PRD → validate PRD
+       (creates a draft)      (makes it validated)   (lists validated)
+```
+
+So a brief created on the first screen was not a draft the second could see, and
+a brief validated on the second was not a validated brief the third could offer.
+The catalog reproduced Amendment 5's dead end one screen later — for any reader
+who did not quit and relaunch between steps.
+
+**Why every test missed it.** Each per-unit test builds a fresh catalog against
+a workspace prepared by the CLI, which is a relaunch. The defect only exists
+across two steps of one session, so a suite that tests screens one at a time
+cannot see it however thorough it is. The bug was in the seam, and nothing tested
+the seam.
+
+**What R-5.26 says now.** Any form that offers choices resolves at open time.
+The condition is gone. "Does this picker describe state the reader can change
+from here?" is a judgement, and it was got wrong on four screens simultaneously
+by the person who wrote the requirement; "a picker means a `FormFn`" is not a
+judgement. Forms with no choices — the three `add` id fields, which are free
+text — may still be built statically, because they have nothing that can go
+stale.
+
+`TestEveryPickerResolvesAtOpenTime` asserts the structural rule;
+`TestTheWholeLoopRunsInOneSession` asserts the behaviour it exists to protect.
+The second is the one that found this, and it is the only test in the suite that
+drives more than one screen.
+
+**The same defect was in the read-only half, and R-5.4 gains a clause for it.**
+Asking the question of the other catalog found `readOnlyScreens` hoisting one
+`componentCatalog(ws)` call out of two closures — the **component browser** and
+`governance explain`'s picker. A component created by `add component`, one
+screen away, appeared in neither until the reader quit and relaunched.
+
+Being read-only did not make this smaller. It made it quieter, which is worse: a
+picker that omits a component offers one fewer choice, but a **browser** that
+omits it is asserting the workspace does not contain it, in the one screen a
+reader opens to find out. `internal/tui` gains `Screen.ChoicesFn` and
+`ResolveChoices`, exactly symmetric to `FormFn` and `ResolveForm` and resolved
+once per open for the same reason — `View` and the key handlers run per
+keystroke and must not touch the filesystem.
+
+### Amendment 9 — the misfiled reality doc (2026-08-29)
+
+**Authority:** found while building the `reality new` screen (Amendment 7),
+deferred there as out of that unit's scope, and approved separately by the
+codebase owner. A CLI change, not a TUI one.
+
+**Statement being amended:** R-0.7a gains clause (m). No R-5 requirement changes.
+
+**What the oracle did.** `bin/company-os:2030-2058` resolved the platform
+directory from `--platform` and wrote `<platform>/reality/components/<id>.md`,
+consulting the component's descriptor only to look up a display name. It never
+asked whether the component lived under that platform. So
+
+```
+company-os reality new --platform payments svc-owned-by-identity
+```
+
+created the file and reported success.
+
+**Why that is worse than an error.** The component descriptor is authoritative
+for the component↔platform relationship (invariant 2), so a reality doc filed
+against a platform whose descriptor does not name the component is a document
+about a component that platform does not have — and **nothing downstream reads
+it**. The component browser looks under the owning platform. `prd complete`'s
+done-check stats the owning platform's path. The reader sees `created`, and the
+gate they ran the command to satisfy goes on refusing, with no line anywhere
+connecting the two. A silent write into a path nothing reads is a worse outcome
+than a refusal, which is the whole reason this is worth a carve-out rather than
+being left as oracle fidelity.
+
+**Deliberately narrow.** An **unknown** component still scaffolds. Writing a
+reality doc before its descriptor exists is a real order of work, and refusing
+it would be a new prohibition rather than the correction of a silent misfile.
+Only the case where the workspace *knows* the component and knows it lives
+elsewhere is refused, with exit 3 (`ExitWorkspace`) — the code
+`notActiveError` already uses for "the artifact you named is not where you said
+it is" — and a message naming both platforms and the descriptor that settles it.
+
+**The TUI guard stays.** `realityInvocation` still refuses the pair in `Build`,
+and R-5.5's combination clause still requires it: refusing there keeps the
+reader in the form beside the picker they have to change, with no preview
+offered and nothing written. Refusing only at commit would be correct and would
+still walk them back through a preview they had already approved.
+
+### Amendment 8 — `prd complete`, and the flag that gets no field (2026-08-29)
+
+**Authority:** the same restated goal as Amendments 5–7. Last of the four gaps.
+With it, a whole change can be completed from the menu — which was the goal
+those four amendments existed to reach.
+
+**Statement being amended:** R-5.5 gains `prd complete` and one prohibition;
+R-5.27 is added.
+
+**No `force` field, now or later.** `prd complete --force` overrides the
+done-gate that enforces invariant 4 — *a change is done only when reality is
+updated*. A gate that can be waved through from a menu is not a gate, and the
+reader most likely to reach for it from a menu is precisely the one who least
+knows what it protects. The flag stays where using it is a deliberate act:
+typed, at a terminal, by someone who went looking for it.
+
+This is **not** an R-5.10 gap. R-5.10 requires every value the TUI collects to
+have a flag equivalent, so that a TUI action is reproducible in CI. It does not
+require every flag to have a field, and reading it that way would make the
+menu's surface a mirror of the CLI's rather than a chosen subset — which is the
+opposite of what a menu is for.
+
+**R-5.27, and why it only surfaced now.** `prd complete`'s refusal is the only
+QUIET error in the system: it prints its whole block to stdout and writes
+nothing to stderr, and `main.go` suppresses the `error: …` line for it.
+`runScreen` did not, because until this screen existed no command in the catalog
+could return one. The refusal opens with *"done-check failed — a change is not
+done until reality is updated"*, so passing it through would have rendered that
+sentence twice — once as the block's own header, once as an error line beneath
+it. The requirement is written about quiet errors generally rather than about
+this command, because the duplication is a property of the contract and not of
+the refusal.
+
+**What the refusal already got right, and was not touched.** It names each
+unchecked item count, each missing reality doc by component and path, and prints
+the exact `reality new` command that fixes it. The task file budgeted work for
+rendering it legibly; the block was already legible, and the only defect was the
+duplicate. Nothing was reformatted.
+
+### Amendment 7 — `reality new`, and the pair that exists nowhere (2026-08-29)
+
+**Authority:** the same restated goal as Amendments 5 and 6. Third of the four
+gaps Amendment 5 enumerated.
+
+**Statement being amended:** R-5.5's enumeration gains `reality new`, and R-5.5
+gains one new clause about invalid combinations — see below.
+
+**The gap.** `prd complete` refuses while a component's reality doc is older
+than the PRD (invariant 4). A reader who reaches the end of a change and has no
+reality doc at all cannot write one from the menu, which is the point in the
+lifecycle where the refusal they are about to hit is least self-explanatory.
+
+**Why this form needed a new clause and the previous six did not.** It is the
+first form whose two fields constrain each other: a component belongs to one
+platform, and a form has no way to narrow one picker from another picker's
+value. So the catalog can hand `Build` a `(platform, component)` pair that
+exists nowhere in the workspace.
+
+That pair **does not fail.** `scaffold.RealityNew` resolves the platform
+directory and writes `<platform>/reality/components/<id>.md` without ever asking
+whether the component lives under that platform — so a mis-picked pair
+scaffolds one platform's component underneath another and reports success. The
+form refuses the pair in `Build`, which is the seam `addInvocation` already uses
+for the empty-slug case: the reader stays in the form with the reason, and
+nothing is written.
+
+The clause is written as a general rule rather than as a note about this screen,
+because the next two-field form will have the same shape and the reasoning is
+not specific to reality docs.
+
+**Not fixed in this unit — and closed the same day.** The underlying CLI
+accepted the mismatched pair from any caller, not just the TUI. `RealityNew` now
+refuses it (see [Amendment 9](#amendment-9--the-misfiled-reality-doc-2026-08-29)).
+The form's `Build` refusal stays regardless, and R-5.5's clause still requires
+it: refusing in `Build` keeps the reader in the form beside the picker they have
+to change, with no preview offered and nothing written.
+
+**Picker scope.** Only components without a reality doc are offered, because
+`RealityNew` refuses to overwrite an existing one. The screen resolves at open
+time under R-5.26 so the list shrinks as docs are written within a session.
+
+**Scope.** `prd complete` remains — the last of the four.
+
+### Amendment 6 — `prd validate` (2026-08-28)
+
+**Authority:** the same restated goal that authorised Amendment 5 — *"I want to
+make it simple for users, non developer, to follow."* Amendment 5 named
+`prd validate` as one of the three remaining lifecycle gaps and said they ship
+"under the same standard, one at a time". This is the second of the three.
+
+**Statement being amended:** R-5.5's enumeration, which after Amendment 5 read
+`discover new`, `prd new`, `add team`, `add platform`, `add component`, and
+`discover validate`. `prd validate` is added to it.
+
+**The gap.** After Amendment 5 a reader can create a brief, validate it, and
+create a PRD from it — and then has nothing to tell them whether the PRD they
+just wrote is complete. `prd validate` is the command that answers that, and it
+is the check the reader wants *before* filling in a governance checklist, not
+after. Without a screen for it the menu still sends them to a terminal at
+exactly the point they most want reassurance.
+
+**Why it is a mutating screen even though it mutates nothing.** `prd validate`
+reads and reports; unlike `discover validate` it rewrites no frontmatter. It is
+in `mutatingScreens` regardless, because the read-only catalog is a set of
+listings that dispatch no commands at all. That is a structural property, not a
+per-command judgement, and it is worth more than the accuracy of one title: a
+screen that dispatched a command from the browsing half would be the first
+precedent for doing so, and the next one added there would not be so harmless.
+The `(writes)` title over-warns, which is the safe direction to be wrong in.
+
+**What is NOT relaxed.** R-5.6 through R-5.9 apply unchanged — preview, explicit
+confirmation, no filesystem change before it. The `workspace sync` and
+`scratchpad init` exclusions stand on Amendment 2's reasoning. The prohibition
+on any browsing screen reaching `discover validate` stands.
+
+**Scope.** `reality new` and `prd complete` remain, and ship under the same
+standard — see `docs/tasks/tui-lifecycle-completion.md`.
+
+### Amendment 5 — `discover validate`, and the dead end it closes (2026-08-28)
+
+**Authority:** the codebase owner, restating the goal directly — *"I want to make
+it simple for users, non developer, to follow."* A user request, not a review
+finding, and therefore the justification standard Amendment 4 established: a
+mutating form ships when an observed request arrives for it.
+
+**Statement being amended:**
+
+> R-5.5 | … each justified by an observed request rather than by completeness:
+> `discover new`, `prd new`, `add team`, `add platform`, and `add component`.
+
+**What the five-form catalog turned out to be.** It can *start* a unit of work
+and cannot *finish* one. The gap is not evenly spread — it falls in one exact
+place. `prd new`'s `from-discovery` picker lists `status: validated` briefs only
+(`cmd/company-os/tuiform.go`, `validatedBriefIDs`), and the command that sets
+that status is `discover validate`, which R-5.5 forbade a form for. So a brief
+created on one screen **cannot appear on the next**, with no error and no
+explanation — the reader is simply not offered their own work. A non-developer
+following the menu reaches screen two and stops.
+
+`tuiform.go`'s header predicted this and named the remedy: `discover validate`
+"is a mutation wearing a read-only name, and wiring it anywhere that reads as
+browsing is the exact defect read-only-first exists to prevent. **If it is ever
+offered, it belongs HERE, behind a preview and a confirmation, not in a
+browser.**" This amendment does exactly that and nothing more.
+
+**What is NOT relaxed.** The prohibition that carried the real safety property
+stands: no *browsing* screen may reach `discover validate`. The discovery
+browser still cannot edit what it browses. R-5.6 through R-5.9 apply unchanged —
+preview, explicit confirmation, no filesystem change before it. The form is in
+`mutatingScreens`, titled `(writes)` like its neighbours.
+
+**Why the earlier prohibition was still right when written.** It was made while
+the read-only catalog was being established, when the risk was a browser that
+mutates. That risk is real and unchanged. What has changed is that the catalog
+now has a mutating half with a preview-and-confirm discipline, which is a home
+the requirement did not have in 2026-07.
+
+**Scope.** This amendment covers `discover validate` only. `prd validate`,
+`reality new` and `prd complete` are the remaining lifecycle gaps and ship under
+the same standard, one at a time — see
+`docs/tasks/tui-lifecycle-completion.md`.
 
 ### Amendment 4 — the `add` forms (2026-07-27)
 

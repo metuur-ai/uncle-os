@@ -1,0 +1,5 @@
+schemaVersion: '1.0'
+team: {id: solo, name: Solo}
+components:
+- {id: solo-service, relationship: accountable, repository: 'repo://solo-service'}
+tags: [kind/ownership, team/solo]

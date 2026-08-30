@@ -66,8 +66,8 @@ BUILDFLAGS := -trimpath
 PLATFORMS  := darwin/arm64 darwin/amd64 linux/amd64
 
 .PHONY: help build install uninstall run dev test test-v cover fmt fmt-check \
-        vet lint version-check check acceptance golden clean release tidy \
-        deps-check arch-test repro
+        vet lint version-check version-show bump bump-build check acceptance \
+        golden clean release tidy deps-check arch-test repro
 
 # --- help ----------------------------------------------------------------
 help: ## Show this help
@@ -76,7 +76,7 @@ help: ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
 	  | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
 	@echo
-	@echo "Variables: WS=<workspace> PREFIX=<dir> VERSION=<v>"
+	@echo "Variables: WS=<workspace> PREFIX=<dir> VERSION=<v> BUMP=<major|minor|patch|vX.Y.Z>"
 
 # --- build ---------------------------------------------------------------
 build: ## Build the binary into ./company-os
@@ -146,6 +146,46 @@ lint: fmt-check vet ## fmt-check + vet
 # Those copies drift silently — install.sh sat at v0.4.0 while docs said v1.0.0.
 version-check: ## Fail if the hardcoded release-tag literals disagree
 	@scripts/bump-version.sh --check
+
+version-show: ## Show the current release tag and every site that carries it
+	@scripts/bump-version.sh --show
+
+# `bump` rewrites the hardcoded literals; it does NOT tag and does NOT change
+# what the binary reports. VERSION comes from `git describe` at build time, so
+# a freshly bumped tree still stamps the OLD tag until `git tag` is run. That is
+# why `bump-build` passes the new value through explicitly — it is the only way
+# to get a binary carrying a version that has no tag yet, which is exactly what
+# you want when testing a release before cutting it.
+#
+#   make bump                # patch: v1.1.0 -> v1.1.1
+#   make bump BUMP=minor     # v1.1.0 -> v1.2.0
+#   make bump BUMP=v2.0.0    # explicit
+BUMP ?= patch
+
+bump: ## Bump the release-tag literals (BUMP=major|minor|patch|vX.Y.Z, default patch)
+	@scripts/bump-version.sh $(BUMP)
+	@scripts/bump-version.sh --check
+
+# The stamp is read back from the sites AFTER the bump, so the artifacts carry
+# the version just written rather than the tag git still reports. This is the
+# whole reason the target exists: `make release` alone stamps `git describe`,
+# which on an untagged tree yields v0.1.1-80-g<sha>-dirty, not the version the
+# docs and install.sh now claim.
+#
+# It builds the full cross-compiled matrix, not a host binary — dist/ is what
+# gets uploaded, and a release you cannot upload is not a release. `make build`
+# remains the fast host-only loop.
+bump-build: bump ## Bump, then cross-compile release artifacts into ./dist at the new version
+	@new=$$(scripts/bump-version.sh --show | awk '/^Current: /{print $$2}'); \
+	  if [ -z "$$new" ]; then echo "bump-build: sites disagree after bump" >&2; exit 1; fi; \
+	  $(MAKE) --no-print-directory release VERSION=$$new; \
+	  echo; \
+	  echo "next: verify, tag, publish"; \
+	  echo "  ./dist/$(BINARY)-$$(go env GOOS)-$$(go env GOARCH) --version"; \
+	  echo "  git commit -am 'release $$new' && git tag $$new && git push --tags"; \
+	  echo; \
+	  echo "note: NOT tagged yet. Until \`git tag $$new\` exists, a plain \`make build\`"; \
+	  echo "      or \`make release\` reverts to what git describe reports."
 
 # --- behaviour suite -----------------------------------------------------
 # acceptance.sh freezes `validate` output against golden snapshots, on the

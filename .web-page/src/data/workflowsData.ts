@@ -64,7 +64,7 @@ PASS`
     title: 'Scenario 2: Full Change Lifecycle (Discovery -> PRD -> Reality -> Done)',
     subtitle: 'Shipping a feature end-to-end: team discovery brief, platform PRD, reality update, and PRD completion.',
     badge: 'Core Change Engine',
-    description: 'Experience how Company OS enforces that "a change is not done until the Representation of Reality is updated". See how prd complete blocks with Exit Code 5 if reality doc date is stale.',
+    description: 'Experience how Company OS enforces that "a change is not done until the Representation of Reality is updated". See how prd complete blocks with Exit Code 5 if reality doc date is stale. Every step below also has a guided form in company-os tui, which previews the command before running it — the commands here are what goes in a script or a runbook.',
     steps: [
       {
         stepNumber: 1,

@@ -27,7 +27,7 @@ run the lifecycle here and confirm `company-os validate` still exits 0
 **Try it:**
 ```bash
 export PATH="$PWD/../../bin:$PATH"   # from this directory
-company-os validate                  # the [1/7]..[7/7] gate, exits 0
+company-os validate                  # the [1/8]..[8/8] gate, exits 0
 company-os governance resolve --team customer-engagement
 company-os today --role product-owner
 company-os skills list

@@ -1,11 +1,12 @@
 ---
 id: skill://product/running-discovery
+type: skill
 version: '1.2'
 authority: canonical
 appliesTo: ['company://all-teams']
 inputs: ['a problem signal (tickets, metrics, stakeholder ask)']
 outputs: [product/discovery/<id>/brief.md passing `company-os discover validate`]
-tags: [authority/canonical, kind/skill, process/discovery]
+tags: [authority/canonical]
 ---
 
 # Running Discovery

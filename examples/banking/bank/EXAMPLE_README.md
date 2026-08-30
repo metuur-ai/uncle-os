@@ -17,7 +17,7 @@ Simulated source repositories, one per organizational unit:
   requirement targets `relationships: [consumes]`. `payments` catalogs two
   components in two code repos under one team (P3).
 - `team-cards-issuing/` — the accountable side of P2 (its descriptor claim is
-  reconciled by validate [1/7]).
+  reconciled by validate [1/8]).
 - `code-transaction-screening/` — a code repo: invisible to the CLI, bound to
   governance only via grep-able `@spec req://…#R<n>` markers in tests.
 

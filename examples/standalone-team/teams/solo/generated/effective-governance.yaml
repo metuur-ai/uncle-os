@@ -1,0 +1,14 @@
+generatedAt: '2026-08-27T11:52:44Z'
+team: solo
+components:
+  solo-service:
+    platforms:
+    - id: core
+      relationship: belongs-to
+    requirements:
+      company:
+      - id: security-baseline
+        level: default
+        version: '1.0'
+      platform: {}
+deviationsApplied: []

@@ -132,8 +132,14 @@ func noColorRequested() bool {
 // exactly the defect shipping read-only screens first exists to avoid.
 // root is the raw --root the reader typed, threaded through so every derived
 // invocation reproduces from where they stood (see cmdTUI).
+// Nothing here hoists a workspace scan out of its closure. `componentCatalog`
+// used to be called once, at catalog build, and shared by the component browser
+// and `governance explain`'s picker — so a component added from `add component`
+// was missing from both until the reader quit and relaunched. That is the same
+// defect Amendment 10 found in the mutating half (R-5.26), and being read-only
+// made it quieter rather than smaller: a BROWSER that omits what the reader just
+// created is claiming the workspace does not contain it.
 func readOnlyScreens(ws *workspace.Workspace, root string) []tui.Screen {
-	components := componentCatalog(ws)
 	return []tui.Screen{
 		{
 			Title: "workspace overview",
@@ -155,7 +161,9 @@ func readOnlyScreens(ws *workspace.Workspace, root string) []tui.Screen {
 		},
 		{
 			Title: "component browser",
-			Run:   func(string) (string, error) { return componentText(components), nil },
+			Run: func(string) (string, error) {
+				return componentText(componentCatalog(ws)), nil
+			},
 		},
 		{
 			Title: "PRD browser",
@@ -166,9 +174,11 @@ func readOnlyScreens(ws *workspace.Workspace, root string) []tui.Screen {
 			Run:   func(string) (string, error) { return discoveryText(ws), nil },
 		},
 		{
-			Title:   "governance explain",
-			Prompt:  "component",
-			Choices: componentIDList(components),
+			Title:  "governance explain",
+			Prompt: "component",
+			ChoicesFn: func() []string {
+				return componentIDList(componentCatalog(ws))
+			},
 			Run: func(cid string) (string, error) {
 				return runScreen(ws, &Args{Root: root,
 					Cmd: "governance", Action: "explain", ComponentArg: cid})
@@ -231,6 +241,17 @@ func runScreen(ws *workspace.Workspace, args *Args) (string, error) {
 		if rerr := r(&buf, results); rerr != nil && err == nil {
 			err = rerr
 		}
+	}
+	// A quiet error has already said what it had to say, on the command's own
+	// output stream — which here is `buf`, the body this returns. main.go
+	// suppresses the `error: …` line for exactly these; the TUI has to make the
+	// same call, and until `prd complete` reached the catalog nothing exercised
+	// it. `prd complete`'s refusal is the only quiet error in the system, and it
+	// opens with "done-check failed — a change is not done until reality is
+	// updated", so passing it on renders that sentence twice: once as the block's
+	// own header and once as an `error:` line beneath it.
+	if model.IsQuiet(err) && strings.TrimSpace(buf.String()) != "" {
+		err = nil
 	}
 	header := screenCommand(args)
 	if header == "" {

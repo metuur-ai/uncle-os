@@ -43,11 +43,58 @@ examples/workspace/
     └── scratchpad/                                 # local-only, git-ignored
 ```
 
+Not sure what to do first — in this workspace, or any workspace? Ask the tool
+instead of reading the layout above:
+
+```bash
+$ company-os next
+next: outcome review for 2026-per-channel-quiet-hours due 2026-10-16
+  platform: communications
+```
+
+`next` is read-only: it scans for the single highest-priority pending action
+(an expiring deviation/exception, a PRD failing its contract, an unchecked
+governance item, a stale reality doc, a due outcome review) and prints the
+exact command to run. `--all` lists every pending item instead of just the
+top one. Run it any time you land in an unfamiliar workspace — before reading
+docs, before running anything else.
+
+### Prefer a menu? `company-os tui`
+
+If you would rather browse than memorize commands, `company-os tui` opens a
+menu-driven UI over the same commands. It is safe as a first command — it runs
+outside a workspace too, and offers to scaffold one there. Four views exist
+*only* in the TUI: a workspace overview, and browsers for components, PRDs and
+discovery briefs. It also gives one-key fixes for regenerating derived state and
+re-resolving governance.
+
+**The whole loop is in the menu.** Every step below — write a brief, validate
+it, write the PRD from it, check the PRD, describe current state, complete the
+change — has a guided form. Each previews the exact command it is about to run
+and writes nothing until you confirm, so the menu teaches the CLI rather than
+replacing it.
+
+```bash
+company-os tui        # and that is the loop, end to end
+```
+
+Two deliberate omissions. `prd complete --force` has no field: it overrides the
+check that a change is not done until reality is updated, and that stays a
+typed, deliberate act. And no browsing screen writes — `discover validate`
+rewrites the brief it is given, so it lives with the forms, never in the
+discovery browser. `workspace sync` and `scratchpad init` have no forms either;
+both need a value the workspace does not contain.
+
+The rest of this tutorial uses the CLI throughout, because a tutorial has to
+show you what ran. If you run this loop often the CLI is the faster surface
+anyway — and as of the flag inference shown below, the commands are complete as
+written, not abbreviations.
+
 ## 0.5 Configuring paths on your machine
 
 Your absolute paths are yours; the committed YAML must stay portable. The rule
 is simple: **no `/Users/yourname/...` string is ever committed.** Absolute paths
-live only in environment variables or git-ignored local files. That way you,
+live only in environment variables — never in a tracked file. That way you,
 your teammates, and CI can clone the same repos to completely different
 locations and everything still resolves.
 
@@ -56,13 +103,8 @@ locations and everything still resolves.
 ```text
 1. CLI flag              company-os --root /abs/path ...
 2. Environment variable  $COMPANY_OS_WORKSPACE_ROOT
-3. Repo-local override   .company-os.local.yaml        (git-ignored)
-4. User-level config     ~/.company-os/config.yaml     (outside every repo)
-5. Committed shared      config/repositories.yaml      (relative dirs only)
-6. Built-in default      current working directory
+3. Built-in default      current working directory
 ```
-
-### The normal case: one env var per machine
 
 Set the workspace root once. The CLI's `--root` already defaults to
 `$COMPANY_OS_WORKSPACE_ROOT`, so after this you can run commands from anywhere:
@@ -84,78 +126,12 @@ Or pass it inline without exporting anything:
 company-os --root /Users/javier/work/company-knowledge validate
 ```
 
-Effective path = `root` + the repo's **relative** `directory`. The committed
-`config/repositories.yaml` holds only those relative directories and the *name*
-of the env var — never a value:
-
-```yaml
-# config/repositories.yaml   (committed, identical for everyone)
-workspace:
-  rootVariable: COMPANY_OS_WORKSPACE_ROOT   # the NAME of the env var, not a path
-repositories:
-  - id: platform-os-communications
-    directory: platforms/communications                       # relative
-  - id: customer-notification-service
-    directory: components/customer-notification-service       # relative
-```
-
-### The odd case: one repo lives somewhere off the tree
-
-If you cloned a repo into an unusual spot, override just that repo in a
-**git-ignored** local file — absolute paths are allowed here because this file
-is never committed:
-
-```yaml
-# .company-os.local.yaml   (NOT committed)
-workspace:
-  root: /Users/javier/work/company-os
-repositories:
-  customer-notification-service:
-    localPath: /Users/javier/work/notification-experiments    # absolute override
-```
-
-Commit a `.company-os.local.example.yaml` so teammates know the shape, and make
-sure the real file is ignored. `company-os scratchpad init` writes these ignore
-rules for you:
-
-```gitignore
-.company-os.local.yaml
-.env
-.env.local
-scratchpad/
-```
-
-### Multiple workspaces: user-level config
-
-Juggling a primary and an experimental checkout? Keep them in a user-level file
-outside every repo and switch by name:
-
-```yaml
-# ~/.company-os/config.yaml
-activeWorkspace: primary
-workspaces:
-  primary:
-    root: /Users/javier/work/company-knowledge
-  experimental:
-    root: /Users/javier/work/company-experimental
-```
-
-### What goes where
-
-| Committed YAML (portable) | Env vars / git-ignored local files (machine-specific) |
-|---|---|
-| Relative `directory` per repo | Absolute `root` path |
-| Git remote URLs, stable IDs | Per-repo `localPath` overrides |
-| The *name* of the env var | Obsidian vault location, workspace selection |
-
-### Kit status
-
-The CLI implements layers **1, 2, and 6**
-today: `--root`, `$COMPANY_OS_WORKSPACE_ROOT`, and cwd fallback — enough to
-point it at any path on your machine. Layers 3–5 (`.company-os.local.yaml`
-merging, `~/.company-os/config.yaml`, and a `workspace sync` that clones repos
-into the relative directories) are specified here and in the proposal but not
-yet wired into the CLI.
+A per-repo `.company-os.local.yaml` override, a `~/.company-os/config.yaml`
+multi-workspace switcher, and a repo-cloning step driven by a committed
+`config/repositories.yaml` are proposed but not implemented — see
+`company-os-starter/docs/00-original-proposal.md` for that design.
+(`company-os workspace sync` does exist today, but for the unrelated federated
+multi-repo manifest — see §8 below — not for this proposal.)
 
 ## 1. Resolve the team's effective governance
 
@@ -193,14 +169,20 @@ created teams/customer-engagement/product/discovery/2026-per-channel-quiet-hours
 next: fill Problem signal, Hypothesis, Success criteria, then run: ...
 ```
 
-Try validating the empty brief — the contract pushes back:
+Try validating the empty brief. The brief validates — and the CLI tells you what
+you have not filled in yet, without blocking you:
 
 ```bash
 $ company-os discover validate 2026-per-channel-quiet-hours --team customer-engagement
-  [FAIL] section 'Problem signal' is empty
-  [FAIL] section 'Hypothesis' is empty
-  [FAIL] section 'Success criteria' is empty
+  [warn] 3 sections are empty: Problem signal, Hypothesis, Success criteria — format guidance only; the team may use its own structure (opt in via standards/doc-formats.yaml)
+  [ok] brief '2026-per-channel-quiet-hours' validated (status: validated)
 ```
+
+That is *strict on artifacts, flexible on process* in one line: the **headings**
+are the contract and a missing one always fails, but whether a section has prose
+in it yet is your team's business. A team that wants empty sections to block
+opts in with `enforce: true` in `teams/<t>/standards/doc-formats.yaml`, and then
+gets one blocking `[FAIL]` per empty section instead of this single warning.
 
 Fill the three mandatory sections (how you research them — interviews, data,
 prototypes — is `guidance`-tier, i.e. your choice), then:
@@ -209,6 +191,20 @@ prototypes — is `guidance`-tier, i.e. your choice), then:
 $ company-os discover validate 2026-per-channel-quiet-hours --team customer-engagement
   [ok] brief '2026-per-channel-quiet-hours' validated (status: validated)
 ```
+
+`--team` is optional when the brief id is unique across the workspace — the
+CLI searches `teams/*/product/discovery/` for it. On a second brief in this
+same workspace:
+
+```bash
+$ company-os discover validate 2026-test-flag-free
+  [warn] 3 sections are empty: Problem signal, Hypothesis, Success criteria — format guidance only; the team may use its own structure (opt in via standards/doc-formats.yaml)
+  [ok] brief '2026-test-flag-free' validated (status: validated)
+```
+
+Several teams with a brief of the same id → the command lists every candidate
+and asks you to disambiguate with `--team`; an explicit `--team` always wins
+over inference.
 
 ## 3. Create the PRD from the validated discovery
 
@@ -252,6 +248,28 @@ $ company-os prd validate 2026-per-channel-quiet-hours --platform communications
 $ company-os prd validate 2026-per-channel-quiet-hours --platform communications
   [ok] PRD '2026-per-channel-quiet-hours' passes the artifact contract
 ```
+
+Same inference as `discover validate`: `--platform` is optional when the PRD
+id is unique across `platforms/*/change-records/active/` and
+`platforms/*/archive/prds/`. `prd complete` infers it the same way. Dropping
+the flag on a fresh PRD:
+
+```bash
+$ company-os prd validate 2026-test-flag-free
+  [warn] 3 sections are empty: Problem statement, Success metrics, Proposed change — format guidance only; the team may use its own structure (opt in via standards/doc-formats.yaml)
+  [FAIL] process contract field 'decisionOwner' missing or TODO
+```
+
+> **Why `prd validate` is stricter than `company-os validate`.** They check
+> different things on purpose, so a PRD can pass the workspace gate and still
+> fail here. Gate `[3/8] active PRD contracts` is the **active-record floor** —
+> a workspace-wide sweep asserting four fields (`title`, `team`, `components`,
+> `governanceSnapshot`) on every PRD already live under
+> `change-records/active/`. `prd validate` is the **author-time pre-flight** —
+> it adds `platform` and `decisionOwner`, which the author is expected to settle
+> before delivering, and which the gate does not demand of a document whose
+> location already states its platform. If the two ever agree exactly, one of
+> them is redundant.
 
 ## 4. Composable Definition of Ready during refinement
 
@@ -337,46 +355,68 @@ note: mandatory rules require approval by the rule owner before this is valid.
 
 ```bash
 $ company-os validate
-[1/7] ownership reconciliation
+validating workspace /path/to/examples/workspace
+
+[1/8] ownership reconciliation
   [ok] customer-notification-service: registry and descriptor agree (communications)
-[2/7] deviation and exception expiry
-  [ok] customer-engagement: deviation platform-standard://communications/prd-structure current (review 2027-01-15)
-  [ok] customer-engagement: deviation company-standard://estimation/story-points current (review 2027-01-14)
-  [ok] customer-engagement: exception platform-standard://communications/message-schema valid until 2026-12-31
-[3/7] active PRD contracts
-[4/7] frontmatter core and tag derivation (interop contract)
-  [ok] platforms/communications/reality/components/customer-notification-service.md: frontmatter core and tags in sync
-[5/7] CLAUDE.md context node drift (fail-safe, absence-tolerant)
+
+[2/8] deviation and exception expiry
+  [ok] customer-engagement: deviation platform-standard://communications/prd-structure current (review 2035-01-15)
+  [ok] customer-engagement: deviation company-standard://estimation/story-points current (review 2035-01-14)
+  [warn] customer-engagement: exception for platform-standard://communications/message-schema is approved by a placeholder (TODO: rule owner) — replace it with the rule owner
+  [ok] customer-engagement: exception platform-standard://communications/message-schema valid until 2035-12-31
+
+[3/8] active PRD contracts
+
+[4/8] frontmatter core and tag derivation (interop contract)
+  [ok] company-os/onboarding/developer.md: core fields + tags in sync
+  ...                                       # one line per frontmatter document
+  [ok] company-ontology/contexts/communications.md: core fields + tags in sync
+
+[5/8] CLAUDE.md context node drift (fail-safe, absence-tolerant)
   [ok] company-os/CLAUDE.md: context node in sync
   [ok] platforms/communications/CLAUDE.md: context node in sync
   [ok] teams/customer-engagement/CLAUDE.md: context node in sync
   [ok] company-ontology/CLAUDE.md: context node in sync
-[6/7] feature-index drift (derived component->artifact map)
+  [ok] platforms/communications: directory indexes in sync (1 index(es))
+  [ok] teams/customer-engagement: directory indexes in sync (1 index(es))
+  [ok] company-ontology: directory indexes in sync (1 index(es))
+
+[6/8] feature-index drift (derived component->artifact map)
   [ok] communications: feature-index in sync (1 component(s))
-[7/7] custom skills layering (shadowing + extends resolution)
-  [ok] skills layered cleanly (1 canonical, 0 team, 1 personal; no shadowing or dangling extends)
+
+[7/8] custom skills layering (shadowing + extends resolution)
+  [ok] skills layered cleanly (2 canonical, 0 team; no shadowing or dangling extends)
+
+[8/8] promotion integrity (promoted drafts match their change records)
+
 PASS
 ```
 
-The gate count is dynamic: the seven gates above run in monorepo mode. In a
-**federated** workspace (a `workspace.yaml` manifest is present) validate adds an
-eighth gate — `[8/8] federated slice integrity` — which fails if a materialized
+Note the `[warn]` in gate 2: warnings name something worth fixing (here, an
+exception still carrying the placeholder approver `company-os exception request`
+wrote) but they do not fail the gate. Only `[FAIL]` lines count as problems.
+
+The gate count is dynamic: the eight gates above run in monorepo mode. In a
+**federated** workspace (a `workspace.yaml` manifest is present) validate adds a
+ninth gate — `[9/9] federated slice integrity` — which fails if a materialized
 governance slice was hand-edited (its content hash no longer matches
-`workspace.lock.yaml`). With no manifest the eighth gate does not exist and the
-output is byte-for-byte the seven-gate form above.
+`workspace.lock.yaml`). With no manifest the ninth gate does not exist and the
+output is byte-for-byte the eight-gate form above.
 
 It fails (exit 1, blocking merge) when: a team claims ownership the component
 descriptor doesn't confirm (single-source rule), a deviation passes its
 `reviewDate`, an exception is missing or past its `expires`, an active PRD
 is missing contract fields, a doc's frontmatter core or derived tags drift, a
-generated `CLAUDE.md` context node is stale, or a platform's derived
-`feature-index.yaml` is out of date. The last three gates are absence-tolerant
-— they pass when the artifact is absent. Wire it as CI:
+generated `CLAUDE.md` context node or per-directory `index.md` is stale, a
+platform's derived `feature-index.yaml` is out of date, or a promoted draft no
+longer matches its change record. The absence-tolerant gates pass when the
+artifact is absent. Wire it as CI:
 
 ```yaml
 # .github/workflows/os-validate.yml (any OS repo)
 - name: install company-os        # one static binary, no runtime dependency
-  env: {COMPANY_OS_VERSION: v1.0.0}
+  env: {COMPANY_OS_VERSION: v1.1.2}
   run: |
     curl -fsSLo /usr/local/bin/company-os \
       <release-url>/$COMPANY_OS_VERSION/company-os_${COMPANY_OS_VERSION}_linux_amd64
@@ -387,6 +427,22 @@ generated `CLAUDE.md` context node is stale, or a platform's derived
 
 The second check ensures `effective-governance.yaml` is truly derived — if
 someone hand-edited it, the regenerated file differs and CI fails.
+
+Locally, `--fix` regenerates that same derived state (effective-governance,
+tags, indexes, CLAUDE.md context nodes) before running the gates, so you don't
+have to remember `governance resolve` and `graph build` yourself:
+
+```bash
+$ company-os validate --fix
+...
+PASS
+validate --fix: 0 file(s) regenerated
+```
+
+`--fix` is a **local convenience only**. CI keeps the strict two-step check
+above (`validate` + `git diff --exit-code` against the freshly regenerated
+files) — a workspace with drift still fails CI even if `--fix` would have
+silently repaired it locally.
 
 ## 9. Where personal flexibility lives
 
@@ -454,9 +510,52 @@ signal ──> discover new ──> discover validate ──> prd new (snapshot+
                                                         learnings ──> next signal
 ```
 
+## 11. Finding things: `company-os find`
 
+Local search is otherwise fragmented across derived tags, the ids registry,
+per-directory `index.md` files, and feature-indexes.
+`find` is one front door over all of them — case-insensitive substring match,
+exact-id hits ranked first, grouped output by match kind:
 
+```bash
+$ company-os find customer-notification-service
+== canonical IDs ==
+  platforms/communications/components/customer-notification-service.yaml  [component://customer-notification-service]  id substring match
 
+== derived tags ==
+  platforms/communications/archive/prds/2026-per-channel-quiet-hours/prd.md  [Per-channel quiet hours]  tag: component/customer-notification-service
+  platforms/communications/reality/components/customer-notification-service.md  tag: component/customer-notification-service
 
---- 
-I want to integrate  the  graphify  for optimize the searchs and an
+== frontmatter ==
+  platforms/communications/reality/components/customer-notification-service.md  id field match
+
+== feature-index ==
+  platforms/communications/generated/feature-index.yaml  [customer-notification-service]  feature-index component match
+
+graphify installed but no graphify-out/graph.json here — run graphify to build the graph
+```
+
+A query that doesn't hit anything is not a failure — search is not a gate:
+
+```bash
+$ company-os find zzznotarealthing
+no matches
+
+graphify installed but no graphify-out/graph.json here — run graphify to build the graph
+```
+
+**The graphify hook:** if a `graphify` binary is on `PATH` and
+`graphify-out/graph.json` exists under the workspace root, `find` appends a
+`graphify query "<query>"` section using the built graph's EXTRACTED/INFERRED
+edges. Either missing → the quiet hint line above, exit 0 regardless. Skip the
+hook explicitly with `--no-graphify`:
+
+```bash
+$ company-os find customer-notification-service --no-graphify
+== canonical IDs ==
+  platforms/communications/components/customer-notification-service.yaml  [component://customer-notification-service]  id substring match
+...
+```
+
+`--json` emits the same records structured, for scripting or an agent to
+consume directly.

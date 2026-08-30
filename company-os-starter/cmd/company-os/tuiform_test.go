@@ -19,6 +19,7 @@ package main
 // tomorrow is covered tomorrow without anyone remembering to come here.
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -263,7 +264,23 @@ func TestMutatingScreensAreTheR55Names(t *testing.T) {
 	got := mutatingScreens(ws, "")
 	want := []string{
 		"new discovery brief (writes)",
+		// Amendment 5 (2026-08-28): `discover validate` gained a form because
+		// without it the catalog dead-ends — a brief created one screen up
+		// cannot reach "new PRD"'s picker, which lists validated briefs only.
+		// It sits HERE, adjacent to the screen that creates what it validates,
+		// and NOT in the discovery browser; that prohibition is unchanged and
+		// is asserted separately below.
+		"validate discovery brief (writes)",
 		"new PRD (writes)",
+		// Amendment 6 (2026-08-28): `prd validate` under the same standard —
+		// an observed request, one form at a time. It sits after the screen that
+		// creates what it checks.
+		"validate PRD (writes)",
+		// Amendment 7 (2026-08-29): `reality new`, third of the four lifecycle
+		// gaps Amendment 5 enumerated.
+		"new reality doc (writes)",
+		// Amendment 8 (2026-08-29): `prd complete`, the last of the four gaps.
+		"complete PRD (writes)",
 		"add team (writes)",
 		"add platform (writes)",
 		"add component (writes)",
@@ -280,9 +297,21 @@ func TestMutatingScreensAreTheR55Names(t *testing.T) {
 		}
 	}
 
-	// No screen in the whole catalog may reach a forbidden command, and no
-	// browsing screen may reach `discover validate`, which rewrites the brief it
-	// is asked about.
+	// Two prohibitions, and Amendment 5 (2026-08-28) separated them, because
+	// only one was ever load-bearing.
+	//
+	//   1. `workspace sync` and `scratchpad init` get no form ANYWHERE.
+	//   2. `discover validate` gets no form in a BROWSING screen — it rewrites
+	//      status: draft to status: validated, and a browser that edits what it
+	//      browses is the defect read-only-first exists to prevent. It is now
+	//      offered as a mutating form, behind preview and confirmation.
+	//
+	// Before Amendment 5 the second was enforced as "nowhere", which also
+	// forbade the safe home and left the catalog unable to finish a change.
+	mutating := map[string]bool{}
+	for _, s := range mutatingScreens(ws, "") {
+		mutating[s.Title] = true
+	}
 	for _, s := range screensFor(ws, "") {
 		form := s.ResolveForm()
 		if form == nil {
@@ -292,10 +321,13 @@ func TestMutatingScreensAreTheR55Names(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: build: %v", s.Title, err)
 		}
-		for _, forbidden := range []string{
-			"workspace sync", "scratchpad init", "discover validate"} {
-			if strings.Contains(action.Preview(), forbidden) {
-				t.Errorf("%s previews %q — R-5.5 forbids a form for it", s.Title, forbidden)
+		forbidden := []string{"workspace sync", "scratchpad init"}
+		if !mutating[s.Title] {
+			forbidden = append(forbidden, "discover validate")
+		}
+		for _, f := range forbidden {
+			if strings.Contains(action.Preview(), f) {
+				t.Errorf("%s previews %q — R-5.5 forbids a form for it", s.Title, f)
 			}
 		}
 	}
@@ -383,6 +415,310 @@ func TestFormPickersOfferOnlyValuesThatExist(t *testing.T) {
 			}
 		}
 	}
+}
+
+// TestValidatePRDPickerOffersActiveRecordsOnly is unit 2's acceptance, and the
+// half of it the generic catalog tests cannot see: they run against a fixture
+// with no change records, where every picker is legitimately empty, so nothing
+// so far proves this one ever fills.
+//
+// The archived record is placed by hand rather than by running `prd complete`,
+// because what is under test is the directory the picker reads, not the
+// lifecycle that puts things there — and `prd complete` refuses until reality is
+// updated, which would make this a test of the done-gate instead.
+func TestValidatePRDPickerOffersActiveRecordsOnly(t *testing.T) {
+	root := tuiWorkspace(t)
+	var out, errOut bytes.Buffer
+	if code := run([]string{"--root", root, "prd", "new",
+		"--platform", "plat", "--title", "Quiet hours", "--components", "svc"},
+		&out, &errOut); code != 0 {
+		t.Fatalf("prd new failed (%d): %s", code, errOut.String())
+	}
+	archived := filepath.Join(root, "platforms", "plat", "archive", "prds", "2026-already-done")
+	if err := os.MkdirAll(archived, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	ws := workspace.New(root)
+	got := activePRDIDs(ws)
+	if len(got) != 1 {
+		t.Fatalf("activePRDIDs = %v, want exactly the one active record", got)
+	}
+	if strings.Contains(got[0], "already-done") {
+		t.Errorf("activePRDIDs offers the archived record %q", got[0])
+	}
+
+	// End to end through the screen: the picked id reaches `prd validate` as the
+	// positional, and the previewed line parses back (R-5.10).
+	form := screenNamed(t, mutatingScreens(ws, root), "validate PRD (writes)").ResolveForm()
+	if len(form.Fields[0].Choices) != 1 || form.Fields[0].Choices[0] != got[0] {
+		t.Fatalf("picker choices = %v, want %v", form.Fields[0].Choices, got)
+	}
+	action, err := form.Build([]string{got[0]})
+	if err != nil {
+		t.Fatalf("build: %v", err)
+	}
+	back, err := parse(shellSplit(action.Preview())[1:])
+	if err != nil {
+		t.Fatalf("the previewed command does not parse: %s (%v)", action.Preview(), err)
+	}
+	if back.Cmd != "prd" || back.Action != "validate" || back.ID != got[0] {
+		t.Errorf("preview %q parses to %s %s %q", action.Preview(), back.Cmd, back.Action, back.ID)
+	}
+}
+
+// TestRealityScreenRefusesAComponentFromAnotherPlatform is unit 3's real risk,
+// and the reason the refusal lives in Build rather than being left to the CLI:
+// the mis-picked pair does not fail. scaffold.RealityNew never asks whether the
+// component belongs to the platform it was given, so it would scaffold one
+// platform's component underneath another and report success.
+//
+// Both directions are asserted. A test that only checked the refusal would pass
+// on a Build that refuses everything.
+func TestRealityScreenRefusesAComponentFromAnotherPlatform(t *testing.T) {
+	root := tuiWorkspace(t)
+	var out, errOut bytes.Buffer
+	if code := run([]string{"--root", root, "add", "platform", "other"},
+		&out, &errOut); code != 0 {
+		t.Fatalf("add platform failed (%d): %s", code, errOut.String())
+	}
+	ws := workspace.New(root)
+	form := screenNamed(t, mutatingScreens(ws, root), "new reality doc (writes)").ResolveForm()
+
+	// "svc" belongs to "plat" (tuiWorkspace), so this pair exists nowhere.
+	before := treeDigest(t, root)
+	if _, err := form.Build([]string{"other", "svc"}); err == nil {
+		t.Fatal("built an invocation for a component of another platform")
+	} else if !strings.Contains(err.Error(), "plat") {
+		t.Errorf("refusal does not name where the component lives: %v", err)
+	}
+	if after := treeDigest(t, root); after != before {
+		t.Error("a refused build touched the workspace")
+	}
+
+	action, err := form.Build([]string{"plat", "svc"})
+	if err != nil {
+		t.Fatalf("the pair that DOES exist was refused: %v", err)
+	}
+	if !strings.Contains(action.Preview(), "reality new") {
+		t.Errorf("preview is not a reality new: %s", action.Preview())
+	}
+}
+
+// TestRealityPickerOffersOnlyComponentsWithoutADoc: RealityNew refuses to
+// overwrite, so a component that already has a doc is a choice guaranteed to
+// error. The screen resolves at open time (R-5.26), so the list must SHRINK
+// once the doc is written — checked here by reopening rather than by rebuilding
+// the catalog, which is what a reader does in one sitting.
+func TestRealityPickerOffersOnlyComponentsWithoutADoc(t *testing.T) {
+	root := tuiWorkspace(t)
+	ws := workspace.New(root)
+	screen := screenNamed(t, mutatingScreens(ws, root), "new reality doc (writes)")
+	if got := screen.ResolveForm().Fields[1].Choices; !slices.Equal(got, []string{"svc"}) {
+		t.Fatalf("component choices = %v, want [svc]", got)
+	}
+
+	var out, errOut bytes.Buffer
+	if code := run([]string{"--root", root, "reality", "new",
+		"--platform", "plat", "svc"}, &out, &errOut); code != 0 {
+		t.Fatalf("reality new failed (%d): %s", code, errOut.String())
+	}
+	if got := screen.ResolveForm().Fields[1].Choices; len(got) != 0 {
+		t.Errorf("component choices = %v after the doc was written, want none", got)
+	}
+}
+
+// TestCompleteScreenRendersTheDoneCheckRefusalOnce is unit 4's legibility
+// requirement, made precise.
+//
+// `prd complete`'s refusal is the only QUIET error in the system: it prints its
+// whole block to stdout and writes nothing to stderr, and main.go suppresses the
+// `error: …` line for it. runScreen did not, because nothing in the catalog
+// could produce a quiet error until this screen existed — so the refusal would
+// have opened with "done-check failed …" as the block header and then repeated
+// that same sentence as an error line beneath it.
+//
+// The count is what is asserted. Checking merely that the sentence APPEARS
+// passes on the duplicated rendering, which is the defect.
+func TestCompleteScreenRendersTheDoneCheckRefusalOnce(t *testing.T) {
+	root := tuiWorkspace(t)
+	var out, errOut bytes.Buffer
+	if code := run([]string{"--root", root, "prd", "new",
+		"--platform", "plat", "--title", "Quiet hours", "--components", "svc"},
+		&out, &errOut); code != 0 {
+		t.Fatalf("prd new failed (%d): %s", code, errOut.String())
+	}
+	ws := workspace.New(root)
+	form := screenNamed(t, mutatingScreens(ws, root), "complete PRD (writes)").ResolveForm()
+	id := form.Fields[0].Choices[0]
+	action, err := form.Build([]string{id})
+	if err != nil {
+		t.Fatalf("build: %v", err)
+	}
+
+	// The PRD is brand new: its checklist is unchecked and svc has no reality
+	// doc, so the gate refuses. That refusal is the interesting render.
+	body, commitErr := action.Commit()
+	if commitErr != nil {
+		t.Errorf("the quiet refusal reached the UI as an error: %v", commitErr)
+	}
+	if n := strings.Count(body, "done-check failed"); n != 1 {
+		t.Errorf("the refusal sentence appears %d times, want 1:\n%s", n, body)
+	}
+	// The block must still carry the reasons and the way out; suppressing the
+	// duplicate must not have suppressed the diagnosis.
+	for _, want := range []string{
+		"checklist item(s) unchecked",
+		"no reality doc for component 'svc'",
+		"fix: company-os reality new --platform plat svc",
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("refusal does not carry %q:\n%s", want, body)
+		}
+	}
+}
+
+// TestCompleteScreenHasNoForceField. `prd complete --force` overrides the
+// done-gate that enforces invariant 4. A gate that can be waved through from a
+// menu is not a gate, and the reader most likely to reach for it from a menu is
+// the one who least knows what it protects.
+func TestCompleteScreenHasNoForceField(t *testing.T) {
+	ws := workspace.New(tuiWorkspace(t))
+	for _, f := range screenNamed(t, mutatingScreens(ws, ""), "complete PRD (writes)").ResolveForm().Fields {
+		if f.Label == "force" {
+			t.Error("the complete screen offers a force field")
+		}
+	}
+	action, err := screenNamed(t, mutatingScreens(ws, ""), "complete PRD (writes)").
+		ResolveForm().Build([]string{"any-prd"})
+	if err != nil {
+		t.Fatalf("build: %v", err)
+	}
+	if strings.Contains(action.Preview(), "--force") {
+		t.Errorf("the previewed command carries --force: %s", action.Preview())
+	}
+}
+
+// TestTheWholeLoopRunsInOneSession is the acceptance criterion the four
+// lifecycle units were built for, and the only test that exercises them as a
+// sequence rather than one at a time: brief → validate → PRD → validate →
+// reality doc → complete, driven as keystrokes through ONE catalog, without
+// relaunching.
+//
+// Relaunching between steps is what every per-unit test does implicitly, and it
+// hides the defect this test exists to catch: a picker resolved when the catalog
+// was BUILT cannot offer work the reader created a moment ago (R-5.26). A menu
+// that requires the reader to quit and reopen it between every step has not
+// closed the dead end — it has moved it.
+func TestTheWholeLoopRunsInOneSession(t *testing.T) {
+	root := tuiWorkspace(t)
+	ws := workspace.New(root)
+	screens := mutatingScreens(ws, "")
+
+	// pick means "take whatever this picker offers" — and asserts that it
+	// offers something. An empty string means the opposite: leave an optional
+	// field genuinely blank. Collapsing the two is what the first draft of this
+	// test did, and it turned a real assertion into a failure about a free-text
+	// title.
+	const pick = "\x00pick"
+
+	// Each step: open a screen fresh from THIS catalog, fill it, confirm.
+	step := func(title string, values []string) string {
+		t.Helper()
+		form := screenNamed(t, screens, title).ResolveForm()
+		if len(values) != len(form.Fields) {
+			t.Fatalf("%s: %d values for %d fields", title, len(values), len(form.Fields))
+		}
+		for i, f := range form.Fields {
+			if values[i] != pick {
+				continue
+			}
+			if len(f.Choices) == 0 {
+				t.Fatalf("%s: field %q offers nothing — the previous step's "+
+					"work is not reachable without relaunching", title, f.Label)
+			}
+			values[i] = f.Choices[0]
+		}
+		action, err := form.Build(values)
+		if err != nil {
+			t.Fatalf("%s: build: %v", title, err)
+		}
+		body, err := action.Commit()
+		if err != nil {
+			t.Fatalf("%s: commit: %v\n%s", title, err, body)
+		}
+		return body
+	}
+
+	step("new discovery brief (writes)", []string{"core", "Quiet hours"})
+	step("validate discovery brief (writes)", []string{pick})
+	// The title is left blank on purpose — the brief supplies it. from-discovery
+	// is `pick`, so this asserts the brief validated one line above is offered
+	// here: the exact dead end Amendment 5 was written to close.
+	step("new PRD (writes)", []string{"plat", "", "svc", "core", pick})
+	step("validate PRD (writes)", []string{pick})
+	step("new reality doc (writes)", []string{"plat", pick})
+
+	// The done-check refuses here, and that is correct rather than a failure of
+	// the loop: prd new writes an unchecked governance checklist, and the menu
+	// offers no way to tick it off — the evidence goes in the PRD, by hand.
+	// Asserting the refusal keeps this test honest about where the menu stops.
+	form := screenNamed(t, screens, "complete PRD (writes)").ResolveForm()
+	id := form.Fields[0].Choices[0]
+	action, err := form.Build([]string{id})
+	if err != nil {
+		t.Fatalf("complete: build: %v", err)
+	}
+	body, _ := action.Commit()
+	if !strings.Contains(body, "checklist item(s) unchecked") {
+		t.Errorf("expected the done-check to refuse on the unchecked checklist:\n%s", body)
+	}
+	// The reality doc written two steps up is why THIS is not also a reason.
+	if strings.Contains(body, "no reality doc for component") {
+		t.Errorf("the reality doc created in this session was not seen:\n%s", body)
+	}
+}
+
+// TestEveryPickerResolvesAtOpenTime is the structural guard for what
+// TestTheWholeLoopRunsInOneSession caught behaviourally.
+//
+// The loop test proves the six lifecycle screens see each other's work. It
+// cannot prove the NEXT screen someone adds will, and the failure mode is
+// invisible: a static picker is not wrong until the reader creates something in
+// the same session, so the screen looks correct in every per-unit test.
+//
+// The rule asserted is stronger than R-5.26's condition and deliberately so —
+// "does this picker describe state the reader can change from here?" is a
+// judgement, and it was got wrong on four screens at once. "A picker means a
+// FormFn" is not a judgement. A screen with no picker may stay static: the three
+// `add` id fields are free text and have nothing to go stale.
+func TestEveryPickerResolvesAtOpenTime(t *testing.T) {
+	ws := workspace.New(tuiWorkspace(t))
+	for _, s := range mutatingScreens(ws, "") {
+		if s.Form == nil {
+			continue // FormFn — resolved when opened, which is the rule.
+		}
+		for _, f := range s.Form.Fields {
+			if f.Choices != nil {
+				t.Errorf("%s: field %q is a picker on a statically-built form — "+
+					"it cannot offer anything created earlier in the same session; "+
+					"move the form into a FormFn", s.Title, f.Label)
+			}
+		}
+	}
+}
+
+// screenNamed finds one screen by title, failing rather than returning a zero
+// value, so a renamed screen reports itself instead of a nil dereference.
+func screenNamed(t *testing.T, screens []tui.Screen, title string) tui.Screen {
+	t.Helper()
+	for _, s := range screens {
+		if s.Title == title {
+			return s
+		}
+	}
+	t.Fatalf("no screen titled %q", title)
+	return tui.Screen{}
 }
 
 // ---------------------------------------------- R-5.8 / R-5.9 on a real tree

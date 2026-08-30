@@ -1,0 +1,11 @@
+schemaVersion: '1.0'
+kind: Platform
+metadata:
+  id: core
+  name: Core
+conformance:
+  companyOsVersion: '2026.2'
+  profile: standard
+tags:
+- kind/platform
+- platform/core

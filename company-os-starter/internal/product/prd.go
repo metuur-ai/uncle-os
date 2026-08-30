@@ -247,6 +247,29 @@ func requirePRDID(id string) error {
 	return model.Usagef("prd", "the following arguments are required: id")
 }
 
+// notActiveError explains a missing active PRD.
+//
+// The plain "no active PRD at <path>" reads like nothing was found, which is a
+// half-truth the moment the id names a COMPLETED change: `prd complete` moved
+// it to archive/prds/, so the tool can see it and is refusing for a reason the
+// path alone does not state. Context inference (ux-simplification 1.2) made
+// this sharper, because `prd validate <id>` now resolves the platform from the
+// archive and then reports a path under active/ that the user never typed.
+//
+// So: when the archived twin exists, say so and name it. Otherwise keep the
+// original sentence verbatim — that path is the one every existing test and
+// the oracle's own message assert on, and "not here" is the whole truth there.
+func notActiveError(pdir, platform, id, prd string) error {
+	archived := filepath.Join(pdir, "archive", "prds", id)
+	if _, err := os.Stat(archived); err == nil {
+		return model.Errorf(model.ExitWorkspace,
+			"PRD '%s' is archived under platform '%s', not active — "+
+				"completed changes are not re-validated (see %s)",
+			id, platform, archived)
+	}
+	return model.Errorf(model.ExitWorkspace, "no active PRD at %s", prd)
+}
+
 // PRDValidate is `prd validate` (`:625-669`), as records. Its refusal exits 1
 // through the shared fail() helper (exit-code map § H).
 func PRDValidate(ws *workspace.Workspace, platform, id string) ([]model.GateResult, error) {
@@ -259,7 +282,7 @@ func PRDValidate(ws *workspace.Workspace, platform, id string) ([]model.GateResu
 	}
 	prd := filepath.Join(pdir, "change-records", "active", id, "prd.md")
 	if _, err := os.Stat(prd); err != nil {
-		return nil, model.Errorf(model.ExitWorkspace, "no active PRD at %s", prd)
+		return nil, notActiveError(pdir, platform, id, prd)
 	}
 	meta, body, err := graph.ReadFrontmatter(prd)
 	if err != nil {
@@ -332,7 +355,7 @@ func PRDComplete(ws *workspace.Workspace, platform, id string, force bool,
 	src := filepath.Join(pdir, "change-records", "active", id)
 	prd := filepath.Join(src, "prd.md")
 	if _, err := os.Stat(prd); err != nil {
-		return nil, model.Errorf(model.ExitWorkspace, "no active PRD at %s", prd)
+		return nil, notActiveError(pdir, platform, id, prd)
 	}
 	meta, body, err := graph.ReadFrontmatter(prd)
 	if err != nil {

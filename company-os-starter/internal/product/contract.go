@@ -17,6 +17,7 @@ package product
 
 import (
 	"path/filepath"
+	"strings"
 
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/model"
 	"github.com/metuur-ai/uncle-os/company-os-starter/internal/workspace"
@@ -161,7 +162,36 @@ func sectionIssues(body []byte, sections []string) (blocking, format []Issue) {
 // The `enforced` field on each format issue is what makes Message able to render
 // both sentences off one code: the blocking form is the bare "section 'X' is
 // empty", the guidance form appends the opt-in pointer.
+// ux-simplification Phase 2 (Unit 7): when the team has NOT opted in and more
+// than one section is empty, the warnings collapse into a single finding naming
+// all of them.
+//
+// The reason is signal, not tidiness. A freshly scaffolded brief and PRD produce
+// six near-identical paragraphs on the tutorial's happy path, each repeating the
+// same opt-in sentence, before the user has had any chance to fill anything in.
+// Six routine warnings teach a reader to skim `[warn]`, and the warning that
+// matters — an exception approved by a placeholder, say — is skimmed with them.
+//
+// Enforced teams keep one finding per section: there the findings BLOCK, so the
+// per-section detail is worth the lines and the reader is not skimming.
 func applyFormatPolicy(errs, format []Issue, enforced bool) (blocking, warnings []Issue) {
+	if !enforced && len(format) > 1 {
+		names := make([]string, 0, len(format))
+		for _, f := range format {
+			names = append(names, f.Fields.Str("section"))
+		}
+		return errs, []Issue{{
+			Code: model.CodeSectionEmpty,
+			// `sections` (plural) is what Message keys the aggregated sentence
+			// off, following this cluster's existing rule that one code renders
+			// several sentences off its fields rather than splitting a check.
+			Fields: model.Fields{
+				"sections": strings.Join(names, ", "),
+				"count":    len(names),
+				"enforced": false,
+			},
+		}}
+	}
 	for _, f := range format {
 		f.Fields = model.Fields{"section": f.Fields.Str("section"), "enforced": enforced}
 		if enforced {

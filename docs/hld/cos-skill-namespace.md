@@ -53,20 +53,22 @@ workspace, where no mixed namespace exists.
 This change gives every Company OS skill a `cos-` prefix across all three of
 its name slots — file stem, `id:`, and any `extends:` URI addressing it — and
 adds a validation gate so the convention holds in repos that were written after
-this document. It also packages the four canonical starter-kit skills as a
+this document. It also packages the five canonical starter-kit skills as a
 distributable Claude Code plugin, so the same skills that govern a workspace are
 invokable in an agent session under the same `cos-` names.
 
-The four starter-kit skills under `company-os-starter/skills/` are flattened to
+The five starter-kit skills under `company-os-starter/skills/` are flattened to
 the same shape while we are in those files. They currently sit at
 `<name>/SKILL.md`, which the discovery glob would never match. That is a
 consistency problem, not a live defect: like the sibling `.md` files under
 `templates/`, they are human reference copies that no code path reads. They are
 not embedded in the binary, `company-os init` does not copy them, and
 `company-os-starter/` is not a workspace root, so nothing discovers them from
-either layout. They are also not currently valid workspace artifacts: none carries a `type:`
-key, and all four hand-write tags that derivation does not produce, so copying
-one into a workspace today yields validation failures. Flattening the layout,
+either layout. Four of the five are also not currently valid workspace artifacts: none of
+those four carries a `type:` key, and all four hand-write tags that derivation
+does not produce, so copying one of them into a workspace today yields
+validation failures. The fifth, `reality-from-prds`, already carries
+`type: skill` and derived-only tags. Flattening the layout,
 adding `type: skill`, and correcting `tags:` together mean a reader who copies
 one into a real workspace gets a file that works.
 
@@ -87,11 +89,11 @@ is already a gate-7 failure. The prefix makes the intended relationship legible
 before validation runs: a team writing `cos-creating-prd` is visibly reaching
 for a Company OS name and should be extending, not replacing.
 
-**Agents operating a workspace.** Four shipped skills instruct an agent to grep
+**Agents operating a workspace.** The shipped skills instruct an agent to grep
 CLI stderr for the `company-os ` prefix and tell it what each exit code means in
 context — including which shortcuts past a gate are forbidden. That judgment is
 the layer no validator can express, and today an agent reaches it only by
-knowing to go read the files. Packaging those four as plugin skills loads it
+knowing to go read the files. Packaging those five as plugin skills loads it
 automatically. The plugin ships no slash commands: wrapping a CLI the agent can
 already invoke would add drift, not capability.
 
@@ -119,7 +121,7 @@ names. None of these change.
 ## Goals
 
 1. Every shared skill file in the repository is named `cos-<name>.SKILL.md` and
-   sits directly inside a `skills/` directory, including the four starter-kit
+   sits directly inside a `skills/` directory, including the five starter-kit
    reference copies.
 2. Every skill `id:` reads `skill://<scope>/cos-<name>`, and every `extends:`
    URI reads `platform-skill://<platform>/cos-<name>`, resolving to the renamed
@@ -128,7 +130,7 @@ names. None of these change.
    whose file stem or `id:` name segment lacks the prefix, names the offending
    file, and downgrades to a warning when that file is inside a read-only slice
    the workspace cannot edit.
-4. The four canonical skills are installable as a Claude Code plugin, exposing
+4. The five canonical skills are installable as a Claude Code plugin, exposing
    `cos-`-named skills and no slash commands.
 5. `make check` passes: gofmt, vet, `go test ./...`, and
    `examples/acceptance.sh` against all five example workspaces.

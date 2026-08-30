@@ -121,7 +121,15 @@ func rewriteGeneratedBlockWithHeader(path, block, header string) (outcome nodeOu
 			return nodeInSync, nil, model.Wrapf(model.ExitArtifact, err,
 				"cannot create %s: %v", filepath.Dir(path), err)
 		}
-		if err := os.WriteFile(path, []byte(header+region+"\n"), 0o666); err != nil {
+		// ux-simplification 2.1: the trailing newline was removed from the
+		// creation path to match the replacement path. The regex in the
+		// replacement branch consumes any trailing whitespace after the end
+		// marker (including the \n), so a file created with \n would be
+		// rewritten without it on the next run — a 2-cycle that broke --fix
+		// idempotency after a deletion. The committed fixtures already carry
+		// no trailing newline (they were produced by the replacement path),
+		// so this change is byte-identical for every existing workspace.
+		if err := os.WriteFile(path, []byte(header+region), 0o666); err != nil {
 			return nodeInSync, nil, model.Wrapf(model.ExitArtifact, err, "cannot write %s: %v", path, err)
 		}
 		return nodeWritten, nil, nil

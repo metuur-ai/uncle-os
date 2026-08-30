@@ -78,6 +78,16 @@ func Message(code string, f model.Fields) string {
 	case model.CodeSectionHeadingMissing:
 		return fmt.Sprintf("required section heading '## %s' missing", f.Str("section"))
 	case model.CodeSectionEmpty:
+		// ux-simplification Phase 2 (Unit 7): the aggregated form, keyed off
+		// the plural field. Only the non-enforced path ever produces it, so it
+		// always carries the guidance pointer — once, rather than once per
+		// section.
+		if list := f.Str("sections"); list != "" {
+			count, _ := f["count"].(int)
+			return fmt.Sprintf("%d sections are empty: %s — format guidance "+
+				"only; the team may use its own structure "+
+				"(opt in via standards/doc-formats.yaml)", count, list)
+		}
 		bare := fmt.Sprintf("section '%s' is empty", f.Str("section"))
 		if enforced, _ := f["enforced"].(bool); enforced {
 			return bare
@@ -96,9 +106,21 @@ func Message(code string, f model.Fields) string {
 	case model.CodeDiscoveryValidated:
 		return fmt.Sprintf("brief '%s' validated (status: validated)", f.Str("brief"))
 	case model.CodeDiscoveryValidateNext:
+		// ux-simplification Phase 2 (Unit 3): print resolved values where the
+		// workspace admits exactly one, and the original placeholders where it
+		// does not. The renderer stays pure — the resolving happens in
+		// DiscoverValidate, which has the workspace; here we only choose
+		// between a value that was supplied and a placeholder that was not.
+		platform, components := f.Str("platform"), f.Str("components")
+		if platform == "" {
+			platform = "<platform-id>"
+		}
+		if components == "" {
+			components = "<comp-id,...>"
+		}
 		return fmt.Sprintf("company-os prd new --team %s --from-discovery %s "+
-			"--platform <platform-id> --components <comp-id,...>",
-			f.Str("team"), f.Str("brief"))
+			"--platform %s --components %s",
+			f.Str("team"), f.Str("brief"), platform, components)
 
 	// ------------------------------------------------------------------ prd
 	case model.CodePRDGovernanceUnresolved:

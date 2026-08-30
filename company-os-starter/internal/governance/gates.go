@@ -237,6 +237,132 @@ func ExpiryGate(ws *workspace.Workspace, ordinal int) (model.GateResult, error) 
 	return g, nil
 }
 
+// SoonDueWindow is the default "soon-due" window for `company-os next`
+// (ux-simplification 1.1). A deviation whose reviewDate or exception whose
+// expires falls within this window of today is surfaced as a pending action
+// before any PRD-level work. 14 days matches a two-week sprint cadence: a
+// review date inside the current sprint is actionable now, not next quarter.
+const SoonDueWindow = 14 * 24 * time.Hour
+
+// ExpiryItem is one deviation or exception with its expiry status, returned by
+// ExpiryScan for `company-os next` (ux-simplification 1.1).
+type ExpiryItem struct {
+	Kind   string // "deviation" or "exception"
+	Team   string // team id
+	Rule   string // the rule the escape hatch targets
+	Date   string // reviewDate or expires, as written
+	Status string // "expired", "soon-due", or "current"
+}
+
+// ExpiryScan returns every deviation and exception with its expiry status.
+//
+// It reuses the same YAML-loading path ExpiryGate uses (loadOr, seqAt) but
+// does NOT judge pass/fail: `next` needs "soon-due" in addition to "expired",
+// and a future caller may need more granular buckets. The window parameter is
+// how far ahead of today counts as "soon-due"; pass SoonDueWindow for the
+// default.
+func ExpiryScan(ws *workspace.Workspace, window time.Duration) ([]ExpiryItem, error) {
+	now := today()
+	deadline := now.Add(window)
+	var items []ExpiryItem
+
+	for _, tdir := range ws.AllTeams() {
+		teamID := filepath.Base(tdir)
+
+		// Deviations — reviewDate.
+		devPath := filepath.Join(tdir, "governance", "deviations.yaml")
+		dev, err := loadOr(devPath, pyMap{})
+		if err != nil {
+			return nil, err
+		}
+		list, err := seqAt(dev, "deviations", relTo(ws.Root, devPath))
+		if err != nil {
+			return nil, err
+		}
+		for _, raw := range list {
+			d, ok := raw.(pyMap)
+			if !ok {
+				return nil, model.Errorf(model.ExitArtifact,
+					"%s: deviations entries must be mappings", relTo(ws.Root, devPath))
+			}
+			ruleVal, err := index(d, "rule", "deviation")
+			if err != nil {
+				return nil, err
+			}
+			rd := d.Get("reviewDate")
+			status, err := expiryStatus(rd, now, deadline, relTo(ws.Root, devPath), "reviewDate")
+			if err != nil {
+				return nil, err
+			}
+			items = append(items, ExpiryItem{
+				Kind: "deviation", Team: teamID,
+				Rule: yamlio.PyString(ruleVal), Date: yamlio.PyString(rd),
+				Status: status,
+			})
+		}
+
+		// Exceptions — expires.
+		excPath := filepath.Join(tdir, "governance", "exceptions.yaml")
+		exc, err := loadOr(excPath, pyMap{})
+		if err != nil {
+			return nil, err
+		}
+		exceptions, err := seqAt(exc, "exceptions", relTo(ws.Root, excPath))
+		if err != nil {
+			return nil, err
+		}
+		for _, raw := range exceptions {
+			e, ok := raw.(pyMap)
+			if !ok {
+				return nil, model.Errorf(model.ExitArtifact,
+					"%s: exceptions entries must be mappings", relTo(ws.Root, excPath))
+			}
+			rule := yamlio.PyString(e.Get("rule"))
+			ex := e.Get("expires")
+			// An exception with no expires is always surfaced as expired —
+			// the same verdict gate 2 reaches (CodeExceptionNoExpiry).
+			status := "expired"
+			if !yamlio.PyFalsy(ex) {
+				status, err = expiryStatus(ex, now, deadline, relTo(ws.Root, excPath), "expires")
+				if err != nil {
+					return nil, err
+				}
+			}
+			items = append(items, ExpiryItem{
+				Kind: "exception", Team: teamID,
+				Rule: rule, Date: yamlio.PyString(ex),
+				Status: status,
+			})
+		}
+	}
+	return items, nil
+}
+
+// expiryStatus classifies a date value as expired, soon-due, or current.
+//
+// A falsy value is "current" — matching gate 2's short-circuit, where a falsy
+// reviewDate passes the gate silently. For exceptions the caller handles the
+// no-expires case before reaching here.
+func expiryStatus(v pyVal, now, deadline time.Time, path, field string) (string, error) {
+	if yamlio.PyFalsy(v) {
+		return "current", nil
+	}
+	text := yamlio.PyString(v)
+	d, err := time.Parse(isoDate, text)
+	if err != nil {
+		return "", model.Errorf(model.ExitValidation,
+			"%s: '%s: %s' is not an ISO-8601 date (YYYY-MM-DD)", path, field, text)
+	}
+	switch {
+	case d.Before(now):
+		return "expired", nil
+	case !d.After(deadline):
+		// d is in [now, deadline] — due within the window.
+		return "soon-due", nil
+	}
+	return "current", nil
+}
+
 // before is `value and dt.date.fromisoformat(str(value)) < TODAY`.
 //
 // A falsy value never reaches the parse, matching the `and`. A value that is not

@@ -224,6 +224,60 @@ func PyDumpAutoFlow(v PyValue) (string, error) {
 	return pyDump(v, pyOptions{flowAuto: true})
 }
 
+// PyDumpFrontmatter is PyDumpAutoFlow plus one deliberate divergence from
+// PyYAML: EVERY top-level mapping value that is a string carrying at least one
+// SPECIAL CHARACTER is emitted double-quoted, on a single unfolded line.
+//
+// Why diverge at all. Every frontmatter write path is a read-modify-write that
+// re-emits the WHOLE mapping (RewriteFrontmatterTags, writeArtifact), so fixing
+// one drifted `tags:` entry re-chooses the scalar style of every other field.
+// PyYAML picks plain for a sentence like
+// `Targets push opt-out below 3.0% within 60 days, …` and then folds it at
+// best_width, so an authored one-line `description: "…"` comes back as a
+// two-line plain scalar. Nothing is lost — it is still the same string — but it
+// churns the git diff of every doc `graph build` touches, and it churns it
+// differently depending on how long the surrounding key is. Committing to
+// double quotes makes those fields a fixed point of the emitter no matter what
+// else in the document changes.
+//
+// The rule started at `title:` and `description:` only, because those are where
+// long authored prose lives and where the fold was observed. It is now every
+// top-level string, because the same argument holds for the short ones: `id:`,
+// `status:`, `platform:`, `fromDiscovery:` and their kin all carry `-`, `:`,
+// `.` or `/`, and pinning their style is what makes the WHOLE frontmatter block
+// — rather than two of its keys — invariant across a re-emission. A rule stated
+// as "top-level strings" is also checkable by eye in review, which a key
+// allow-list stops being the moment a new key is added.
+//
+// SPECIAL CHARACTER, exactly: any rune outside `[A-Za-z0-9 ]` — ASCII letters,
+// ASCII digits and the ASCII space. Everything else counts, including ordinary
+// prose punctuation (`.` `,` `-` `%` `:` `'` `"` `(` `)` `/` `#`), non-ASCII
+// runes, and control characters. The rule is deliberately coarser than "would
+// PyYAML have quoted this anyway": a value of purely alphanumerics and spaces is
+// precisely the case where PyYAML's own choice is already stable, so that case
+// is left exactly as it is emitted today.
+//
+// Scope, still deliberately tight — three gates, none of them widened:
+//   - PyStr ONLY. This is a safety property, not a stylistic one. Frontmatter
+//     `created: 2026-07-18` loads as PyTime, not PyStr; quoting it would make it
+//     re-read as a str, which is a MEANING change. The same holds for bools,
+//     ints, floats and nulls. The type assertion is what keeps them out.
+//   - The TOP level of the emitted mapping only (mapDepth 1) — the frontmatter
+//     block itself. A string nested deeper (inside `pointers:`, a feature-index
+//     component map, a sequence of mappings) is emitted exactly as PyYAML would,
+//     so derived collection payloads keep their safe_dump signature.
+//   - Only this entry point. PyDump, PyDumpAutoFlow and PyDumpCanonical stay
+//     byte-compatible with safe_dump, because the differential harness and the
+//     derived-artifact comparison form both depend on that.
+//
+// The forced double-quoted scalar is written UNFOLDED (split=false). Folding it
+// would reintroduce the two-line churn this exists to remove, and a double-
+// quoted scalar has no length limit that makes the fold necessary for
+// correctness.
+func PyDumpFrontmatter(v PyValue) (string, error) {
+	return pyDump(v, pyOptions{flowAuto: true, quoteTopLevelStrings: true})
+}
+
 // PyDumpCanonical is canonical_yaml (bin/company-os:96-99):
 // yaml.safe_dump(data, sort_keys=True, default_flow_style=False,
 // allow_unicode=True).
@@ -304,6 +358,11 @@ type pyOptions struct {
 	// allowUnicode keeps non-ASCII characters as themselves instead of
 	// escaping them into a double-quoted scalar.
 	allowUnicode bool
+	// quoteTopLevelStrings is PyDumpFrontmatter's divergence: double-quote any
+	// top-level string value that carries a special character. Not a safe_dump
+	// option — see PyDumpFrontmatter for why it exists and why it is confined
+	// to that one entry point.
+	quoteTopLevelStrings bool
 }
 
 type pyEmitter struct {
@@ -316,7 +375,15 @@ type pyEmitter struct {
 	// flowLevel is Python's self.flow_level: non-zero anywhere inside a flow
 	// collection, which forces every nested collection flow too.
 	flowLevel int
-	opt       pyOptions
+	// mapDepth is 1 while emitting the entries of the outermost mapping and
+	// grows with nesting. It has no PyYAML counterpart; it exists only so
+	// quoteTopLevelProse can be confined to the frontmatter block itself.
+	mapDepth int
+	// forceDouble makes the NEXT scalar emit double-quoted and unfolded. It is
+	// set immediately before a mapping value is emitted and cleared immediately
+	// after, so it can never reach a sibling, a key, or a nested node.
+	forceDouble bool
+	opt         pyOptions
 }
 
 func (e *pyEmitter) writeLineBreak() {
@@ -397,6 +464,8 @@ func (e *pyEmitter) node(v PyValue, mappingCtx, simpleKey bool) error {
 		return nil
 
 	case PyMap:
+		e.mapDepth++
+		defer func() { e.mapDepth-- }()
 		if e.flowLevel > 0 || len(t) == 0 || (e.opt.flowAuto && pyBestStyleMap(t)) {
 			return e.flowMap(t)
 		}
@@ -420,7 +489,10 @@ func (e *pyEmitter) node(v PyValue, mappingCtx, simpleKey bool) error {
 				e.writeIndent()
 				e.writeIndicator(":", true, false, true)
 			}
-			if err := e.node(pair.V, true, false); err != nil {
+			e.forceDouble = e.quoteTopLevelProse(pair.V)
+			err := e.node(pair.V, true, false)
+			e.forceDouble = false
+			if err != nil {
 				return err
 			}
 		}
@@ -522,7 +594,10 @@ func (e *pyEmitter) flowMap(t PyMap) error {
 			}
 			e.writeIndicator(":", true, false, false)
 		}
-		if err := e.node(pair.V, true, false); err != nil {
+		e.forceDouble = e.quoteTopLevelProse(pair.V)
+		err := e.node(pair.V, true, false)
+		e.forceDouble = false
+		if err != nil {
 			return err
 		}
 	}
@@ -554,6 +629,44 @@ func checkSimpleKey(key string) bool {
 	return !a.empty && !a.multiline
 }
 
+// quoteTopLevelProse decides PyDumpFrontmatter's rule for one mapping entry: the
+// entry is at the top level of the emitted mapping (mapDepth 1 — flowMap and the
+// block-map loop both run one level inside the PyMap case that incremented it),
+// the value is a string, and that string carries a special character. The KEY is
+// not consulted; the rule is about depth and type, not about names.
+//
+// The PyStr assertion is the safety gate, not a convenience: a frontmatter
+// `created: 2026-07-18` is a PyTime and quoting it would change its type on the
+// next read. Bools, ints, floats, nulls, sequences and mappings are excluded by
+// the same assertion. A value of only letters, digits and spaces, and anything
+// nested below depth 1, fall through to PyYAML's own choice.
+func (e *pyEmitter) quoteTopLevelProse(v PyValue) bool {
+	if !e.opt.quoteTopLevelStrings || e.mapDepth != 1 {
+		return false
+	}
+	s, ok := v.(PyStr)
+	return ok && hasSpecialCharacter(string(s))
+}
+
+// hasSpecialCharacter is PyDumpFrontmatter's "special character" test, stated
+// once: true when the string contains any rune outside `[A-Za-z0-9 ]`.
+//
+// It is intentionally NOT analyzeScalar. analyzeScalar answers "must this be
+// quoted to survive a round trip"; this answers "is this prose whose quoting we
+// want pinned so it stops moving between emissions", which is a broader and
+// much simpler question. An empty string has no special character and so is left
+// to the existing path, which already emits it single-quoted-empty.
+func hasSpecialCharacter(s string) bool {
+	for _, ch := range s {
+		switch {
+		case ch >= 'a' && ch <= 'z', ch >= 'A' && ch <= 'Z', ch >= '0' && ch <= '9', ch == ' ':
+		default:
+			return true
+		}
+	}
+	return false
+}
+
 func (e *pyEmitter) scalar(v PyValue, simpleKey bool) error {
 	text, isStr, err := v.pyRepr()
 	if err != nil {
@@ -582,6 +695,10 @@ func (e *pyEmitter) scalar(v PyValue, simpleKey bool) error {
 
 	split := !simpleKey
 	switch {
+	case e.forceDouble:
+		// PyDumpFrontmatter's divergence, and the only branch that ignores
+		// choose_scalar_style. Unfolded: see PyDumpFrontmatter.
+		e.writeDoubleQuoted(runes, false)
 	case plainRoundTrips && !(simpleKey && (a.empty || a.multiline)) && allowPlain:
 		e.writePlain(runes, split)
 	case a.allowSingleQuoted && !(simpleKey && a.multiline):

@@ -39,8 +39,13 @@ import (
 func Validate(w io.Writer, sections []model.GateResult) error {
 	report := model.Report{}
 	complete := false
+	// fixCount is -1 when --fix was not requested. A non-negative value means
+	// --fix ran and that many files changed; the summary line is printed after
+	// the PASS/FAIL trailer.
+	fixCount := -1
 	for _, s := range sections {
-		if s.Slug == model.SlugWorkspace {
+		switch s.Slug {
+		case model.SlugWorkspace:
 			for _, f := range s.Findings {
 				if f.Code == model.CodeValidateRoot {
 					report.Root = f.Fields.Str("root")
@@ -48,9 +53,18 @@ func Validate(w io.Writer, sections []model.GateResult) error {
 					complete, _ = f.Fields["complete"].(bool)
 				}
 			}
-			continue
+		case model.SlugFixSummary:
+			// ux-simplification 2.1: extract the regenerated count. The
+			// section is not a gate — it rides after the trailer, not in the
+			// numbered list.
+			for _, f := range s.Findings {
+				if f.Code == model.CodeFixRegenerated {
+					fixCount = f.Fields.Int("regenerated")
+				}
+			}
+		default:
+			report.Gates = append(report.Gates, s)
 		}
-		report.Gates = append(report.Gates, s)
 	}
 
 	if _, err := fmt.Fprintf(w, "validating workspace %s\n\n", report.Root); err != nil {
@@ -89,10 +103,25 @@ func Validate(w io.Writer, sections []model.GateResult) error {
 		return nil
 	}
 	if n := report.Problems(); n > 0 {
-		_, err := fmt.Fprintf(w, "\nFAIL — %d problem(s)\n", n)
+		if _, err := fmt.Fprintf(w, "\nFAIL — %d problem(s)\n", n); err != nil {
+			return err
+		}
+		return writeFixSummary(w, fixCount)
+	}
+	if _, err := fmt.Fprint(w, "\nPASS\n"); err != nil {
 		return err
 	}
-	_, err := fmt.Fprint(w, "\nPASS\n")
+	return writeFixSummary(w, fixCount)
+}
+
+// writeFixSummary emits the `validate --fix: N file(s) regenerated` line when
+// --fix was requested. fixCount < 0 means the flag was absent and nothing is
+// printed — the default path stays byte-identical.
+func writeFixSummary(w io.Writer, fixCount int) error {
+	if fixCount < 0 {
+		return nil
+	}
+	_, err := fmt.Fprintf(w, "validate --fix: %d file(s) regenerated\n", fixCount)
 	return err
 }
 

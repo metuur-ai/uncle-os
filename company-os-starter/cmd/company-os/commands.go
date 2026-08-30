@@ -35,11 +35,13 @@ var commands = map[string]Command{
 	"exception":  cmdException,
 	"scratchpad": cmdScratchpad,
 	"today":      cmdToday,
+	"next":       cmdNext,
 	"derive":     cmdGraph,
 	"graph":      cmdGraph,
 	"ids":        cmdIDs,
 	"skills":     cmdSkills,
 	"workspace":  cmdWorkspace,
+	"find":       cmdFind,
 }
 
 // `tui` is registered here rather than in the literal above because R-5.12

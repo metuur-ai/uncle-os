@@ -14,6 +14,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -340,17 +341,58 @@ func TestRoleChoicesComeFromTheParser(t *testing.T) {
 
 // TestGovernanceExplainPickerMatchesTheCatalog: the picker must offer exactly
 // the components that exist, or it offers a lookup that dies.
+//
+// "That exist" now means WHEN THE SCREEN IS OPENED, not when the catalog was
+// built. The second half is the addition: a component created from
+// `add component` — one screen away in the same session — has to be offered
+// here without relaunching, which is Amendment 10's rule reaching the read-only
+// half. ResolveChoices, not .Choices: the screen supplies them lazily, and
+// reading the field directly would test the empty slice it no longer fills.
 func TestGovernanceExplainPickerMatchesTheCatalog(t *testing.T) {
 	root := tuiWorkspace(t)
 	ws := workspace.New(root)
 	s := screenByTitle(t, readOnlyScreens(ws, ""), "governance explain")
-	if len(s.Choices) == 0 {
+	got := s.ResolveChoices()
+	if len(got) == 0 {
 		t.Fatal("no components offered for a workspace that has one")
 	}
-	for _, cid := range s.Choices {
+	for _, cid := range got {
 		if _, _, found := ws.FindComponent(cid); !found {
 			t.Errorf("the picker offers %q, which is not a component", cid)
 		}
+	}
+
+	var out, errOut bytes.Buffer
+	if code := run([]string{"--root", root, "add", "component",
+		"--platform", "plat", "later"}, &out, &errOut); code != 0 {
+		t.Fatalf("add component failed (%d): %s", code, errOut.String())
+	}
+	if !slices.Contains(s.ResolveChoices(), "later") {
+		t.Errorf("a component added in this session is not offered: %v",
+			s.ResolveChoices())
+	}
+}
+
+// TestComponentBrowserSeesWhatThisSessionCreated. The browser is worse than the
+// picker when it goes stale: a picker that omits a component offers one fewer
+// choice, but a browser that omits it is ASSERTING the workspace does not
+// contain it, in the one screen a reader opens to find out.
+func TestComponentBrowserSeesWhatThisSessionCreated(t *testing.T) {
+	root := tuiWorkspace(t)
+	ws := workspace.New(root)
+	s := screenByTitle(t, readOnlyScreens(ws, ""), "component browser")
+
+	var out, errOut bytes.Buffer
+	if code := run([]string{"--root", root, "add", "component",
+		"--platform", "plat", "later"}, &out, &errOut); code != 0 {
+		t.Fatalf("add component failed (%d): %s", code, errOut.String())
+	}
+	body, err := s.Run("")
+	if err != nil {
+		t.Fatalf("component browser: %v", err)
+	}
+	if !strings.Contains(body, "later") {
+		t.Errorf("the browser does not list a component added in this session:\n%s", body)
 	}
 }
 

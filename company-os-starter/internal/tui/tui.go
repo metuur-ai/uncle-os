@@ -71,6 +71,20 @@ type Screen struct {
 	// FormFn wins — see ResolveForm, which is the only place the two are
 	// reconciled.
 	FormFn func() *Form
+	// ChoicesFn is Choices resolved at OPEN time, and is to Choices exactly what
+	// FormFn is to Form. A read-only screen whose picker lists workspace state
+	// has the same staleness a mutating one does: `governance explain` offers
+	// components, and `add component` creates them one screen away, so a catalog
+	// built once cannot offer what the reader made a moment ago.
+	//
+	// The mutating half learned this the expensive way — see R-5.26 and its
+	// Amendment 10. Being read-only does not exempt a picker; it only makes the
+	// consequence quieter, which is worse.
+	//
+	// Resolved ONCE per open, into Model.choices. It must not be called from
+	// View or from a key handler: both run per keystroke, and this reads the
+	// filesystem.
+	ChoicesFn func() []string
 }
 
 // ResolveForm returns this screen's form, calling FormFn if that is how the
@@ -84,6 +98,21 @@ func (s Screen) ResolveForm() *Form {
 	}
 	return s.Form
 }
+
+// ResolveChoices returns this screen's picker values, calling ChoicesFn if that
+// is how the screen supplies them. Same reconciliation rule as ResolveForm: the
+// lazy field wins, and it is answered in exactly one place.
+func (s Screen) ResolveChoices() []string {
+	if s.ChoicesFn != nil {
+		return s.ChoicesFn()
+	}
+	return s.Choices
+}
+
+// picks reports whether this screen takes a choice, WITHOUT resolving it — the
+// same distinction mutates() draws for forms, and for the same reason: this is
+// asked on paths that run per keystroke, and ChoicesFn reads the filesystem.
+func (s Screen) picks() bool { return len(s.Choices) > 0 || s.ChoicesFn != nil }
 
 // mutates reports whether this screen writes, WITHOUT resolving the form.
 //
@@ -169,6 +198,11 @@ type Model struct {
 	menu   int // cursor in the screen list
 	pick   int // cursor in the choice list
 	active int // index into screens, valid in ModePick and ModeBody
+	// choices is the active screen's picker values, resolved ONCE by open (see
+	// Screen.ResolveChoices) and read by everything else. Nothing may read
+	// Screen.Choices directly after open: a screen may supply them lazily, and a
+	// reader who left ModePick and came back must see one list, not two.
+	choices []string
 
 	vp     viewport.Model
 	body   string // the unwrapped body, re-wrapped on every resize
@@ -314,7 +348,7 @@ func (m Model) goBack() (Model, bool) {
 		return m, true
 
 	default: // ModeBody
-		if len(m.screens[m.active].Choices) > 0 {
+		if m.screens[m.active].picks() {
 			m.mode = ModePick
 		} else {
 			m.mode = ModeMenu
@@ -346,7 +380,7 @@ func (m Model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case ModePick:
-		choices := m.screens[m.active].Choices
+		choices := m.choices
 		switch msg.String() {
 		case "up", "k":
 			m.pick = clamp(m.pick-1, 0, len(choices)-1)
@@ -401,7 +435,9 @@ func (m Model) open(i int) Model {
 		m.openForm(i, f)
 		return m
 	}
-	if len(m.screens[i].Choices) > 0 {
+	if m.screens[i].picks() {
+		// Resolved once, here, for the same reason the form above is.
+		m.choices = m.screens[i].ResolveChoices()
 		m.pick = 0
 		m.mode = ModePick
 		return m
@@ -479,7 +515,7 @@ func (m Model) View() string {
 	case ModeMenu:
 		b.WriteString(m.list(titles(m.screens), m.menu))
 	case ModePick:
-		b.WriteString(m.list(m.screens[m.active].Choices, m.pick))
+		b.WriteString(m.list(m.choices, m.pick))
 	case ModeForm:
 		if m.fail != "" {
 			b.WriteString(m.sty.fail.Render(wrap(m.fail, m.width)))

@@ -37,6 +37,16 @@ const (
 	// CodeValidateRoot is that banner line.
 	CodeValidateRoot = "validate.root"
 
+	// SlugFixSummary names the trailing section `validate --fix` appends
+	// (ux-simplification 2.1). It is not a gate — it carries the count of
+	// derived files whose bytes actually changed during the pre-gate
+	// regeneration, and the renderer prints it as one summary line after the
+	// PASS/FAIL trailer. A count of zero means the tree was already fully
+	// derived.
+	SlugFixSummary = "fix-summary"
+	// CodeFixRegenerated carries that count in Fields["regenerated"].
+	CodeFixRegenerated = "validate.fix-regenerated"
+
 	// Gate 1 — ownership reconciliation (:941, :946, :951).
 	CodeOwnershipDescriptorMissing   = "ownership.descriptor-missing"
 	CodeOwnershipAccountableMismatch = "ownership.accountable-mismatch"
@@ -178,6 +188,41 @@ const (
 	CodeDraft = "today.draft"
 )
 
+// ----------------------------------------------------------- next action
+//
+// `company-os next` (ux-simplification 1.1). A read-only scan that names the
+// single highest-priority pending action and the exact command to perform it.
+//
+// Priority order:
+//  1. expired or soon-due deviation reviewDate / exception expires
+//  2. active PRD failing its artifact contract
+//  3. active PRD with unchecked checklist items and/or stale reality
+//  4. completed PRD with an outcome review due
+//  5. nothing pending → suggest `company-os discover new`
+//
+// SlugNext is the section slug. `--all` emits one section per priority kind
+// that has pending items, all sharing this slug; the renderer groups by Code.
+const (
+	SlugNext = "next"
+
+	// CodeNextExpiry is priority 1: a deviation or exception that is expired
+	// or due within the soon-due window.
+	CodeNextExpiry = "next.expiry"
+	// CodeNextContract is priority 2: an active PRD failing its artifact
+	// contract (missing sections or core fields).
+	CodeNextContract = "next.contract"
+	// CodeNextDoneCheck is priority 3: an active PRD with unchecked
+	// governance-checklist items and/or stale component reality.
+	CodeNextDoneCheck = "next.done-check"
+	// CodeNextOutcome is priority 4: a completed PRD with an outcome review
+	// pending.
+	CodeNextOutcome = "next.outcome"
+	// CodeNextEmpty is priority 5: nothing pending.
+	CodeNextEmpty = "next.empty"
+	// CodeNextGroup is the per-kind header `--all` emits before each group.
+	CodeNextGroup = "next.group"
+)
+
 // -------------------------------------------------------------- ids list
 //
 // cmd_ids (`bin/company-os:1275-1302`). The --role legend that may precede the
@@ -240,6 +285,42 @@ const (
 	CodePersonalEntry = "skills.personal-entry"
 	// CodeSummary is the trailing tally (`:916-917`).
 	CodeSummary = "skills.summary"
+)
+
+// ---------------------------------------------------------- skills install
+//
+// `skills install` writes the canonical skills the binary carries into
+// `company-os/skills/`. It has no Python oracle — the reference CLI shipped no
+// such command — so its output is composed here rather than transcribed.
+//
+// One code per outcome, not one code with an outcome field: an agent's whole
+// decision after this command is "did anything change, and is anything wrong",
+// and codes are the contract that answers it. CodeSkillsInstallLocallyNewer and
+// CodeSkillsInstallUnreadable are the two the agent must not treat as success.
+const (
+	// SlugSkillsInstall is the command's own block.
+	SlugSkillsInstall = "skills-install"
+
+	// CodeSkillsInstalled is a skill written where none existed.
+	CodeSkillsInstalled = "skills.installed"
+	// CodeSkillsUpdated is an older installed version replaced by the embedded
+	// one. Fields carry both versions so the change is auditable from the
+	// envelope alone.
+	CodeSkillsUpdated = "skills.updated"
+	// CodeSkillsUnchanged is an installed skill already at the embedded version.
+	CodeSkillsUnchanged = "skills.unchanged"
+	// CodeSkillsLocallyNewer is an installed skill whose version is NEWER than
+	// the binary's. It is left alone: a workspace ahead of the CLI is a stale
+	// binary, not a stale workspace, and overwriting would be a downgrade.
+	CodeSkillsLocallyNewer = "skills.locally-newer"
+	// CodeSkillsUnreadable is an installed file whose version cannot be read.
+	// It is left alone rather than guessed at — an unparsable frontmatter is a
+	// gate-4 problem the user must see, not a file to silently replace.
+	CodeSkillsUnreadable = "skills.unreadable"
+	// CodeSkillsInstallSummary is the trailing tally.
+	CodeSkillsInstallSummary = "skills.install-summary"
+	// CodeSkillsInstallNext is the next command in the workflow (R-1.8).
+	CodeSkillsInstallNext = "skills.install-next"
 )
 
 // ---------------------------------------------------------- graph build
@@ -650,6 +731,51 @@ const (
 	// Scope is "company" or a platform id, which is the only difference between
 	// the two Python lines.
 	CodeChecklistItem = "checklist.item"
+)
+
+// --------------------------------------------------- find (unified search)
+//
+// `company-os find <query>` (ux-simplification 3.1). Read-only unified local
+// search across five sources plus an optional graphify hook. Each source gets
+// its own section slug; the renderer groups findings by section.
+const (
+	// SlugFindIDs names the canonical-IDs section.
+	SlugFindIDs = "find-ids"
+	// SlugFindTags names the derived-tags section.
+	SlugFindTags = "find-tags"
+	// SlugFindFrontmatter names the frontmatter title/id section.
+	SlugFindFrontmatter = "find-frontmatter"
+	// SlugFindIndex names the per-directory index.md section.
+	SlugFindIndex = "find-index"
+	// SlugFindFeature names the feature-index section.
+	SlugFindFeature = "find-feature"
+	// SlugFindGraphify names the graphify hook section.
+	SlugFindGraphify = "find-graphify"
+
+	// CodeFindExactID is a canonical-id exact match (ranked first).
+	CodeFindExactID = "find.exact-id"
+	// CodeFindSubstringID is a canonical-id substring match.
+	CodeFindSubstringID = "find.substring-id"
+	// CodeFindTag is a derived-tags hit.
+	CodeFindTag = "find.tag"
+	// CodeFindTitle is a frontmatter title: hit.
+	CodeFindTitle = "find.title"
+	// CodeFindFieldID is a frontmatter id: hit.
+	CodeFindFieldID = "find.field-id"
+	// CodeFindIndexEntry is a per-directory index.md content hit.
+	CodeFindIndexEntry = "find.index-entry"
+	// CodeFindFeature is a feature-index component/artifact hit.
+	CodeFindFeature = "find.feature"
+	// CodeFindGraphify is one line of graphify hook output.
+	CodeFindGraphify = "find.graphify"
+	// CodeFindGraphifyHint is the quiet hint when graphify is partially
+	// available (binary or graph.json present but not both).
+	CodeFindGraphifyHint = "find.graphify-hint"
+	// CodeFindGraphifyError is the one-line failure reason when graphify
+	// times out or exits non-zero.
+	CodeFindGraphifyError = "find.graphify-error"
+	// CodeFindNoMatches is the "no matches" sentinel.
+	CodeFindNoMatches = "find.no-matches"
 )
 
 // IsTODO reports whether an approval field still carries its scaffolded

@@ -48,6 +48,12 @@ type Args struct {
 	Prefix        string
 	Frozen        bool
 	Only          string
+	All           bool // `next --all`: list every pending item grouped by kind
+	Fix           bool // `validate --fix`: regenerate derived state before gating
+
+	// find (ux-simplification 3.1)
+	Query      string // the search query positional
+	NoGraphify bool   // `find --no-graphify`: skip the graphify hook
 }
 
 type posSpec struct {
@@ -151,7 +157,13 @@ var commandSpecs = []cmdSpec{
 				dest: func(a *Args) *string { return &a.TitleArg }},
 		},
 		flags: []flagSpec{
-			reqStrFlag("team", func(a *Args) *string { return &a.Team }),
+			// ux-simplification 1.2: --team stays required for `new` (which
+			// creates under it) but is suspended for `validate`, where the
+			// brief id can be searched across every team's product/discovery/.
+			// Help text covers both cases.
+			{name: "team", required: true,
+				help: "required unless the id is unique across the workspace",
+				str:  func(a *Args) *string { return &a.Team }},
 		},
 	},
 	{
@@ -163,7 +175,15 @@ var commandSpecs = []cmdSpec{
 		},
 		flags: []flagSpec{
 			strFlag("team", func(a *Args) *string { return &a.Team }),
-			reqStrFlag("platform", func(a *Args) *string { return &a.Platform }),
+			// ux-simplification 1.2 suspended --platform for `validate` and
+			// `complete` (the id locates the record); Phase 2 Unit 2 suspends
+			// it for `new` as well (a single-platform workspace has one answer).
+			// It remains required in the sense that matters: an ambiguous or
+			// absent workspace still refuses, just after inference rather than
+			// before it.
+			{name: "platform", required: true,
+				help: "required unless uniquely inferable from the workspace",
+				str:  func(a *Args) *string { return &a.Platform }},
 			{name: "components", def: "",
 				str: func(a *Args) *string { return &a.Components }},
 			strFlag("title", func(a *Args) *string { return &a.Title }),
@@ -197,6 +217,15 @@ var commandSpecs = []cmdSpec{
 	},
 	{
 		name: "validate", help: "workspace validation gates",
+		flags: []flagSpec{
+			// ux-simplification 2.1: --fix regenerates derived state
+			// (effective-governance, tags, indexes, CLAUDE.md nodes) before
+			// running gates, so the user need not remember the two re-derive
+			// commands. Without it, validate is byte-identical to today.
+			{name: "fix",
+				help:    "regenerate derived state before gating",
+				boolean: func(a *Args) *bool { return &a.Fix }},
+		},
 	},
 	{
 		name: "deviation", help: "declare a comply-or-explain deviation",
@@ -250,6 +279,37 @@ var commandSpecs = []cmdSpec{
 		},
 	},
 	{
+		// ux-simplification 1.1: `company-os next` — names the single
+		// highest-priority pending action and the exact command to perform it.
+		// Read-only; mutates nothing. goOnly because the Python oracle has no
+		// equivalent subcommand and the differential harness compares the
+		// choice set byte-for-byte.
+		name: "next", help: "show the single next action to take",
+		goOnly: true,
+		flags: []flagSpec{
+			{name: "all",
+				help:    "list every pending item grouped by kind",
+				boolean: func(a *Args) *bool { return &a.All }},
+		},
+	},
+	{
+		// ux-simplification 3.1: `company-os find <query>` — unified local
+		// search with optional graphify hook. Read-only; mutates nothing.
+		// goOnly because the Python oracle has no equivalent subcommand.
+		name: "find", help: "unified local search across IDs, tags, indexes, and features",
+		goOnly: true,
+		pos: []posSpec{
+			{name: "query",
+				help: "search query (case-insensitive substring; exact ID match ranked first)",
+				dest: func(a *Args) *string { return &a.Query }},
+		},
+		flags: []flagSpec{
+			{name: "no-graphify",
+				help:    "skip the graphify graph-search hook",
+				boolean: func(a *Args) *bool { return &a.NoGraphify }},
+		},
+	},
+	{
 		name: "derive", help: "derive tags/graph metadata from frontmatter", goOnly: true,
 	},
 	// `graph build` is the pre-`derive` spelling, kept as a silent alias. It is
@@ -283,9 +343,9 @@ var commandSpecs = []cmdSpec{
 		},
 	},
 	{
-		name: "skills", help: "list merged agent skills across the four layers",
+		name: "skills", help: "list merged agent skills across the four layers, or install the canonical ones",
 		pos: []posSpec{
-			{name: "action", choices: []string{"list"},
+			{name: "action", choices: []string{"list", "install"},
 				dest: func(a *Args) *string { return &a.Action }},
 		},
 	},
@@ -294,6 +354,13 @@ var commandSpecs = []cmdSpec{
 		// there is no way to reach the UI except by typing its name — no bare
 		// invocation, no other subcommand, no environment variable (R-5.2).
 		// A bare `company-os` still prints help and exits 2, as it always has.
+		// ux-simplification Phase 2 (Unit 1): R-1.4 wanted this help to name the
+		// UI's screens and its gap. It cannot — help() forbids a description
+		// line, because none of the oracle's sub-parsers sets one and R-0.8
+		// freezes the human-facing output (cmd/company-os/main.go:214-217).
+		// The disclosure therefore lives in company-os-starter/README.md and
+		// both TUTORIAL.md copies, which is where a reader deciding whether to
+		// rely on the UI is actually looking.
 		name: "tui", help: "interactive terminal UI (browse, and scaffold with confirmation)", goOnly: true,
 	},
 	{
@@ -610,8 +677,32 @@ func parseSubcommand(a *Args, spec cmdSpec, argv []string) ([]string, error) {
 		// going to no platform at all, so requiring one would make the command
 		// unreachable for the draft that most needs it — the one whose
 		// `promoteTo.platform` is still TODO.
+		//
+		// ux-simplification 1.2: `prd validate` and `prd complete` suspend it
+		// for a fourth reason — the PRD id can be searched across every
+		// platform's change-records/active/ and archive/prds/ by the dispatch
+		// layer (resolvePlatform), so the user need not know where the record
+		// lives before asking the tool to check it.
+		//
+		// ux-simplification Phase 2 (Unit 2): `prd new` suspends it for a fifth
+		// reason, and a different one — not "the tool can find where the record
+		// already lives" but "the workspace admits exactly one place it could
+		// go". InferPlatformForNew enumerates platforms/ and proceeds only on a
+		// unique match; several platforms still produce a usage error naming
+		// every candidate, so the requirement is enforced after inference
+		// rather than dropped. This is the `governance resolve` pattern —
+		// checked at runtime because the parser cannot read the workspace.
 		if spec.name == "prd" && f.name == "platform" &&
-			(seen["draft"] || a.Action == "promote" || a.Action == "abandon") {
+			(seen["draft"] || a.Action == "promote" || a.Action == "abandon" ||
+				a.Action == "validate" || a.Action == "complete" ||
+				a.Action == "new") {
+			continue
+		}
+		// ux-simplification 1.2: `discover validate` suspends --team so the
+		// brief id can be searched across every team's product/discovery/
+		// (resolveTeam). `discover new` still requires it because the team is
+		// where the new brief is created — inference cannot help a create.
+		if spec.name == "discover" && f.name == "team" && a.Action == "validate" {
 			continue
 		}
 		missing = append(missing, "--"+f.name)

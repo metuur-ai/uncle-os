@@ -133,7 +133,7 @@ next: company-os reality new --platform ordering online-ordering-app`,
     name: 'reality new',
     syntax: 'company-os reality new <component> --platform ID',
     category: 'Scaffolding',
-    description: 'Scaffold a component\'s reality doc describing true current behavior. Refuses to overwrite existing files.',
+    description: 'Scaffold a component\'s reality doc describing true current behavior. Refuses to overwrite an existing file (exit 8), and refuses a component whose descriptor names a different platform (exit 3) — a doc filed under the wrong platform is read by nothing, so it used to look created while the done-check went on refusing.',
     flags: [
       { flag: '--platform', type: 'string', required: true, description: 'Platform ID owning the component' },
     ],
@@ -165,11 +165,11 @@ next: edit representation of reality and set updated: date`,
   {
     id: 'discover',
     name: 'discover',
-    syntax: 'company-os discover {new|validate} --team ID ["<title>" | <brief-id>]',
+    syntax: 'company-os discover {new|validate} [--team ID] ["<title>" | <brief-id>]',
     category: 'Lifecycle',
     description: 'Manage team-private discovery briefs. `new` creates a brief under teams/<t>/product/discovery/; `validate` checks required sections.',
     flags: [
-      { flag: '--team', type: 'string', required: true, description: 'Team ID owning the discovery brief' },
+      { flag: '--team', type: 'string', required: false, description: 'Team ID owning the brief. Required for `new`, which creates under it; inferred for `validate` when the brief id is unique across the workspace.' },
     ],
     example: 'company-os discover validate 2026-same-day-pickup-slots --team web',
     expectedOutput: `  [ok] brief '2026-same-day-pickup-slots' validated (status: validated)`,
@@ -198,11 +198,11 @@ next: edit representation of reality and set updated: date`,
   {
     id: 'prd',
     name: 'prd',
-    syntax: 'company-os prd {new|validate|complete} --platform ID [--team ID] [--components ID] [--from-discovery BRIEF-ID]',
+    syntax: 'company-os prd {new|validate|complete} <prd-id> [--platform ID] [--team ID] [--components ID] [--from-discovery BRIEF-ID]',
     category: 'Lifecycle',
     description: 'Manage platform-visible PRDs. `new` scaffolds with governance snapshot; `validate` checks fields; `complete` verifies reality doc update before archiving.',
     flags: [
-      { flag: '--platform', type: 'string', required: true, description: 'Platform ID' },
+      { flag: '--platform', type: 'string', required: false, description: 'Platform ID — inferred when the workspace admits exactly one answer: for validate/complete from the PRD id, for new from a single-platform workspace. Several candidates still refuse, naming each.' },
       { flag: '--team', type: 'string', required: false, description: 'Team ID' },
       { flag: '--components', type: 'string', required: false, description: 'Comma-separated list of component IDs' },
       { flag: '--from-discovery', type: 'string', required: false, description: 'Source discovery brief ID' },
@@ -634,7 +634,7 @@ updated .gitignore`,
     name: 'tui',
     syntax: 'company-os tui',
     category: 'Utility',
-    description: 'Interactive terminal UI over the current workspace: 10 read-only screens and 5 forms that scaffold artifacts. Every form previews the exact company-os command it will run and writes nothing until you confirm.',
+    description: 'Interactive terminal UI over the current workspace: 10 read-only screens and 9 forms that write. Six of the forms are one change end to end — brief, validate, PRD, validate, reality doc, complete — so a whole unit of work can be finished without typing a command. Every form previews the exact company-os command it will run and writes nothing until you confirm.',
     flags: [],
     example: 'company-os tui',
     expectedOutput: `company-os — workspace overview
@@ -650,7 +650,11 @@ updated .gitignore`,
     ids list
     workspace status
     new discovery brief (writes)
+    validate discovery brief (writes)
     new PRD (writes)
+    validate PRD (writes)
+    new reality doc (writes)
+    complete PRD (writes)
     add team (writes)
     add platform (writes)
     add component (writes)

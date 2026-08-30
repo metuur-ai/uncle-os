@@ -1,0 +1,4 @@
+components:
+  solo-service:
+    reality: reality/components/solo-service.md
+platform: core

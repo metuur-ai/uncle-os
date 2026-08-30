@@ -154,6 +154,21 @@ func DiscoverValidate(ws *workspace.Workspace, team, id string) ([]model.GateRes
 
 	validated := model.Fields{"brief": id, "status": "validated", "team": team}
 	next := model.Fields{"team": team, "brief": id}
+	// ux-simplification Phase 2 (Unit 3): resolve the two placeholders this
+	// guidance used to hand back as homework, where the workspace admits
+	// exactly one answer. The SAME resolvers `prd new` will use (Unit 2), so
+	// the printed command is the one that would actually run — a second
+	// inference implementation here is how the advice and the behavior drift.
+	//
+	// Errors are swallowed on purpose: ambiguity is not a failure of
+	// `discover validate`, it just means there is nothing to substitute, and
+	// the placeholder is still the honest answer. This is advice, not a gate.
+	if platform, err := InferPlatformForNew(ws, ""); err == nil && platform != "" {
+		next["platform"] = platform
+		if components, err := InferComponentsForNew(ws, "", team); err == nil {
+			next["components"] = components
+		}
+	}
 	next[model.FieldNext] = Message(model.CodeDiscoveryValidateNext, next)
 	s.Findings = append(s.Findings,
 		okFinding(model.CodeDiscoveryValidated, "", relTo(ws.Root, brief), validated),

@@ -238,20 +238,21 @@ The PRD is now history, reality reflects the new behavior, and an
 
 ```bash
 $ company-os validate
-[1/7] ownership reconciliation
+[1/8] ownership reconciliation
   [ok] online-ordering-app: registry and descriptor agree (ordering)
-[2/7] deviation and exception expiry
-[3/7] active PRD contracts
-[4/7] frontmatter core and tag derivation (interop contract)
-[5/7] CLAUDE.md context node drift (fail-safe, absence-tolerant)
-[6/7] feature-index drift (derived component->artifact map)
-[7/7] custom skills layering (shadowing + extends resolution)
+[2/8] deviation and exception expiry
+[3/8] active PRD contracts
+[4/8] frontmatter core and tag derivation (interop contract)
+[5/8] CLAUDE.md context node drift (fail-safe, absence-tolerant)
+[6/8] feature-index drift (derived component->artifact map)
+[7/8] custom skills layering (shadowing + extends resolution)
+[8/8] promotion integrity (promoted drafts match their change records)
 PASS
 ```
 
-Seven gates today because there's no `workspace.yaml` federation manifest —
+Eight gates today because there's no `workspace.yaml` federation manifest —
 see [reference/company-os-cli.md](../reference/company-os-cli.md) for what
-each gate checks and when an eighth appears.
+each gate checks and when a ninth appears.
 
 ## Where to next
 

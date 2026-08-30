@@ -360,9 +360,12 @@ func TestGateReproducesGoldens(t *testing.T) {
 		fixture, golden string
 		denominator     int
 	}{
-		{"workspace", "golden-validate.txt", 7},
-		{"federated", "federated-golden-validate.txt", 8},
-		{"failing-workspace", "failing-workspace-golden-validate.txt", 7},
+		// Denominators track the live gate count, not gate 7's ordinal:
+		// promotion integrity landed as gate 8 (federated: 9 with slice
+		// integrity), and the committed goldens were regenerated for it.
+		{"workspace", "golden-validate.txt", 8},
+		{"federated", "federated-golden-validate.txt", 9},
+		{"failing-workspace", "failing-workspace-golden-validate.txt", 8},
 	}
 	for _, tc := range cases {
 		t.Run(tc.fixture, func(t *testing.T) {

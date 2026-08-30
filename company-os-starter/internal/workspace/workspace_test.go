@@ -373,6 +373,132 @@ func TestFindComponentPrefersFirstPlatform(t *testing.T) {
 	}
 }
 
+// ----------------------------------------- ux-simplification 1.2: inference
+
+// TestFindPRDUniqueActive pins the case where exactly one platform holds the
+// PRD in change-records/active/: the platform is returned and candidates is
+// nil, so the dispatch layer can proceed as if the flag had been passed.
+func TestFindPRDUniqueActive(t *testing.T) {
+	root := makeRoot(t)
+	mkdir(t, filepath.Join(root, "platforms", "alpha", "change-records", "active", "2026-thing"))
+	mkdir(t, filepath.Join(root, "platforms", "beta"))
+	ws := New(root)
+
+	platform, candidates := ws.FindPRD("2026-thing")
+	if platform != "alpha" {
+		t.Fatalf("platform = %q, want alpha", platform)
+	}
+	if len(candidates) != 0 {
+		t.Fatalf("candidates = %v, want empty on a unique match", candidates)
+	}
+}
+
+// TestFindPRDUniqueArchived pins the archive path: a PRD that has already been
+// completed still resolves to its platform, so `prd validate` can reach the
+// existing "no active PRD at …" error path with a real platform name.
+func TestFindPRDUniqueArchived(t *testing.T) {
+	root := makeRoot(t)
+	mkdir(t, filepath.Join(root, "platforms", "comms", "archive", "prds", "2026-quiet"))
+	ws := New(root)
+
+	platform, candidates := ws.FindPRD("2026-quiet")
+	if platform != "comms" {
+		t.Fatalf("platform = %q, want comms", platform)
+	}
+	if len(candidates) != 0 {
+		t.Fatalf("candidates = %v, want empty", candidates)
+	}
+}
+
+// TestFindPRDAmbiguous pins the multi-platform case: two platforms holding the
+// same id produce no platform and a sorted candidate list so the dispatch
+// layer can name every one in its usage error.
+func TestFindPRDAmbiguous(t *testing.T) {
+	root := makeRoot(t)
+	mkdir(t, filepath.Join(root, "platforms", "alpha", "change-records", "active", "2026-dup"))
+	mkdir(t, filepath.Join(root, "platforms", "beta", "archive", "prds", "2026-dup"))
+	ws := New(root)
+
+	platform, candidates := ws.FindPRD("2026-dup")
+	if platform != "" {
+		t.Fatalf("platform = %q, want empty on ambiguity", platform)
+	}
+	if !equal(candidates, []string{"alpha", "beta"}) {
+		t.Fatalf("candidates = %v, want [alpha beta]", candidates)
+	}
+}
+
+// TestFindPRDAbsent pins the zero-match case: no platform, no candidates, so
+// the dispatch layer produces its "not found in any platform" error.
+func TestFindPRDAbsent(t *testing.T) {
+	root := makeRoot(t)
+	mkdir(t, filepath.Join(root, "platforms", "alpha"))
+	ws := New(root)
+
+	platform, candidates := ws.FindPRD("2026-ghost")
+	if platform != "" {
+		t.Fatalf("platform = %q, want empty", platform)
+	}
+	if len(candidates) != 0 {
+		t.Fatalf("candidates = %v, want empty", candidates)
+	}
+}
+
+// TestFindPRDNoPlatforms covers the pre-sync workspace where platforms/ does
+// not exist yet: zero matches, no error, same shape as the absent case.
+func TestFindPRDNoPlatforms(t *testing.T) {
+	ws := New(t.TempDir())
+	platform, candidates := ws.FindPRD("anything")
+	if platform != "" || len(candidates) != 0 {
+		t.Fatalf("got (%q, %v), want empty", platform, candidates)
+	}
+}
+
+// TestFindDiscoveryUnique pins the team-side twin: one team holds the brief,
+// the team is returned, candidates is nil.
+func TestFindDiscoveryUnique(t *testing.T) {
+	root := makeRoot(t)
+	mkdir(t, filepath.Join(root, "teams", "core", "product", "discovery", "2026-brief"))
+	mkdir(t, filepath.Join(root, "teams", "edge"))
+	ws := New(root)
+
+	team, candidates := ws.FindDiscovery("2026-brief")
+	if team != "core" {
+		t.Fatalf("team = %q, want core", team)
+	}
+	if len(candidates) != 0 {
+		t.Fatalf("candidates = %v, want empty", candidates)
+	}
+}
+
+// TestFindDiscoveryAmbiguous pins the multi-team case.
+func TestFindDiscoveryAmbiguous(t *testing.T) {
+	root := makeRoot(t)
+	mkdir(t, filepath.Join(root, "teams", "alpha", "product", "discovery", "2026-shared"))
+	mkdir(t, filepath.Join(root, "teams", "beta", "product", "discovery", "2026-shared"))
+	ws := New(root)
+
+	team, candidates := ws.FindDiscovery("2026-shared")
+	if team != "" {
+		t.Fatalf("team = %q, want empty on ambiguity", team)
+	}
+	if !equal(candidates, []string{"alpha", "beta"}) {
+		t.Fatalf("candidates = %v, want [alpha beta]", candidates)
+	}
+}
+
+// TestFindDiscoveryAbsent pins the zero-match case.
+func TestFindDiscoveryAbsent(t *testing.T) {
+	root := makeRoot(t)
+	mkdir(t, filepath.Join(root, "teams", "core"))
+	ws := New(root)
+
+	team, candidates := ws.FindDiscovery("2026-ghost")
+	if team != "" || len(candidates) != 0 {
+		t.Fatalf("got (%q, %v), want empty", team, candidates)
+	}
+}
+
 // ------------------------------------------------------------------ helpers
 
 // assertWorkspaceError checks the classification contract: main must be able to

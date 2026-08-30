@@ -173,8 +173,10 @@ frontmatter IDs  ──(company-os derive)──►  tags: [...] + generated CLA
 requirement references, and `status:` from each doc's frontmatter and rewrites
 a generated `tags:` array (Obsidian reads frontmatter tags natively). Editing
 a tag by hand is futile — the next build overwrites it. Change the frontmatter
-instead. `validate --ontology` fails if committed tags differ from a fresh
-derivation, same pattern as `effective-governance.yaml`.
+instead. Today, `validate`'s own frontmatter/tag-derivation gate already
+catches drift here directly. **Roadmap, not shipped:** a dedicated
+`validate --ontology` flag that fails if committed tags differ from a fresh
+derivation, same pattern as `effective-governance.yaml`, does not exist yet.
 
 ## 2.3 Wikilinks and hub notes: making the graph mean something
 
@@ -305,6 +307,11 @@ would make them orbit a single node in the graph pane is §2.3 roadmap.)
 
 ## 3.4 The spec-driven development loop
 
+> **Roadmap, not shipped.** `company-os spec trace` and the coverage matrix
+> below describe the intended workflow. The CLI does not implement a `spec
+> trace` subcommand today; grep for `@spec` manually, or write your own
+> scanner, until it lands.
+
 ```text
 EARS clauses (requirements.yaml, versioned)
       │  prd new injects them into the PRD checklist per clause
@@ -334,8 +341,9 @@ surface automatically as "annotated against a superseded version."
 
 1. Only `mandatory` clauses *require* trace coverage; `default` clauses report
    but don't block (deviations may apply); `guidance` is never traced.
-2. An `@spec` pointing at an unregistered ID or nonexistent clause fails
-   `validate --ontology` — annotations can't rot silently.
+2. An `@spec` pointing at an unregistered ID or nonexistent clause should fail
+   `validate --ontology` — annotations can't rot silently. (Roadmap: see the
+   note under Part 4 below; `validate` does not check `@spec` targets today.)
 3. One clause may have many `@spec` sites; a mandatory clause with **zero**
    test-side sites blocks `prd complete`.
 4. Never paraphrase the clause at the annotation site — the ID is the link;
@@ -343,7 +351,16 @@ surface automatically as "annotated against a superseded version."
 
 ---
 
-# Part 4 — Validation: What `validate --ontology` Adds
+# Part 4 — Validation: What `validate --ontology` Would Add
+
+> **Roadmap, not shipped.** `validate --ontology` is not an implemented flag.
+> `company-os validate` today runs the gates described in `TUTORIAL.md` §8
+> (ownership reconciliation, deviation/exception expiry, PRD contracts,
+> frontmatter/tag derivation, CLAUDE.md drift, feature-index drift, skills
+> layering, promotion integrity — plus federated slice integrity when a
+> `workspace.yaml` manifest is present). None of the three semantic checks
+> below (id-registry resolution, vocabulary lint, `@spec`/`spec trace`
+> coverage) exist as CLI behavior yet.
 
 Extending the kit's CI gate with semantic checks:
 
@@ -373,6 +390,8 @@ original words); only `authority: canonical` docs are held to it.
 4. Add `boundedContext:` and ontology IDs to frontmatter of canonical docs.
 5. Rewrite one mandatory requirement's checklist as numbered EARS clauses.
 6. Annotate its implementation and tests with `@spec id@version#clause`.
-7. Wire `derive` (tags + generated aggregates) and `validate --ontology` into CI.
+7. Wire `derive` (tags + generated aggregates) into CI today, via
+   `derive && git diff --exit-code`; fold in `validate --ontology` once it
+   ships (roadmap — see Part 4).
 8. Open the assembled vault in Obsidian: filter `#capability/...` and see every
    doc across the federation that touches it.

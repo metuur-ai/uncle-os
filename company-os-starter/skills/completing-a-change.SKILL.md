@@ -1,11 +1,12 @@
 ---
 id: skill://product/completing-a-change
+type: skill
 version: '1.3'
 authority: canonical
 appliesTo: ['company://all-platforms']
 inputs: [an active PRD whose implementation has shipped]
 outputs: [archived PRD + updated reality docs + scheduled outcome review]
-tags: [authority/canonical, kind/skill, process/change-completion]
+tags: [authority/canonical]
 ---
 
 # Completing a Change

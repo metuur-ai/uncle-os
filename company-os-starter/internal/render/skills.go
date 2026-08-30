@@ -76,6 +76,29 @@ func skillLine(w io.Writer, f model.Finding) error {
 	case model.CodeSummary:
 		return writeLines(w, "", fmt.Sprintf("%d skill(s) across %d populated layer(s).",
 			f.Fields.Int("skills"), f.Fields.Int("layers")))
+
+	// `skills install`. Unlike the merged view above — whose every sentence is
+	// a transcription of the Python oracle and therefore composed here — these
+	// lines have no oracle and are composed at the command, so this renders the
+	// Message it was given. A warn is marked; an ok is not, matching the
+	// scaffolding commands' plain output.
+	case model.CodeSkillsInstalled, model.CodeSkillsUpdated, model.CodeSkillsUnchanged:
+		return writeLines(w, "  "+f.Message)
+
+	case model.CodeSkillsLocallyNewer, model.CodeSkillsUnreadable:
+		return writeLines(w, "  [warn] "+f.Message)
+
+	case model.CodeSkillsInstallSummary:
+		return writeLines(w, "", f.Message)
+
+	case model.CodeSkillsInstallNext:
+		return writeLines(w, f.Message)
+
+	// One derived line from the rebuild `skills install` runs, already rendered
+	// by render.Graph and passed through verbatim — the same treatment the
+	// scaffolding commands give it.
+	case model.CodeGenerated:
+		return writeLines(w, f.Message)
 	}
 	return fmt.Errorf("render: skills: no rule for finding code %q", f.Code)
 }

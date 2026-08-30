@@ -8,10 +8,22 @@
 # What it installs:
 #   company-os -> $INSTALL_DIR (default ~/.local/bin)
 #
+# This script installs the CLI and nothing else. It writes no file into any
+# workspace: the canonical agent skills ship inside the binary, and
+# `company-os skills install`, run from a workspace root, is what puts them
+# on disk.
+#
+# It always installs the LATEST published release, even when run from a
+# checkout — a checkout's dist/ is whatever its owner last cross-compiled and is
+# routinely older than what is published. Set LOCAL_BUILD=1 to install your own
+# build instead. An unpacked release bundle (install.sh beside the artifacts and
+# SHA256SUMS) uses those artifacts, verified against the bundled checksums.
+#
 # Options (env):
 #   INSTALL_DIR=/custom/bin        binary location            (default ~/.local/bin)
-#   VERSION=v1.0.0                 release tag                (default: latest)
+#   VERSION=v1.1.2                 release tag                (default: latest)
 #   BASE_URL=https://...           override the download base
+#   LOCAL_BUILD=1                  install ./dist or ./company-os from a checkout
 #
 # WHY THIS EXISTS AND NOT JUST A BROWSER DOWNLOAD (R-6.3):
 # The binaries are NOT signed and NOT notarized. On macOS that matters only for
@@ -208,21 +220,78 @@ verify_checksum() {
 }
 
 # resolve_binary — echo a path to the platform binary, downloading if needed.
+#
+# DOWNLOADING IS THE DEFAULT, including from a checkout. This script's job is to
+# install the published release, and a checkout's `dist/` holds whatever its
+# owner last cross-compiled — which is routinely older than `latest` and carries
+# no relationship to any tag. Preferring it silently installed a months-old
+# binary while reporting success, which is the failure this ordering prevents.
+#
+# The one case where an adjacent binary IS authoritative: an UNPACKED RELEASE.
+# `make release` copies install.sh into dist/ beside the artifacts and
+# SHA256SUMS, so a sibling artifact there is the release this script shipped
+# with, and it can be checksum-verified locally. That is detected by the
+# SHA256SUMS file sitting next to the script, never by the presence of a binary.
+#
+# LOCAL_BUILD=1 opts a developer back into "use my checkout's build" explicitly.
 resolve_binary() {
-  local plat="$1" name="$TOOL_NAME-$1" p
-  # A checkout or unpacked release: prefer what is already on disk.
-  if [[ -n "$SCRIPT_DIR" ]]; then
-    for p in "$SCRIPT_DIR/dist/$name" "$SCRIPT_DIR/$TOOL_NAME"; do
-      if [[ -f "$p" ]]; then echo "$p"; return; fi
-    done
+  local plat="$1" name="$TOOL_NAME-$1"
+
+  # 1. Unpacked release bundle: script, artifact and SHA256SUMS side by side.
+  if [[ -n "$SCRIPT_DIR" && -f "$SCRIPT_DIR/SHA256SUMS" && -f "$SCRIPT_DIR/$name" ]]; then
+    info "Using the artifact bundled beside this script" >&2
+    verify_local_checksum "$SCRIPT_DIR/$name" "$name" "$SCRIPT_DIR/SHA256SUMS" >&2
+    echo "$SCRIPT_DIR/$name"
+    return
   fi
+
+  # 2. Explicit developer opt-in to a local build.
+  if [[ -n "${LOCAL_BUILD:-}" && -n "$SCRIPT_DIR" ]]; then
+    local p
+    for p in "$SCRIPT_DIR/dist/$name" "$SCRIPT_DIR/$TOOL_NAME"; do
+      if [[ -f "$p" ]]; then
+        warn "LOCAL_BUILD set — installing $p, NOT the published release" >&2
+        echo "$p"
+        return
+      fi
+    done
+    die "LOCAL_BUILD set but no binary found; run: make build"
+  fi
+
+  # 3. The default: fetch the published release.
   local tmp
   tmp="$(mktemp -d)/$TOOL_NAME"
   download "$BASE_URL/$name" "$tmp"
-  # Downloads only. A binary already on disk in a checkout is the user's own
-  # build; there is nothing authoritative to check it against.
   verify_checksum "$tmp" "$name" >&2
   echo "$tmp"
+}
+
+# verify_local_checksum <file> <name> <sums> — the bundled-artifact case.
+#
+# Split from verify_checksum, which fetches SHA256SUMS over the network: here
+# the file is already on disk and downloading a second copy would check the
+# bundle against something other than itself.
+verify_local_checksum() {
+  local file="$1" name="$2" sums="$3" expected actual
+  expected="$(awk -v n="$name" '$2 == n || $2 == "*"n {print $1; exit}' "$sums")"
+  if [[ -z "$expected" ]]; then
+    warn "$name absent from the bundled SHA256SUMS — integrity NOT verified"
+    return 0
+  fi
+  if ! actual="$(sha256_of "$file")"; then
+    warn "no sha256sum/shasum on this system — integrity NOT verified"
+    return 0
+  fi
+  if [[ "$actual" != "$expected" ]]; then
+    red "Error: checksum mismatch for $name" >&2
+    echo >&2
+    echo "  expected  $expected" >&2
+    echo "  actual    $actual" >&2
+    echo >&2
+    echo "  The bundled artifact does not match its own SHA256SUMS. Not installing." >&2
+    exit 1
+  fi
+  info "Verified sha256 ${actual:0:16}…"
 }
 
 # ── Install ───────────────────────────────────────────────────────────────────
@@ -249,6 +318,7 @@ main() {
   bold "Next"
   info "company-os --help                  # the whole surface"
   info "cd <a workspace root>              # or pass --root everywhere"
+  info "company-os skills install          # put the canonical agent skills in the workspace"
   info "company-os validate                # the CI gate"
   info "company-os tui                     # interactive, needs a real terminal"
   echo

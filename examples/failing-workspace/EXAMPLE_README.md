@@ -2,7 +2,7 @@
 
 This workspace is **deliberately broken** and is **expected to exit 1**. It is
 not a template — do not copy it. Its only job is to be an oracle: it drives at
-least one `[FAIL]` through every failure site in gates `[1/7]`–`[7/7]` of
+least one `[FAIL]` through every failure site in gates `[1/8]`–`[8/8]` of
 `cmd_validate`, plus the single `warn()` site, so the failure-rendering path of
 the CLI has a byte-frozen snapshot (`examples/failing-golden-validate.txt`).
 
