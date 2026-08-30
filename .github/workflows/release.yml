@@ -48,9 +48,11 @@ jobs:
         working-directory: company-os-starter
         run: make check
 
+      # `make dist`, not `make release`: release tags and pushes, and CI is
+      # already running BECAUSE a tag was pushed. dist is the build half.
       - name: Build artifacts
         working-directory: company-os-starter
-        run: make release
+        run: make dist
 
       # Prove the artifacts are what they claim before publishing them, not
       # after someone reports that they are not.

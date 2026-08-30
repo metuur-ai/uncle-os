@@ -31,12 +31,37 @@ WS         ?= $(EXAMPLES)/workspace
 
 # --- version stamping ----------------------------------------------------
 # R-6.8: a copy-distributed binary must be able to say what it is.
+#
+# Development builds describe the tree: v0.1.1-84-gce851f6 says "84 commits past
+# v0.1.1", which is what you want from `make build` on a work branch.
 VERSION    ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 COMMIT     ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
+
+# RELEASE_VERSION is what `make release` stamps, and it is NOT the same thing.
+#
+# `git describe` reports the last tag REACHED, so on an untagged tree it yields
+# v0.1.1-84-gce851f6 while install.sh and every doc say v1.1.2 — artifacts that
+# contradict the instructions shipped beside them. The release-tag literals are
+# the declaration of intent (`make bump` writes them, `version-check` gates
+# them), so they are what a release carries.
+#
+# Precedence: an explicit VERSION= on the command line, else the declared
+# literals, else `git describe` when the sites cannot be read.
+DECLARED    = $(shell scripts/bump-version.sh --show 2>/dev/null \
+                | awk '/^Current: v/{print $$2}')
+ifeq ($(origin VERSION),command line)
+RELEASE_VERSION := $(VERSION)
+else
+RELEASE_VERSION  = $(or $(DECLARED),$(VERSION))
+endif
+
 # Stamped into internal/model, not main: R-3.5 puts the same identifier in every
 # --json payload, and the JSON encoder is an internal package. See buildinfo.go.
 LDFLAGS    := -s -w \
               -X $(MODULE)/internal/model.version=$(VERSION) \
+              -X $(MODULE)/internal/model.commit=$(COMMIT)
+RELEASE_LDFLAGS = -s -w \
+              -X $(MODULE)/internal/model.version=$(RELEASE_VERSION) \
               -X $(MODULE)/internal/model.commit=$(COMMIT)
 
 # R-6.2: static linking is what makes "no runtime dependency" true rather
@@ -67,7 +92,7 @@ PLATFORMS  := darwin/arm64 darwin/amd64 linux/amd64
 
 .PHONY: help build install uninstall run dev test test-v cover fmt fmt-check \
         vet lint version-check version-show bump bump-build check acceptance \
-        golden clean release tidy deps-check arch-test repro
+        golden clean dist release tidy deps-check arch-test repro
 
 # --- help ----------------------------------------------------------------
 help: ## Show this help
@@ -166,26 +191,19 @@ bump: ## Bump the release-tag literals (BUMP=major|minor|patch|vX.Y.Z, default p
 	@scripts/bump-version.sh $(BUMP)
 	@scripts/bump-version.sh --check
 
-# The stamp is read back from the sites AFTER the bump, so the artifacts carry
-# the version just written rather than the tag git still reports. This is the
-# whole reason the target exists: `make release` alone stamps `git describe`,
-# which on an untagged tree yields v0.1.1-80-g<sha>-dirty, not the version the
-# docs and install.sh now claim.
-#
-# It builds the full cross-compiled matrix, not a host binary — dist/ is what
-# gets uploaded, and a release you cannot upload is not a release. `make build`
-# remains the fast host-only loop.
-bump-build: bump ## Bump, then cross-compile release artifacts into ./dist at the new version
+# Bump then build the matrix, WITHOUT tagging or pushing — `make dist`, not
+# `make release`. This is the rehearsal: it proves the new version cross-compiles
+# and stamps correctly before anything public happens. Publishing is `make
+# release`, which needs the bump committed first (a tag must point at a commit
+# that contains it).
+bump-build: bump ## Bump, then cross-compile into ./dist at the new version (no tag, no push)
+	@$(MAKE) --no-print-directory dist || exit 1
 	@new=$$(scripts/bump-version.sh --show | awk '/^Current: /{print $$2}'); \
-	  if [ -z "$$new" ]; then echo "bump-build: sites disagree after bump" >&2; exit 1; fi; \
-	  $(MAKE) --no-print-directory release VERSION=$$new; \
 	  echo; \
-	  echo "next: verify, tag, publish"; \
+	  echo "next: verify, commit, publish"; \
 	  echo "  ./dist/$(BINARY)-$$(go env GOOS)-$$(go env GOARCH) --version"; \
-	  echo "  git commit -am 'release $$new' && git tag $$new && git push --tags"; \
-	  echo; \
-	  echo "note: NOT tagged yet. Until \`git tag $$new\` exists, a plain \`make build\`"; \
-	  echo "      or \`make release\` reverts to what git describe reports."
+	  echo "  git commit -am 'release $$new' && git push"; \
+	  echo "  make release        # gate, rebuild, tag, push"
 
 # --- behaviour suite -----------------------------------------------------
 # acceptance.sh freezes `validate` output against golden snapshots, on the
@@ -210,19 +228,28 @@ check: lint version-check test acceptance ## Everything CI runs
 # Artifact names carry no version: `/releases/latest/download/<name>` needs a
 # fixed name, and install.sh is built on that URL. The version lives in the
 # release tag and is stamped into the binary — `company-os --version` reports it.
-release: ## Cross-compile release artifacts + checksums into ./dist
+#
+# The stamp is RELEASE_VERSION (the declared literals), not VERSION (`git
+# describe`). See the version-stamping block: a release must not tell a user
+# v0.1.1-84-gce851f6 while the install.sh beside it says v1.1.2.
+dist: ## Cross-compile release artifacts + checksums into ./dist (no tag, no push)
+	@if [ -z "$(RELEASE_VERSION)" ]; then \
+	  echo "dist: cannot determine a version to stamp" >&2; exit 1; fi
+	@scripts/bump-version.sh --check >/dev/null 2>&1 \
+	  || { echo "dist: release-tag literals disagree — run 'make version-show'" >&2; \
+	       scripts/bump-version.sh --check; exit 1; }
 	@rm -rf $(DIST) && mkdir -p $(DIST)
 	@for p in $(PLATFORMS); do \
 	  os=$${p%/*}; arch=$${p#*/}; \
 	  out=$(DIST)/$(BINARY)-$${os}-$${arch}; \
 	  echo "  $$os/$$arch"; \
 	  $(GOFLAGS_STATIC) GOOS=$$os GOARCH=$$arch \
-	    go build $(BUILDFLAGS) -ldflags '$(LDFLAGS)' -o $$out $(PKG) || exit 1; \
+	    go build $(BUILDFLAGS) -ldflags '$(RELEASE_LDFLAGS)' -o $$out $(PKG) || exit 1; \
 	done
 	@cp install.sh $(DIST)/install.sh
 	@cd $(DIST) && shasum -a 256 * > SHA256SUMS
 	@echo
-	@echo "artifacts in $(DIST) ($(VERSION)):"
+	@echo "artifacts in $(DIST) ($(RELEASE_VERSION)):"
 	@ls -1 $(DIST)
 	@echo
 	@echo "NOT SIGNED, NOT NOTARIZED — deliberately (R-6.3). Ship install.sh as the"
@@ -232,13 +259,59 @@ release: ## Cross-compile release artifacts + checksums into ./dist
 	@echo "Publish the install line, not a download link. See"
 	@echo "docs/user-guide/how-to/release-and-upgrade.md."
 
+# `release` publishes. It runs the gate, builds the matrix, tags, and pushes the
+# tag — which triggers .github/workflows/release.yml, which rebuilds from the
+# tag and uploads the artifacts to GitHub. The local dist/ is the rehearsal; CI
+# produces the bytes users download.
+#
+# Pushing a tag is public and effectively irreversible, so everything that can
+# refuse does so BEFORE the push: the gate, a dirty tree, a tag that already
+# exists, an unpushed HEAD. Use `make dist` to build without publishing.
+#
+#   make release              # gate, build, tag, push
+#   make release SKIP_GATE=1  # same, without re-running make check
+#   make dist                 # artifacts only
+release: ## Gate, build, tag, and push — publishes via CI
+	@v="$(RELEASE_VERSION)"; \
+	if [ -z "$$v" ]; then echo "release: no version to stamp" >&2; exit 1; fi; \
+	if git rev-parse -q --verify "refs/tags/$$v" >/dev/null 2>&1; then \
+	  echo "release: tag $$v already exists." >&2; \
+	  echo "  Bump first:  make bump           (or make bump BUMP=minor)" >&2; \
+	  exit 1; fi; \
+	if [ -n "$$(git status --porcelain)" ]; then \
+	  echo "release: working tree is dirty. Commit first — a tag must point at" >&2; \
+	  echo "         a commit that contains what you are shipping." >&2; \
+	  git status --short >&2; exit 1; fi; \
+	up=$$(git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null); \
+	if [ -z "$$up" ]; then \
+	  echo "release: branch has no upstream; push it first." >&2; exit 1; fi; \
+	if [ -n "$$(git rev-list @{upstream}..HEAD 2>/dev/null)" ]; then \
+	  echo "release: HEAD is ahead of $$up. Push your commits first, or CI will" >&2; \
+	  echo "         build a tag whose commit the remote does not have." >&2; exit 1; fi; \
+	echo "releasing $$v from $$(git rev-parse --short HEAD) on $$up"; \
+	echo
+	@if [ -z "$(SKIP_GATE)" ]; then \
+	  echo "== gate =="; $(MAKE) --no-print-directory check || exit 1; echo; \
+	else echo "== gate skipped (SKIP_GATE set) =="; echo; fi
+	@echo "== build =="
+	@$(MAKE) --no-print-directory dist || exit 1
+	@echo
+	@echo "== publish =="
+	@v="$(RELEASE_VERSION)"; \
+	  git tag -a "$$v" -m "release $$v" && echo "  tagged $$v" && \
+	  git push origin "$$v" && echo "  pushed $$v" && \
+	  echo && \
+	  echo "CI is building and will attach the artifacts to the release:" && \
+	  echo "  https://github.com/metuur-ai/uncle-os/actions" && \
+	  echo "  https://github.com/metuur-ai/uncle-os/releases/tag/$$v"
+
 repro: ## R-6.10: build the release matrix twice and prove the checksums match
 	@tmp=$$(mktemp -d) || exit 1; \
 	  echo "pass 1 (warm cache)"; \
-	  $(MAKE) --no-print-directory release >/dev/null || exit 1; \
+	  $(MAKE) --no-print-directory dist >/dev/null || exit 1; \
 	  cp $(DIST)/SHA256SUMS $$tmp/first; \
 	  echo "pass 2 (cold cache — GOCACHE=$$tmp/cache)"; \
-	  GOCACHE=$$tmp/cache $(MAKE) --no-print-directory release >/dev/null || exit 1; \
+	  GOCACHE=$$tmp/cache $(MAKE) --no-print-directory dist >/dev/null || exit 1; \
 	  if diff -q $$tmp/first $(DIST)/SHA256SUMS >/dev/null; then \
 	    echo; echo "reproducible — identical across a cold-cache rebuild:"; \
 	    sed 's/^/  /' $(DIST)/SHA256SUMS; rc=0; \
@@ -266,7 +339,7 @@ repro: ## R-6.10: build the release matrix twice and prove the checksums match
 #   `ldd` exists only on Linux. On a darwin release host the linux artifact's
 #   linkage is checked structurally via file(1) and confirmed for real only on
 #   task 5.3's clean Linux box.
-deps-check: release ## Prove each release artifact needs nothing at runtime (R-6.1, R-6.2, R-6.8)
+deps-check: dist ## Prove each release artifact needs nothing at runtime (R-6.1, R-6.2, R-6.8)
 	@fail=0; \
 	for f in $(DIST)/$(BINARY)-*; do \
 	  echo "== $$(basename $$f)"; \
