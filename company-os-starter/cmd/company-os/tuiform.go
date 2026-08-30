@@ -102,34 +102,48 @@ func newInvocation(ws *workspace.Workspace, args *Args) tui.Action {
 // mutatingScreens is R-5.5's list. Every entry is marked in its title, because
 // a menu that does not distinguish reading from writing is a menu that gets
 // someone to write by accident.
+// EVERY screen here with a picker resolves at open time (FormFn), not at
+// catalog build. R-5.26 required it only "where a mutating form offers choices
+// describing workspace state the reader can change from inside the same
+// session", and for a while four screens read that as permission to stay static.
+// They were wrong on their own terms — every one of those pickers describes
+// state the LIFECYCLE SCREENS THEMSELVES change, one step apart:
+//
+//	new discovery brief → validate discovery brief → new PRD → validate PRD
+//
+// A brief created on the first screen is not a draft the second can see; a brief
+// validated on the second is not a validated brief the third can offer. Built
+// statically, the catalog reproduced the exact dead end Amendment 5 was written
+// to close — one screen later, and only for a reader who does not quit and
+// relaunch between steps, which is why every per-unit test missed it. The rule
+// is now uniform rather than conditional: a picker in this file is resolved when
+// its screen is opened, and there is no judgement call left to get wrong.
 func mutatingScreens(ws *workspace.Workspace, root string) []tui.Screen {
-	teams := baseNames(ws.AllTeams())
-	platforms := baseNames(ws.AllPlatforms())
-	components := componentIDList(componentCatalog(ws))
-
 	return []tui.Screen{
 		{
 			Title: "new discovery brief (writes)",
-			Form: &tui.Form{
-				Fields: []tui.Field{
-					{
-						Label:   "team",
-						Choices: teams,
-						Help: "the team that owns the discovery. Briefs are " +
-							"team-private: teams/<team>/product/discovery/.",
+			FormFn: func() *tui.Form {
+				return &tui.Form{
+					Fields: []tui.Field{
+						{
+							Label:   "team",
+							Choices: baseNames(ws.AllTeams()),
+							Help: "the team that owns the discovery. Briefs are " +
+								"team-private: teams/<team>/product/discovery/.",
+						},
+						{
+							Label: "title",
+							Help: "free text. The brief id is derived from it: " +
+								"<year>-<slugified-title>.",
+						},
 					},
-					{
-						Label: "title",
-						Help: "free text. The brief id is derived from it: " +
-							"<year>-<slugified-title>.",
+					Build: func(v []string) (tui.Action, error) {
+						return newInvocation(ws, &Args{
+							Root: root, Cmd: "discover", Action: "new",
+							Team: v[0], TitleArg: v[1],
+						}), nil
 					},
-				},
-				Build: func(v []string) (tui.Action, error) {
-					return newInvocation(ws, &Args{
-						Root: root, Cmd: "discover", Action: "new",
-						Team: v[0], TitleArg: v[1],
-					}), nil
-				},
+				}
 			},
 		},
 		{
@@ -143,73 +157,84 @@ func mutatingScreens(ws *workspace.Workspace, root string) []tui.Screen {
 			// Without it the UI dead-ends: a brief created one screen up cannot
 			// reach the "new PRD" picker, which lists validated briefs only.
 			Title: "validate discovery brief (writes)",
-			Form: &tui.Form{
-				Fields: []tui.Field{
-					{
-						Label:   "brief",
-						Choices: draftBriefIDs(ws),
-						Help:    briefFieldHelp(draftBriefIDs(ws)),
+			FormFn: func() *tui.Form {
+				drafts := draftBriefIDs(ws)
+				return &tui.Form{
+					Fields: []tui.Field{
+						{
+							Label:   "brief",
+							Choices: drafts,
+							Help:    briefFieldHelp(drafts),
+						},
 					},
-				},
-				Build: func(v []string) (tui.Action, error) {
-					// Id only: the team is resolved from the brief's own
-					// directory (ux-simplification 1.2, resolveTeam). Passing a
-					// team here would add a second answer to a question the
-					// filesystem already answers, and the preview line stays
-					// short enough for a non-developer to read.
-					return newInvocation(ws, &Args{
-						Root: root, Cmd: "discover", Action: "validate",
-						TitleArg: v[0],
-					}), nil
-				},
+					Build: func(v []string) (tui.Action, error) {
+						// Id only: the team is resolved from the brief's own
+						// directory (ux-simplification 1.2, resolveTeam). Passing
+						// a team here would add a second answer to a question the
+						// filesystem already answers, and the preview line stays
+						// short enough for a non-developer to read.
+						return newInvocation(ws, &Args{
+							Root: root, Cmd: "discover", Action: "validate",
+							TitleArg: v[0],
+						}), nil
+					},
+				}
 			},
 		},
 		{
 			Title: "new PRD (writes)",
-			Form: &tui.Form{
-				Fields: []tui.Field{
-					{
-						Label:   "platform",
-						Choices: platforms,
-						Help: "the platform whose reality this change record " +
-							"proposes to change.",
+			// The `from-discovery` picker is why the whole file resolves late.
+			// It lists validated briefs, and the screen one step up is what
+			// validates them — built statically it could never offer the brief
+			// the reader had just validated, which is Amendment 5's dead end
+			// wearing a different screen.
+			FormFn: func() *tui.Form {
+				components := componentIDList(componentCatalog(ws))
+				return &tui.Form{
+					Fields: []tui.Field{
+						{
+							Label:   "platform",
+							Choices: baseNames(ws.AllPlatforms()),
+							Help: "the platform whose reality this change record " +
+								"proposes to change.",
+						},
+						{
+							Label:    "title",
+							Optional: true,
+							Help: "free text. Leave it out only when a discovery " +
+								"brief is chosen below — the brief's title is used " +
+								"instead.",
+						},
+						{
+							Label:    "components",
+							Optional: true,
+							Help:     componentsHelp(components),
+						},
+						{
+							Label:    "team",
+							Choices:  baseNames(ws.AllTeams()),
+							Optional: true,
+							Help: "the proposing team. Required when a discovery " +
+								"brief is chosen, because the brief is read from " +
+								"that team's directory.",
+						},
+						{
+							Label:    "from-discovery",
+							Choices:  validatedBriefIDs(ws),
+							Optional: true,
+							Help: "a validated brief in the chosen team. Its " +
+								"Problem signal and Success criteria are copied " +
+								"into the PRD.",
+						},
 					},
-					{
-						Label:    "title",
-						Optional: true,
-						Help: "free text. Leave it out only when a discovery " +
-							"brief is chosen below — the brief's title is used " +
-							"instead.",
+					Build: func(v []string) (tui.Action, error) {
+						return newInvocation(ws, &Args{
+							Root: root, Cmd: "prd", Action: "new",
+							Platform: v[0], Title: v[1], Components: v[2],
+							Team: v[3], FromDiscovery: v[4],
+						}), nil
 					},
-					{
-						Label:    "components",
-						Optional: true,
-						Help:     componentsHelp(components),
-					},
-					{
-						Label:    "team",
-						Choices:  teams,
-						Optional: true,
-						Help: "the proposing team. Required when a discovery " +
-							"brief is chosen, because the brief is read from " +
-							"that team's directory.",
-					},
-					{
-						Label:    "from-discovery",
-						Choices:  validatedBriefIDs(ws),
-						Optional: true,
-						Help: "a validated brief in the chosen team. Its " +
-							"Problem signal and Success criteria are copied " +
-							"into the PRD.",
-					},
-				},
-				Build: func(v []string) (tui.Action, error) {
-					return newInvocation(ws, &Args{
-						Root: root, Cmd: "prd", Action: "new",
-						Platform: v[0], Title: v[1], Components: v[2],
-						Team: v[3], FromDiscovery: v[4],
-					}), nil
-				},
+				}
 			},
 		},
 		{
@@ -225,24 +250,27 @@ func mutatingScreens(ws *workspace.Workspace, root string) []tui.Screen {
 			// safe is structural — browsing screens do not dispatch commands at
 			// all, so there is no per-command judgement call to get wrong later.
 			Title: "validate PRD (writes)",
-			Form: &tui.Form{
-				Fields: []tui.Field{
-					{
-						Label:   "prd",
-						Choices: activePRDIDs(ws),
-						Help:    prdFieldHelp(activePRDIDs(ws)),
+			FormFn: func() *tui.Form {
+				active := activePRDIDs(ws)
+				return &tui.Form{
+					Fields: []tui.Field{
+						{
+							Label:   "prd",
+							Choices: active,
+							Help:    prdFieldHelp(active),
+						},
 					},
-				},
-				Build: func(v []string) (tui.Action, error) {
-					// Id only, as in unit 1: `prd validate` searches every
-					// platform's change-records/active/ for the id
-					// (ux-simplification 1.2, resolvePlatform), so asking for the
-					// platform would be asking the reader a question the tool
-					// already answers from the id they just picked.
-					return newInvocation(ws, &Args{
-						Root: root, Cmd: "prd", Action: "validate", ID: v[0],
-					}), nil
-				},
+					Build: func(v []string) (tui.Action, error) {
+						// Id only, as in unit 1: `prd validate` searches every
+						// platform's change-records/active/ for the id
+						// (ux-simplification 1.2, resolvePlatform), so asking for
+						// the platform would be asking the reader a question the
+						// tool already answers from the id they just picked.
+						return newInvocation(ws, &Args{
+							Root: root, Cmd: "prd", Action: "validate", ID: v[0],
+						}), nil
+					},
+				}
 			},
 		},
 		{

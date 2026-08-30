@@ -9,7 +9,16 @@ status: complete
 > R-5.27). A change can be taken end to end from `company-os tui`. The one
 > hazard found along the way — `reality new` misfiling a component under the
 > wrong platform for *any* caller — was approved separately and closed in
-> `RealityNew` the same day (Amendment 9, R-0.7a(m)). Nothing is carried forward.
+> `RealityNew` the same day (Amendment 9, R-0.7a(m)).
+>
+> **Then the acceptance criterion was actually run**, and it failed. Unit 1's
+> acceptance — *create a brief in the TUI, validate it in the TUI, see it in the
+> "new PRD" picker* — had never been executed as a sequence; every unit was
+> tested against a freshly-built catalog, which is a relaunch. Four screens
+> resolved their pickers at catalog build, so nothing created in a session was
+> offered by the next screen: Amendment 5's dead end, moved one screen later.
+> Fixed by making every picker resolve at open time (Amendment 10, R-5.26
+> restated). Nothing is carried forward.
 
 # TUI Lifecycle Completion — Tasks
 

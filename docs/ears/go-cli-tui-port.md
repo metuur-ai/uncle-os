@@ -193,7 +193,55 @@ friction F5 (35-40 domain terms) and F6 (EARS and `@spec` syntax) are untouched.
 | R-5.22 | **Restated 2026-07-27 — see [Amendment 2](#amendment-2--advisor-scope-corrected-2026-07-27).** IF resolving a detected problem requires a value that cannot be derived from the workspace — a federation manifest needs repo URLs and commit pins; an unresolved feature-index reference needs an authoring decision — THE SYSTEM SHALL report and explain the problem and SHALL NOT offer a fix, because a form that writes a plausible-but-wrong value is worse than the missing one. |
 
 | R-5.23 | WHEN the reader leaves the recovery menu of R-5.17 without selecting a workspace, THE SYSTEM SHALL exit 0, because quitting a menu is not a failure. |
-| R-5.26 | WHERE a mutating form offers choices describing workspace state the reader can change from inside the same session, THE SYSTEM SHALL resolve that form when its screen is opened rather than when the catalog is built, so a value created a moment ago is offerable without relaunching. Added 2026-07-27; see [Amendment 4](#amendment-4--the-add-forms-2026-07-27). |
+| R-5.26 | **Restated 2026-08-29 — see [Amendment 10](#amendment-10--the-condition-that-was-the-defect-2026-08-29).** THE SYSTEM SHALL resolve a mutating form that offers ANY choices when its screen is opened rather than when the catalog is built, so a value created a moment ago is offerable without relaunching. A form with no choices to offer may be built statically. Added 2026-07-27 as a conditional requirement; see [Amendment 4](#amendment-4--the-add-forms-2026-07-27). |
+
+### Amendment 10 — the condition that was the defect (2026-08-29)
+
+**Authority:** found by the acceptance test the four lifecycle units were built
+for and which none of them had actually run — the loop driven end to end through
+one catalog, without relaunching between steps.
+
+**Statement being amended:**
+
+> R-5.26 | WHERE a mutating form offers choices describing workspace state **the
+> reader can change from inside the same session**, THE SYSTEM SHALL resolve
+> that form when its screen is opened rather than when the catalog is built.
+
+**What the condition cost.** Four screens — `new discovery brief`, `validate
+discovery brief`, `new PRD`, `validate PRD` — built their pickers at catalog
+construction, on the reading that their choices were not the kind of state the
+reader changes from inside a session. That reading was wrong on its own terms,
+and wrong in the one place it mattered most: those four screens **are the
+lifecycle**, and each one changes exactly the state the next one lists.
+
+```
+new discovery brief → validate discovery brief → new PRD → validate PRD
+       (creates a draft)      (makes it validated)   (lists validated)
+```
+
+So a brief created on the first screen was not a draft the second could see, and
+a brief validated on the second was not a validated brief the third could offer.
+The catalog reproduced Amendment 5's dead end one screen later — for any reader
+who did not quit and relaunch between steps.
+
+**Why every test missed it.** Each per-unit test builds a fresh catalog against
+a workspace prepared by the CLI, which is a relaunch. The defect only exists
+across two steps of one session, so a suite that tests screens one at a time
+cannot see it however thorough it is. The bug was in the seam, and nothing tested
+the seam.
+
+**What R-5.26 says now.** Any form that offers choices resolves at open time.
+The condition is gone. "Does this picker describe state the reader can change
+from here?" is a judgement, and it was got wrong on four screens simultaneously
+by the person who wrote the requirement; "a picker means a `FormFn`" is not a
+judgement. Forms with no choices — the three `add` id fields, which are free
+text — may still be built statically, because they have nothing that can go
+stale.
+
+`TestEveryPickerResolvesAtOpenTime` asserts the structural rule;
+`TestTheWholeLoopRunsInOneSession` asserts the behaviour it exists to protect.
+The second is the one that found this, and it is the only test in the suite that
+drives more than one screen.
 
 ### Amendment 9 — the misfiled reality doc (2026-08-29)
 

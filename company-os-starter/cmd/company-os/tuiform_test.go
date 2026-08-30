@@ -599,6 +599,115 @@ func TestCompleteScreenHasNoForceField(t *testing.T) {
 	}
 }
 
+// TestTheWholeLoopRunsInOneSession is the acceptance criterion the four
+// lifecycle units were built for, and the only test that exercises them as a
+// sequence rather than one at a time: brief → validate → PRD → validate →
+// reality doc → complete, driven as keystrokes through ONE catalog, without
+// relaunching.
+//
+// Relaunching between steps is what every per-unit test does implicitly, and it
+// hides the defect this test exists to catch: a picker resolved when the catalog
+// was BUILT cannot offer work the reader created a moment ago (R-5.26). A menu
+// that requires the reader to quit and reopen it between every step has not
+// closed the dead end — it has moved it.
+func TestTheWholeLoopRunsInOneSession(t *testing.T) {
+	root := tuiWorkspace(t)
+	ws := workspace.New(root)
+	screens := mutatingScreens(ws, "")
+
+	// pick means "take whatever this picker offers" — and asserts that it
+	// offers something. An empty string means the opposite: leave an optional
+	// field genuinely blank. Collapsing the two is what the first draft of this
+	// test did, and it turned a real assertion into a failure about a free-text
+	// title.
+	const pick = "\x00pick"
+
+	// Each step: open a screen fresh from THIS catalog, fill it, confirm.
+	step := func(title string, values []string) string {
+		t.Helper()
+		form := screenNamed(t, screens, title).ResolveForm()
+		if len(values) != len(form.Fields) {
+			t.Fatalf("%s: %d values for %d fields", title, len(values), len(form.Fields))
+		}
+		for i, f := range form.Fields {
+			if values[i] != pick {
+				continue
+			}
+			if len(f.Choices) == 0 {
+				t.Fatalf("%s: field %q offers nothing — the previous step's "+
+					"work is not reachable without relaunching", title, f.Label)
+			}
+			values[i] = f.Choices[0]
+		}
+		action, err := form.Build(values)
+		if err != nil {
+			t.Fatalf("%s: build: %v", title, err)
+		}
+		body, err := action.Commit()
+		if err != nil {
+			t.Fatalf("%s: commit: %v\n%s", title, err, body)
+		}
+		return body
+	}
+
+	step("new discovery brief (writes)", []string{"core", "Quiet hours"})
+	step("validate discovery brief (writes)", []string{pick})
+	// The title is left blank on purpose — the brief supplies it. from-discovery
+	// is `pick`, so this asserts the brief validated one line above is offered
+	// here: the exact dead end Amendment 5 was written to close.
+	step("new PRD (writes)", []string{"plat", "", "svc", "core", pick})
+	step("validate PRD (writes)", []string{pick})
+	step("new reality doc (writes)", []string{"plat", pick})
+
+	// The done-check refuses here, and that is correct rather than a failure of
+	// the loop: prd new writes an unchecked governance checklist, and the menu
+	// offers no way to tick it off — the evidence goes in the PRD, by hand.
+	// Asserting the refusal keeps this test honest about where the menu stops.
+	form := screenNamed(t, screens, "complete PRD (writes)").ResolveForm()
+	id := form.Fields[0].Choices[0]
+	action, err := form.Build([]string{id})
+	if err != nil {
+		t.Fatalf("complete: build: %v", err)
+	}
+	body, _ := action.Commit()
+	if !strings.Contains(body, "checklist item(s) unchecked") {
+		t.Errorf("expected the done-check to refuse on the unchecked checklist:\n%s", body)
+	}
+	// The reality doc written two steps up is why THIS is not also a reason.
+	if strings.Contains(body, "no reality doc for component") {
+		t.Errorf("the reality doc created in this session was not seen:\n%s", body)
+	}
+}
+
+// TestEveryPickerResolvesAtOpenTime is the structural guard for what
+// TestTheWholeLoopRunsInOneSession caught behaviourally.
+//
+// The loop test proves the six lifecycle screens see each other's work. It
+// cannot prove the NEXT screen someone adds will, and the failure mode is
+// invisible: a static picker is not wrong until the reader creates something in
+// the same session, so the screen looks correct in every per-unit test.
+//
+// The rule asserted is stronger than R-5.26's condition and deliberately so —
+// "does this picker describe state the reader can change from here?" is a
+// judgement, and it was got wrong on four screens at once. "A picker means a
+// FormFn" is not a judgement. A screen with no picker may stay static: the three
+// `add` id fields are free text and have nothing to go stale.
+func TestEveryPickerResolvesAtOpenTime(t *testing.T) {
+	ws := workspace.New(tuiWorkspace(t))
+	for _, s := range mutatingScreens(ws, "") {
+		if s.Form == nil {
+			continue // FormFn — resolved when opened, which is the rule.
+		}
+		for _, f := range s.Form.Fields {
+			if f.Choices != nil {
+				t.Errorf("%s: field %q is a picker on a statically-built form — "+
+					"it cannot offer anything created earlier in the same session; "+
+					"move the form into a FormFn", s.Title, f.Label)
+			}
+		}
+	}
+}
+
 // screenNamed finds one screen by title, failing rather than returning a zero
 // value, so a renamed screen reports itself instead of a nil dereference.
 func screenNamed(t *testing.T, screens []tui.Screen, title string) tui.Screen {
