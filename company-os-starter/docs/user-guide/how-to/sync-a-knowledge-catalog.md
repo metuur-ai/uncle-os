@@ -112,7 +112,7 @@ nothing more than:
 
 ```yaml
 - name: install company-os        # one static binary, no runtime dependency
-  env: {COMPANY_OS_VERSION: v1.0.0}
+  env: {COMPANY_OS_VERSION: v1.1.0}
   run: |
     curl -fsSLo /usr/local/bin/company-os \
       <release-url>/$COMPANY_OS_VERSION/company-os_${COMPANY_OS_VERSION}_linux_amd64

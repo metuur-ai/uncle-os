@@ -10,7 +10,7 @@
 #
 # Options (env):
 #   INSTALL_DIR=/custom/bin        binary location            (default ~/.local/bin)
-#   VERSION=v1.0.0                 release tag                (default: latest)
+#   VERSION=v1.1.0                 release tag                (default: latest)
 #   BASE_URL=https://...           override the download base
 #
 # WHY THIS EXISTS AND NOT JUST A BROWSER DOWNLOAD (R-6.3):
