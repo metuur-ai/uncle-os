@@ -1,12 +1,13 @@
 ---
 id: skill://product/creating-prd
+type: skill
 version: '1.5'
 authority: canonical
 appliesTo: ['company://all-platforms']
 inputs:
 - {a discovery brief with status: validated (or an explicit problem statement)}
 outputs: [change-records/active/<id>/prd.md passing `company-os prd validate`]
-tags: [authority/canonical, kind/skill, process/prd]
+tags: [authority/canonical]
 ---
 
 # Creating a PRD

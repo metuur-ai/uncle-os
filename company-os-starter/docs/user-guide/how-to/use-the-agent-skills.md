@@ -205,9 +205,24 @@ The starter kit carries five reference skills:
 | `skill://governance/requesting-an-exception` | a mandatory rule a component cannot satisfy |
 
 `examples/workspace` additionally carries `skill://governance/syncing-knowledge`
-for the [knowledge catalog](sync-a-knowledge-catalog.md) workflow. Copy the ones
-you want into `company-os/skills/` or `platforms/<p>/skills/`, renaming to
-`<name>.SKILL.md`, and edit them — they are a starting point, not a dependency.
+for the [knowledge catalog](sync-a-knowledge-catalog.md) workflow.
+
+The binary carries all five, so getting them into a workspace is one command:
+
+```bash
+company-os skills install     # -> company-os/skills/, flat, discovery-ready
+```
+
+Re-run it after a CLI upgrade: it replaces skills older than the binary's,
+leaves anything at the same or a newer version alone, and reports one code per
+skill ([reference](../reference/company-os-cli.md#skills-install)). Then edit
+them — they are a starting point, not a dependency. If you edit one, bump its
+`version:` and the installer will never touch it again.
+
+To place them somewhere else — `platforms/<p>/skills/`, a team layer — copy by
+hand, renaming to `<name>.SKILL.md`, and run `graph build`: tags are derived per
+layer, so a company-layer skill copied to a platform is in drift until it is
+rebuilt.
 
 Skills also ride federation for free: `skills/` is in the default slice
 allowlist, so a platform repo's skills land in every workspace that syncs it.

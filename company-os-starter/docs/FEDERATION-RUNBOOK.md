@@ -445,7 +445,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: install company-os     # one static binary; no runtime dependency
-        env: {COMPANY_OS_VERSION: v1.1.0}
+        env: {COMPANY_OS_VERSION: v1.1.1}
         run: |
           curl -fsSLo /usr/local/bin/company-os \
             <release-url>/$COMPANY_OS_VERSION/company-os_${COMPANY_OS_VERSION}_linux_amd64
@@ -479,7 +479,7 @@ jobs:
       - uses: actions/checkout@v4          # the composition repo: siblings + lock + native dirs
         with: {repository: acme/company-workspace, path: ws}
       - name: install company-os     # one static binary; no runtime dependency
-        env: {COMPANY_OS_VERSION: v1.1.0}
+        env: {COMPANY_OS_VERSION: v1.1.1}
         run: |
           curl -fsSLo /usr/local/bin/company-os \
             <release-url>/$COMPANY_OS_VERSION/company-os_${COMPANY_OS_VERSION}_linux_amd64

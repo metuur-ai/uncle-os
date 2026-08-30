@@ -343,9 +343,9 @@ func TestArgumentErrorDiagnostics(t *testing.T) {
 		// --- invalid choice on a positional ---
 		{
 			"skills action", []string{"skills", "show"},
-			"usage: company-os skills [-h] {list}",
+			"usage: company-os skills [-h] {list,install}",
 			"company-os skills: error: argument action: invalid choice: 'show' " +
-				"(choose from list)",
+				"(choose from list, install)",
 		},
 		{
 			"ids action", []string{"ids", "show"},
@@ -424,9 +424,9 @@ func TestArgumentErrorDiagnostics(t *testing.T) {
 		},
 		{
 			"bad choice outranks the surplus positional", []string{"skills", "bogus", "extra"},
-			"usage: company-os skills [-h] {list}",
+			"usage: company-os skills [-h] {list,install}",
 			"company-os skills: error: argument action: invalid choice: 'bogus' " +
-				"(choose from list)",
+				"(choose from list, install)",
 		},
 
 		// --- invalid choice on a flag ---
@@ -512,7 +512,7 @@ func TestArgumentErrorDiagnostics(t *testing.T) {
 		},
 		{
 			"missing skills action", []string{"skills"},
-			"usage: company-os skills [-h] {list}",
+			"usage: company-os skills [-h] {list,install}",
 			"company-os skills: error: the following arguments are required: action",
 		},
 		{

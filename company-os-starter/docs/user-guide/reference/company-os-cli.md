@@ -473,10 +473,11 @@ $ company-os ids list --platform ordering
 ## `skills`
 
 List merged agent skills across all four layers (company, platform, team,
-personal).
+personal), or install the canonical ones the binary carries.
 
 ```text
 company-os skills list
+company-os skills install
 ```
 
 ```bash
@@ -486,7 +487,47 @@ $ company-os skills list
 Layers that don't exist yet (e.g. no company or platform root in a
 standalone-team workspace) simply show as empty — this command never errors
 on absence. A freshly `init`ed workspace has no skills at all and reports
-`0 skill(s) across 0 populated layer(s)`.
+`0 skill(s) across 0 populated layer(s)` — until you install them.
+
+### `skills install`
+
+Writes the canonical skills the binary ships with into `company-os/skills/`,
+flat and named the way discovery matches. This is what turns the `agentSkills`
+pointer in a team's `team.yaml` into files that actually exist.
+
+```bash
+$ company-os skills install
+  index company-os/skills/index.md
+  node company-os/CLAUDE.md
+  installed company-os/skills/completing-a-change.SKILL.md (v1.3)
+  installed company-os/skills/creating-prd.SKILL.md (v1.5)
+  installed company-os/skills/reality-from-prds.SKILL.md (v1.0)
+  installed company-os/skills/requesting-an-exception.SKILL.md (v1.1)
+  installed company-os/skills/running-discovery.SKILL.md (v1.2)
+
+5 skill(s) in company-os/skills, 5 changed
+next: review what a session now sees: company-os skills list
+```
+
+It compares the installed `version:` against the binary's and reports one code
+per skill, so an agent branches on codes rather than prose:
+
+| `code` | What happened |
+|---|---|
+| `skills.installed` | No file was there; it was written. |
+| `skills.updated` | The installed version was older; it was replaced. Both versions are in `fields`. |
+| `skills.unchanged` | Already at this version. Left alone — your edits at an unchanged version survive. |
+| `skills.locally-newer` | The installed version is **newer** than this binary's. Left alone: upgrade the CLI rather than downgrade the skill. Warn. |
+| `skills.unreadable` | The installed file's version could not be read. Left alone. Warn. |
+
+Two things it deliberately does not do: it never deletes a file, and it never
+merges. A team that edits a skill and bumps its `version:` keeps that file
+forever; a team that edits without bumping loses those edits the next time the
+skill's shipped version moves.
+
+The command rebuilds derived artifacts before returning — the two lines above
+the install output — so `company-os validate` exits 0 straight afterwards with
+no `graph build` in between.
 
 Discovery is one level deep and matches `*.SKILL.md`, except for the personal
 layer (`teams/<t>/scratchpad/personal-rules/*.md`, git-ignored). Precedence,

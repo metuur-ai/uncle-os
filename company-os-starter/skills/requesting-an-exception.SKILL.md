@@ -1,11 +1,12 @@
 ---
 id: skill://governance/requesting-an-exception
+type: skill
 version: '1.1'
 authority: canonical
 appliesTo: ['company://all-teams']
 inputs: [a mandatory rule that a specific component cannot satisfy]
 outputs: [an approved entry in governance/exceptions.yaml with an expiry]
-tags: [authority/canonical, kind/skill, process/exception]
+tags: [authority/canonical]
 ---
 
 # Requesting an Exception to a Mandatory Rule

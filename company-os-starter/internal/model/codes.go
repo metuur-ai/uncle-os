@@ -287,6 +287,42 @@ const (
 	CodeSummary = "skills.summary"
 )
 
+// ---------------------------------------------------------- skills install
+//
+// `skills install` writes the canonical skills the binary carries into
+// `company-os/skills/`. It has no Python oracle — the reference CLI shipped no
+// such command — so its output is composed here rather than transcribed.
+//
+// One code per outcome, not one code with an outcome field: an agent's whole
+// decision after this command is "did anything change, and is anything wrong",
+// and codes are the contract that answers it. CodeSkillsInstallLocallyNewer and
+// CodeSkillsInstallUnreadable are the two the agent must not treat as success.
+const (
+	// SlugSkillsInstall is the command's own block.
+	SlugSkillsInstall = "skills-install"
+
+	// CodeSkillsInstalled is a skill written where none existed.
+	CodeSkillsInstalled = "skills.installed"
+	// CodeSkillsUpdated is an older installed version replaced by the embedded
+	// one. Fields carry both versions so the change is auditable from the
+	// envelope alone.
+	CodeSkillsUpdated = "skills.updated"
+	// CodeSkillsUnchanged is an installed skill already at the embedded version.
+	CodeSkillsUnchanged = "skills.unchanged"
+	// CodeSkillsLocallyNewer is an installed skill whose version is NEWER than
+	// the binary's. It is left alone: a workspace ahead of the CLI is a stale
+	// binary, not a stale workspace, and overwriting would be a downgrade.
+	CodeSkillsLocallyNewer = "skills.locally-newer"
+	// CodeSkillsUnreadable is an installed file whose version cannot be read.
+	// It is left alone rather than guessed at — an unparsable frontmatter is a
+	// gate-4 problem the user must see, not a file to silently replace.
+	CodeSkillsUnreadable = "skills.unreadable"
+	// CodeSkillsInstallSummary is the trailing tally.
+	CodeSkillsInstallSummary = "skills.install-summary"
+	// CodeSkillsInstallNext is the next command in the workflow (R-1.8).
+	CodeSkillsInstallNext = "skills.install-next"
+)
+
 // ---------------------------------------------------------- graph build
 //
 // cmd_graph (`bin/company-os:1787-1797`) and rebuild_generated (`:1803-1810`)

@@ -343,9 +343,9 @@ var commandSpecs = []cmdSpec{
 		},
 	},
 	{
-		name: "skills", help: "list merged agent skills across the four layers",
+		name: "skills", help: "list merged agent skills across the four layers, or install the canonical ones",
 		pos: []posSpec{
-			{name: "action", choices: []string{"list"},
+			{name: "action", choices: []string{"list", "install"},
 				dest: func(a *Args) *string { return &a.Action }},
 		},
 	},

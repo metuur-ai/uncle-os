@@ -8,9 +8,14 @@
 # What it installs:
 #   company-os -> $INSTALL_DIR (default ~/.local/bin)
 #
+# This script installs the CLI and nothing else. It writes no file into any
+# workspace: the canonical agent skills ship inside the binary, and
+# `company-os skills install`, run from a workspace root, is what puts them
+# on disk.
+#
 # Options (env):
 #   INSTALL_DIR=/custom/bin        binary location            (default ~/.local/bin)
-#   VERSION=v1.1.0                 release tag                (default: latest)
+#   VERSION=v1.1.1                 release tag                (default: latest)
 #   BASE_URL=https://...           override the download base
 #
 # WHY THIS EXISTS AND NOT JUST A BROWSER DOWNLOAD (R-6.3):
@@ -249,6 +254,7 @@ main() {
   bold "Next"
   info "company-os --help                  # the whole surface"
   info "cd <a workspace root>              # or pass --root everywhere"
+  info "company-os skills install          # put the canonical agent skills in the workspace"
   info "company-os validate                # the CI gate"
   info "company-os tui                     # interactive, needs a real terminal"
   echo
