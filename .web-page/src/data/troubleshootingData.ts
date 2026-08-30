@@ -22,8 +22,24 @@ export const TROUBLESHOOTING_DATA: TroubleshootingItem[] = [
     tool: 'Company OS',
     category: 'PRD',
     symptom: 'prd complete refuses with done-check error (Exit Code 5)',
-    cause: "A governance checklist item in the PRD is still unchecked (- [ ]), or the component's reality doc updated: date is older than the PRD created: date.",
-    fix: "Update the component reality doc (platforms/<p>/reality/components/<comp>.md), bump updated: date to today, check off checklist boxes with evidence links, and retry."
+    cause: "A governance checklist item in the PRD is still unchecked (- [ ]), the component has no reality doc at all, or its reality doc updated: date is older than the PRD created: date.",
+    fix: "The refusal names every reason and prints the exact command that fixes a missing doc. Scaffold with company-os reality new if it names one, edit the reality doc and bump updated: to today, check off checklist boxes with evidence links, and retry. Do not reach for --force: it overrides the rule that a change is not done until reality is updated, which is why the TUI's complete form has no field for it."
+  },
+  {
+    id: 'ts-11',
+    tool: 'Company OS',
+    category: 'Scaffolding',
+    symptom: "reality new refuses: \"component 'X' belongs to platform 'A', not 'B'\" (Exit Code 3)",
+    cause: "The --platform you passed is not the one the component's descriptor names. The descriptor is authoritative for the component-to-platform relationship.",
+    fix: "Re-run with the platform named in the message. Before 2026-08-29 this pair was written rather than refused — the doc landed where nothing reads it, so the command reported created while prd complete's done-check went on refusing, with nothing connecting the two. If you hit that, delete the misfiled doc under the wrong platform and re-scaffold under the right one."
+  },
+  {
+    id: 'ts-12',
+    tool: 'Company OS',
+    category: 'CLI/Upgrade',
+    symptom: 'The TUI does not offer a brief, PRD, or component I just created in the same session',
+    cause: "A build older than 2026-08-29. Four lifecycle pickers, the component browser, and governance explain were built when the TUI launched rather than when the screen was opened, so nothing created in a session appeared in the next step.",
+    fix: "Upgrade. On an older build the workaround is to quit and relaunch company-os tui between steps."
   },
   {
     id: 'ts-4',

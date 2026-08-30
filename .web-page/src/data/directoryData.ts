@@ -130,7 +130,7 @@ export const DIRECTORY_CATEGORIES_DATA: DirectoryCategoryData[] = [
       },
       {
         title: 'Interactive TUI: company-os tui',
-        description: 'Browse 10 read-only screens and scaffold via 5 confirm-first forms, without memorising flags.',
+        description: 'Browse 10 read-only screens and run a whole change via 9 confirm-first forms, without memorising flags.',
         targetTab: 'cli',
         tag: 'Interactive Tool',
       },
