@@ -66,9 +66,10 @@ reason. Nothing is broken; the layers simply aren't there yet.
 
 Discovery globs **one level deep** and matches `*.SKILL.md` exactly, so
 `skills/creating-prd/SKILL.md` is invisible — the file must be
-`skills/creating-prd.SKILL.md`. (The five reference skills shipped in the
-starter kit under `skills/<name>/SKILL.md` are examples to copy, not a workspace
-layout; rename them on the way in.)
+`skills/creating-prd.SKILL.md`. The five canonical skills are compiled into the
+binary and written in that flat shape by `company-os skills install` (see
+[Get the canonical skills](#get-the-canonical-skills) below); you never copy
+them from the starter-kit checkout by hand.
 
 Personal rules are the one layer with a different shape: plain `*.md`, no
 frontmatter required, and discovered only under a team's scratchpad. Create the
@@ -207,7 +208,12 @@ The starter kit carries five reference skills:
 `examples/workspace` additionally carries `skill://governance/syncing-knowledge`
 for the [knowledge catalog](sync-a-knowledge-catalog.md) workflow.
 
-The binary carries all five, so getting them into a workspace is one command:
+## Get the canonical skills
+
+Nothing is downloaded separately: the five skills are embedded in the
+`company-os` binary you already installed (`make install` or the release
+`install.sh`). Getting them into a workspace is one command, run from the
+workspace root:
 
 ```bash
 company-os skills install     # -> company-os/skills/, flat, discovery-ready
